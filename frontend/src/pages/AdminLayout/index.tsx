@@ -13,9 +13,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = () => {
 
   const navigation = [
     { name: 'Главная', href: '/admin', icon: '🏠' },
-    // Здесь можно добавить другие пункты меню админки
-    // { name: 'Пользователи', href: '/admin/users', icon: '👥' },
-    // { name: 'Настройки', href: '/admin/settings', icon: '⚙️' },
+    { name: 'Категории', href: '/admin/categories', icon: '🗂️' },
+    { name: 'Секции', href: '/admin/sections', icon: '📚' },
   ];
 
   const handleSignOut = async () => {

@@ -5,6 +5,8 @@ import LoginPage from 'pages/LoginPage';
 import ForbiddenPage from 'pages/ForbiddenPage';
 import AdminLayout from 'pages/AdminLayout';
 import AdminHomePage from 'pages/AdminHomePage';
+import AdminCategoriesPage from 'pages/AdminCategoriesPage';
+import AdminSectionsPage from 'pages/AdminSectionsPage';
 import DebugPage from 'pages/DebugPage';
 import { ProtectedRoute } from 'shared/ui/molecules';
 
@@ -28,6 +30,8 @@ const App: React.FC = () => {
       >
         {/* Вложенные роуты админки */}
         <Route index element={<AdminHomePage />} />
+        <Route path="categories" element={<AdminCategoriesPage />} />
+        <Route path="sections" element={<AdminSectionsPage />} />
         {/* Здесь можно добавить другие страницы админки */}
         {/* <Route path="users" element={<AdminUsersPage />} /> */}
         {/* <Route path="settings" element={<AdminSettingsPage />} /> */}
