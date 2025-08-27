@@ -5,5 +5,6 @@ export { default as PropertiesSection } from './PropertiesSection';
 export { default as AnimationsSection } from './AnimationsSection';
 export { default as ChangelogSection } from './ChangelogSection';
 export { default as ControlsSection } from './ControlsSection';
-export { default } from './BlockRenderer';
+export { default as BlockRenderer } from './BlockRenderer';
 export { default as LayoutManager } from './LayoutManager';
+export { default as LiveEditor } from './LiveEditor';

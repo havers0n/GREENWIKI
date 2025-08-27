@@ -13,6 +13,12 @@ type LayoutBlock = Database['public']['Tables']['layout_blocks']['Row'];
 interface BlockRendererProps {
   pageIdentifier: string;
   blocks?: LayoutBlock[];
+  /** Включает режим редактора: клики по блокам выбирают их, выбранный подсвечивается */
+  editorMode?: boolean;
+  /** ID выбранного блока для подсветки */
+  selectedBlockId?: string | null;
+  /** Колбэк выбора блока по клику в превью (null — снять выделение) */
+  onSelectBlock?: (id: string | null) => void;
 }
 
 // Use a permissive props type to allow different sections to define their own props contracts
@@ -38,7 +44,7 @@ const LoadingState = {
 
 type LoadingState = typeof LoadingState[keyof typeof LoadingState];
 
-const BlockRenderer: React.FC<BlockRendererProps> = ({ pageIdentifier, blocks: externalBlocks }) => {
+const BlockRenderer: React.FC<BlockRendererProps> = ({ pageIdentifier, blocks: externalBlocks, editorMode = false, selectedBlockId, onSelectBlock }) => {
   const [blocks, setBlocks] = useState<LayoutBlock[]>([]);
   const [loadingState, setLoadingState] = useState<LoadingState>(LoadingState.Loading);
   const [error, setError] = useState<string | null>(null);
@@ -98,12 +104,25 @@ const BlockRenderer: React.FC<BlockRendererProps> = ({ pageIdentifier, blocks: e
             return null;
           }
 
+          const isSelected = selectedBlockId === block.id;
+          const wrapperClassName = editorMode
+            ? `relative rounded-md ${isSelected ? 'ring-2 ring-blue-500' : 'ring-1 ring-transparent hover:ring-blue-300'} cursor-pointer`
+            : undefined;
+
+          const handleClick = editorMode && onSelectBlock
+            ? (e: React.MouseEvent<HTMLDivElement>) => {
+                e.stopPropagation();
+                onSelectBlock(block.id);
+              }
+            : undefined;
+
           return (
-            <Component
-              key={block.id}
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-              {...(block.content as Record<string, unknown>)}
-            />
+            <div key={block.id} className={wrapperClassName} onClick={handleClick} data-block-id={block.id}>
+              <Component
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                {...(block.content as Record<string, unknown>)}
+              />
+            </div>
           );
         })}
     </div>
