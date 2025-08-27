@@ -3,3 +3,7 @@ export * from './Card';
 export * from './Icon';
 export * from './Tag';
 export * from './Typography';
+export * from './Input';
+export * from './Select';
+export * from './Textarea';
+export * from './Spinner';

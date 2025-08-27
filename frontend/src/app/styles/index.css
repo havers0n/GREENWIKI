@@ -1,3 +1,7 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --color-majestic-pink: #E6007A;
   --color-majestic-dark: #111827;
@@ -26,3 +30,4 @@
 .bg-status-red { background-color: var(--status-red); }
 .bg-status-green { background-color: var(--status-green); }
 .bg-status-blue { background-color: var(--status-blue); }
+

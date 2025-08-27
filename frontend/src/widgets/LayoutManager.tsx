@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Database } from '@my-forum/db-types';
-import { Button, Card, Typography, Tag } from 'shared/ui/atoms';
+import { Button, Card, Typography, Tag, Select, Textarea, Spinner } from 'shared/ui/atoms';
+import { Modal } from 'shared/ui/molecules';
 import {
   fetchAdminLayoutByPage,
   createLayoutBlock,
@@ -83,7 +84,7 @@ import {
              </Tag>
            </div>
            {contentPreview && (
-             <Typography variant="small" className="mt-2 text-majestic-gray-500 break-words">
+             <Typography variant="small" className="mt-2 text-gray-500 break-words">
                {contentPreview}
              </Typography>
            )}
@@ -96,28 +97,6 @@ import {
          </div>
        </div>
      </Card>
-   );
- };
-
- // Modal primitives
- interface ModalProps {
-   title: string;
-   children: React.ReactNode;
-   onClose: () => void;
- }
-
- const Modal: React.FC<ModalProps> = ({ title, children, onClose }) => {
-   return (
-     <div className="fixed inset-0 z-50 flex items-center justify-center">
-       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-       <div className="relative bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4 p-6">
-         <div className="flex items-start justify-between mb-4">
-           <Typography as="h2" variant="h2">{title}</Typography>
-           <button aria-label="Close" className="text-majestic-gray-400 hover:text-majestic-dark" onClick={onClose}>✕</button>
-         </div>
-         {children}
-       </div>
-     </div>
    );
  };
 
@@ -162,27 +141,25 @@ import {
          <div className="mb-3 p-3 rounded-md text-sm bg-red-50 text-red-700 border border-red-200">{error}</div>
        )}
        <div className="space-y-4">
-         <div>
-           <label className="block text-sm font-medium mb-1">Тип блока</label>
-           <select value={blockType} onChange={(e) => setBlockType(e.target.value as BlockType)} className="w-full border rounded-lg p-2.5">
-             {BLOCK_TYPES.map((t) => (
-               <option key={t} value={t}>{t}</option>
-             ))}
-           </select>
-         </div>
-         <div>
-           <label className="block text-sm font-medium mb-1">Статус</label>
-           <select value={status} onChange={(e) => setStatus(e.target.value as BlockStatus)} className="w-full border rounded-lg p-2.5">
-             {STATUSES.map((s) => (
-               <option key={s} value={s}>{s}</option>
-             ))}
-           </select>
-         </div>
-         <div>
-           <label className="block text-sm font-medium mb-1">JSON контент</label>
-           <textarea value={contentText} onChange={(e) => setContentText(e.target.value)} rows={8} className="w-full border rounded-lg p-2.5 font-mono text-sm" placeholder='{"title":"..."}'></textarea>
-           <Typography variant="small" className="mt-1">Введите валидный JSON</Typography>
-         </div>
+         <Select label="Тип блока" value={blockType} onChange={(e) => setBlockType(e.target.value as BlockType)}>
+           {BLOCK_TYPES.map((t) => (
+             <option key={t} value={t}>{t}</option>
+           ))}
+         </Select>
+         <Select label="Статус" value={status} onChange={(e) => setStatus(e.target.value as BlockStatus)}>
+           {STATUSES.map((s) => (
+             <option key={s} value={s}>{s}</option>
+           ))}
+         </Select>
+         <Textarea
+           label="JSON контент"
+           value={contentText}
+           onChange={(e) => setContentText(e.target.value)}
+           rows={8}
+           className="font-mono text-sm"
+           hint="Введите валидный JSON"
+           placeholder='{"title":"..."}'
+         />
          <div className="flex justify-end gap-2 pt-2">
            <Button onClick={onClose} variant="secondary">Отмена</Button>
            <Button onClick={handleSubmit} disabled={submitting} variant="primary">
@@ -236,26 +213,23 @@ import {
          <div className="mb-3 p-3 rounded-md text-sm bg-red-50 text-red-700 border border-red-200">{error}</div>
        )}
        <div className="space-y-4">
-         <div>
-           <label className="block text-sm font-medium mb-1">Тип блока</label>
-           <select value={blockType} onChange={(e) => setBlockType(e.target.value as BlockType)} className="w-full border rounded-lg p-2.5">
-             {BLOCK_TYPES.map((t) => (
-               <option key={t} value={t}>{t}</option>
-             ))}
-           </select>
-         </div>
-         <div>
-           <label className="block text-sm font-medium mb-1">Статус</label>
-           <select value={status} onChange={(e) => setStatus(e.target.value as BlockStatus)} className="w-full border rounded-lg p-2.5">
-             {STATUSES.map((s) => (
-               <option key={s} value={s}>{s}</option>
-             ))}
-           </select>
-         </div>
-         <div>
-           <label className="block text-sm font-medium mb-1">JSON контент</label>
-           <textarea value={contentText} onChange={(e) => setContentText(e.target.value)} rows={8} className="w-full border rounded-lg p-2.5 font-mono text-sm" />
-         </div>
+         <Select label="Тип блока" value={blockType} onChange={(e) => setBlockType(e.target.value as BlockType)}>
+           {BLOCK_TYPES.map((t) => (
+             <option key={t} value={t}>{t}</option>
+           ))}
+         </Select>
+         <Select label="Статус" value={status} onChange={(e) => setStatus(e.target.value as BlockStatus)}>
+           {STATUSES.map((s) => (
+             <option key={s} value={s}>{s}</option>
+           ))}
+         </Select>
+         <Textarea
+           label="JSON контент"
+           value={contentText}
+           onChange={(e) => setContentText(e.target.value)}
+           rows={8}
+           className="font-mono text-sm"
+         />
          <div className="flex justify-end gap-2 pt-2">
            <Button onClick={onClose} variant="secondary">Отмена</Button>
            <Button onClick={handleSubmit} disabled={submitting} variant="primary">
@@ -284,7 +258,7 @@ import {
        </Typography>
        <div className="flex justify-end gap-2 pt-4">
          <Button onClick={onClose} variant="secondary">Отмена</Button>
-         <Button onClick={onConfirm} disabled={!!busy} className="bg-red-600 hover:bg-red-700">{busy ? 'Удаление...' : 'Удалить'}</Button>
+         <Button onClick={onConfirm} disabled={!!busy} variant="danger">{busy ? 'Удаление...' : 'Удалить'}</Button>
        </div>
      </Modal>
    );
@@ -377,7 +351,7 @@ import {
        <div className="flex items-start justify-between">
          <div>
            <Typography as="h1" variant="h1">Управление блоками</Typography>
-           <Typography variant="small" className="mt-1 text-majestic-gray-500">Страница: {pageIdentifier}</Typography>
+           <Typography variant="small" className="mt-1 text-gray-500">Страница: {pageIdentifier}</Typography>
          </div>
          <div className="flex items-center gap-2">
            <Button onClick={() => setShowCreate(true)} variant="primary">Добавить новый блок</Button>
@@ -386,7 +360,12 @@ import {
        </div>
 
        {loading && (
-         <Card className="p-6"><Typography>Загрузка...</Typography></Card>
+         <Card className="p-6">
+           <div className="flex items-center gap-3">
+             <Spinner />
+             <Typography>Загрузка...</Typography>
+           </div>
+         </Card>
        )}
 
        {!loading && error && (
