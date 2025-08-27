@@ -4,6 +4,8 @@ import { Button, Input, Select } from 'shared/ui/atoms';
 import { fetchCategories } from 'shared/api/categories';
 import { updateSection } from 'shared/api/sections';
 import type { Database, TablesUpdate } from '@my-forum/db-types';
+import { fetchAdminPages } from 'shared/api/pages';
+import type { PageRow } from 'shared/api/pages';
 
 interface Props {
   section: Database['public']['Tables']['sections']['Row'];
@@ -17,6 +19,7 @@ type LinkType = 'internal' | 'external';
 
 const EditSectionModal: React.FC<Props> = ({ section, onClose, onUpdated }) => {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [pages, setPages] = useState<PageRow[]>([]);
   const [name, setName] = useState(section.name || '');
   const [description, setDescription] = useState(section.description || '');
   const [position, setPosition] = useState<number | ''>(section.position ?? '');
@@ -36,6 +39,18 @@ const EditSectionModal: React.FC<Props> = ({ section, onClose, onUpdated }) => {
       }
     };
     loadCats();
+  }, []);
+
+  useEffect(() => {
+    const loadPages = async () => {
+      try {
+        const data = await fetchAdminPages();
+        setPages(data);
+      } catch (e: any) {
+        setError(e?.message || 'Ошибка загрузки страниц');
+      }
+    };
+    loadPages();
   }, []);
 
   useEffect(() => {
@@ -112,7 +127,12 @@ const EditSectionModal: React.FC<Props> = ({ section, onClose, onUpdated }) => {
         </div>
 
         {linkType === 'internal' ? (
-          <Input label="page_id" type="number" value={pageId} onChange={(e) => setPageId(e.target.value === '' ? '' : Number(e.target.value))} />
+          <Select label="Страница" value={pageId === '' ? '' : String(pageId)} onChange={(e) => setPageId(e.target.value === '' ? '' : Number(e.target.value))}>
+            <option value="">Выберите страницу</option>
+            {pages.map((p) => (
+              <option key={p.id} value={String(p.id)}>{p.title}</option>
+            ))}
+          </Select>
         ) : (
           <Input label="external_url" placeholder="https://..." value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} />
         )}

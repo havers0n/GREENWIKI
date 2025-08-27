@@ -4,6 +4,8 @@ import { Button, Input, Select } from 'shared/ui/atoms';
 import { fetchCategories } from 'shared/api/categories';
 import { createSection } from 'shared/api/sections';
 import type { Database, TablesInsert } from '@my-forum/db-types';
+import { fetchAdminPages } from 'shared/api/pages';
+import type { PageRow } from 'shared/api/pages';
 
 interface Props {
   onClose: () => void;
@@ -16,6 +18,7 @@ type LinkType = 'internal' | 'external';
 
 const CreateSectionModal: React.FC<Props> = ({ onClose, onCreated }) => {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [pages, setPages] = useState<PageRow[]>([]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [position, setPosition] = useState<number | ''>('');
@@ -35,6 +38,18 @@ const CreateSectionModal: React.FC<Props> = ({ onClose, onCreated }) => {
       }
     };
     loadCats();
+  }, []);
+
+  useEffect(() => {
+    const loadPages = async () => {
+      try {
+        const data = await fetchAdminPages();
+        setPages(data);
+      } catch (e: any) {
+        setError(e?.message || 'Ошибка загрузки страниц');
+      }
+    };
+    loadPages();
   }, []);
 
   const xorValid = useMemo(() => {
@@ -107,7 +122,12 @@ const CreateSectionModal: React.FC<Props> = ({ onClose, onCreated }) => {
         </div>
 
         {linkType === 'internal' ? (
-          <Input label="page_id" type="number" value={pageId} onChange={(e) => setPageId(e.target.value === '' ? '' : Number(e.target.value))} />
+          <Select label="Страница" value={pageId === '' ? '' : String(pageId)} onChange={(e) => setPageId(e.target.value === '' ? '' : Number(e.target.value))}>
+            <option value="">Выберите страницу</option>
+            {pages.map((p) => (
+              <option key={p.id} value={String(p.id)}>{p.title}</option>
+            ))}
+          </Select>
         ) : (
           <Input label="external_url" placeholder="https://..." value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} />
         )}

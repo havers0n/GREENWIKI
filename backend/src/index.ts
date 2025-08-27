@@ -7,6 +7,7 @@ import cors from 'cors'
 import layoutRouter from './routes/layoutRoutes'
 import categoryRouter from './routes/categoryRoutes'
 import sectionRouter from './routes/sectionRoutes'
+import pageRouter from './routes/pageRoutes'
 
 const app = express()
 
@@ -20,6 +21,7 @@ app.get('/health', (_req: Request, res: Response) => {
 app.use('/api/layout', layoutRouter)
 app.use('/api/categories', categoryRouter)
 app.use('/api/sections', sectionRouter)
+app.use('/api/pages', pageRouter)
 
 app.use('/api', (_req: Request, res: Response) => {
   res.status(404).json({ error: 'Not Found' })

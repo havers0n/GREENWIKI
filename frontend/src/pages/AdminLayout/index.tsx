@@ -15,6 +15,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = () => {
     { name: 'Главная', href: '/admin', icon: '🏠' },
     { name: 'Категории', href: '/admin/categories', icon: '🗂️' },
     { name: 'Секции', href: '/admin/sections', icon: '📚' },
+    { name: 'Страницы', href: '/admin/pages', icon: '📄' },
   ];
 
   const handleSignOut = async () => {

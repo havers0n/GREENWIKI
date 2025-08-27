@@ -1,12 +1,8 @@
 import React from 'react';
-import LayoutManager from 'widgets/LayoutManager';
+import EditorManager from 'widgets/EditorManager';
 
 const AdminHomePage: React.FC = () => {
-  return (
-    <div className="space-y-6">
-      <LayoutManager pageIdentifier="homepage" />
-    </div>
-  );
+  return <EditorManager pageIdentifier="homepage" />;
 };
 
 export default AdminHomePage;

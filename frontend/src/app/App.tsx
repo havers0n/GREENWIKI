@@ -9,6 +9,7 @@ import AdminCategoriesPage from 'pages/AdminCategoriesPage';
 import AdminSectionsPage from 'pages/AdminSectionsPage';
 import DebugPage from 'pages/DebugPage';
 import { ProtectedRoute } from 'shared/ui/molecules';
+import AdminPagesPage from 'pages/AdminPagesPage';
 
 const App: React.FC = () => {
   return (
@@ -32,6 +33,7 @@ const App: React.FC = () => {
         <Route index element={<AdminHomePage />} />
         <Route path="categories" element={<AdminCategoriesPage />} />
         <Route path="sections" element={<AdminSectionsPage />} />
+        <Route path="pages" element={<AdminPagesPage />} />
         {/* Здесь можно добавить другие страницы админки */}
         {/* <Route path="users" element={<AdminUsersPage />} /> */}
         {/* <Route path="settings" element={<AdminSettingsPage />} /> */}

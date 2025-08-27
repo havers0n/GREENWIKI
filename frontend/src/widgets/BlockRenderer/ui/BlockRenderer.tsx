@@ -12,6 +12,7 @@ type LayoutBlock = Database['public']['Tables']['layout_blocks']['Row'];
 
 interface BlockRendererProps {
   pageIdentifier: string;
+  blocks?: LayoutBlock[];
 }
 
 // Use a permissive props type to allow different sections to define their own props contracts
@@ -37,12 +38,22 @@ const LoadingState = {
 
 type LoadingState = typeof LoadingState[keyof typeof LoadingState];
 
-const BlockRenderer: React.FC<BlockRendererProps> = ({ pageIdentifier }) => {
+const BlockRenderer: React.FC<BlockRendererProps> = ({ pageIdentifier, blocks: externalBlocks }) => {
   const [blocks, setBlocks] = useState<LayoutBlock[]>([]);
   const [loadingState, setLoadingState] = useState<LoadingState>(LoadingState.Loading);
   const [error, setError] = useState<string | null>(null);
 
+  // If blocks are provided from outside (e.g., EditorManager), use them and skip fetching
   useEffect(() => {
+    if (typeof externalBlocks !== 'undefined') {
+      setBlocks(externalBlocks);
+      setLoadingState(externalBlocks.length > 0 ? LoadingState.Loaded : LoadingState.Empty);
+    }
+  }, [externalBlocks]);
+
+  // Fallback: fetch blocks only when no external blocks are provided
+  useEffect(() => {
+    if (typeof externalBlocks !== 'undefined') return;
     const loadLayout = async () => {
       try {
         setLoadingState(LoadingState.Loading);
@@ -60,8 +71,8 @@ const BlockRenderer: React.FC<BlockRendererProps> = ({ pageIdentifier }) => {
       }
     };
 
-    loadLayout();
-  }, [pageIdentifier]);
+    void loadLayout();
+  }, [pageIdentifier, externalBlocks]);
 
   if (loadingState === LoadingState.Loading) {
     return <div>Loading...</div>;
