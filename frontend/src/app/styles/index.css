@@ -1,0 +1,28 @@
+:root {
+  --color-majestic-pink: #E6007A;
+  --color-majestic-dark: #111827;
+  --color-majestic-gray-100: #F3F4F6;
+  --color-majestic-gray-200: #E5E7EB;
+  --color-majestic-gray-300: #D1D5DB;
+  --color-majestic-gray-400: #9CA3AF;
+  --status-red: #EF4444;
+  --status-green: #10B981;
+  --status-blue: #3B82F6;
+}
+
+.text-majestic-dark { color: var(--color-majestic-dark); }
+.text-majestic-gray-300 { color: var(--color-majestic-gray-300); }
+.text-majestic-gray-400 { color: var(--color-majestic-gray-400); }
+.text-majestic-pink { color: var(--color-majestic-pink); }
+
+.bg-majestic-gray-100 { background-color: var(--color-majestic-gray-100); }
+.bg-majestic-gray-200 { background-color: var(--color-majestic-gray-200); }
+.bg-majestic-gray-300 { background-color: var(--color-majestic-gray-300); }
+.bg-majestic-gray-400 { background-color: var(--color-majestic-gray-400); }
+.bg-majestic-pink { background-color: var(--color-majestic-pink); }
+
+.border-majestic-gray-200 { border-color: var(--color-majestic-gray-200); }
+
+.bg-status-red { background-color: var(--status-red); }
+.bg-status-green { background-color: var(--status-green); }
+.bg-status-blue { background-color: var(--status-blue); }

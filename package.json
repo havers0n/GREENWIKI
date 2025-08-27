@@ -1,0 +1,20 @@
+{
+  "name": "my-forum",
+  "version": "1.0.0",
+  "description": "Forum application with backend, frontend and shared types",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel dev",
+    "build": "pnpm --recursive build",
+    "test": "pnpm --recursive test",
+    "lint": "pnpm --recursive lint",
+    "gen:types": "supabase gen types typescript --linked > packages/db-types/src/index.ts"
+  },
+  "devDependencies": {
+    "supabase": "^2.39.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

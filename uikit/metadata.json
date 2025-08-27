@@ -1,0 +1,5 @@
+{
+  "name": "Majestic UI Kit",
+  "description": "A comprehensive UI kit built with React, TypeScript, and Tailwind CSS, following Feature-Sliced Design (FSD) and Atomic Design principles, based on the Majestic RP visual style.",
+  "requestFramePermissions": []
+}
