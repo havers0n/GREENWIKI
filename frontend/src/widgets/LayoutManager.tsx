@@ -79,12 +79,12 @@ import {
              <Typography as="h3" variant="h3" className="truncate">
                #{block.position} — {block.block_type}
              </Typography>
-             <Tag className={block.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-800'}>
+             <Tag className={block.status === 'published' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'}>
                {block.status}
              </Tag>
            </div>
            {contentPreview && (
-             <Typography variant="small" className="mt-2 text-gray-500 break-words">
+             <Typography variant="small" className="mt-2 text-gray-500 dark:text-gray-400 break-words">
                {contentPreview}
              </Typography>
            )}
@@ -93,7 +93,7 @@ import {
            <Button onClick={() => onMoveUp(block.id)} disabled={isFirst} variant="secondary">Вверх</Button>
            <Button onClick={() => onMoveDown(block.id)} disabled={isLast} variant="secondary">Вниз</Button>
            <Button onClick={() => onEdit(block)} variant="primary">Редактировать</Button>
-           <Button onClick={() => onDelete(block)} variant="ghost" className="text-red-600">Удалить</Button>
+           <Button onClick={() => onDelete(block)} variant="ghost" className="text-red-600 dark:text-red-400">Удалить</Button>
          </div>
        </div>
      </Card>
@@ -138,7 +138,7 @@ import {
    return (
      <Modal title={`Добавить блок для «${pageIdentifier}»`} onClose={onClose}>
        {error && (
-         <div className="mb-3 p-3 rounded-md text-sm bg-red-50 text-red-700 border border-red-200">{error}</div>
+         <div className="mb-3 p-3 rounded-md text-sm bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-700/50">{error}</div>
        )}
        <div className="space-y-4">
          <Select label="Тип блока" value={blockType} onChange={(e) => setBlockType(e.target.value as BlockType)}>
@@ -210,7 +210,7 @@ import {
    return (
      <Modal title={`Редактировать блок #${block.position}`} onClose={onClose}>
        {error && (
-         <div className="mb-3 p-3 rounded-md text-sm bg-red-50 text-red-700 border border-red-200">{error}</div>
+         <div className="mb-3 p-3 rounded-md text-sm bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-700/50">{error}</div>
        )}
        <div className="space-y-4">
          <Select label="Тип блока" value={blockType} onChange={(e) => setBlockType(e.target.value as BlockType)}>
@@ -351,7 +351,7 @@ import {
        <div className="flex items-start justify-between">
          <div>
            <Typography as="h1" variant="h1">Управление блоками</Typography>
-           <Typography variant="small" className="mt-1 text-gray-500">Страница: {pageIdentifier}</Typography>
+           <Typography variant="small" className="mt-1 text-gray-500 dark:text-gray-400">Страница: {pageIdentifier}</Typography>
          </div>
          <div className="flex items-center gap-2">
            <Button onClick={() => setShowCreate(true)} variant="primary">Добавить новый блок</Button>
@@ -369,7 +369,7 @@ import {
        )}
 
        {!loading && error && (
-         <Card className="p-6 border-red-200 bg-red-50"><Typography>Ошибка: {error}</Typography></Card>
+         <Card className="p-6 border-red-200 dark:border-red-700/50 bg-red-50 dark:bg-red-900/20"><Typography>Ошибка: {error}</Typography></Card>
        )}
 
        {!loading && !error && blocks.length === 0 && (

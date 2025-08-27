@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import type { Session, User } from '@supabase/supabase-js';
+import type { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '../../supabase';
 import type { Profile } from '../../supabase';
 
@@ -90,10 +90,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initializeAuth();
 
     // Слушаем изменения состояния аутентификации
-    let subscription: any = null;
+    let subscription: { unsubscribe: () => void } | null = null;
 
     try {
-      const { data } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const { data } = supabase.auth.onAuthStateChange(async (_event: AuthChangeEvent, session: Session | null) => {
         setSession(session);
         setUser(session?.user ?? null);
 
@@ -176,7 +176,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (error) {
         console.error('Error fetching profile:', error);
 
-        if (error.code === 'PGRST116') {
+        if ((error as any).code === 'PGRST116') {
           console.log('🔧 Profile not found, creating new profile...');
           const { data: newProfile, error: createError } = await supabase
             .from('profiles')
@@ -186,14 +186,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
           if (createError) {
             console.error('❌ Error creating profile:', createError);
-            console.error('Create error details:', createError.message, createError.code);
+            console.error('Create error details:', (createError as any).message, (createError as any).code);
 
-            if (createError.code === '42P01') {
+            if ((createError as any).code === '42P01') {
               setError('Таблица profiles не существует в базе данных. Создайте таблицу через Supabase Studio.');
-            } else if (createError.code === '42501') {
+            } else if ((createError as any).code === '42501') {
               setError('Нет прав доступа к таблице profiles. Проверьте RLS политики.');
             } else {
-              setError(`Ошибка создания профиля: ${createError.message}`);
+              setError(`Ошибка создания профиля: ${(createError as any).message}`);
             }
           } else {
             console.log('✅ Profile created successfully:', newProfile);
@@ -202,16 +202,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         } else {
           console.error('❌ Error loading profile:', error);
-          console.error('Error details:', error.message, error.code);
+          console.error('Error details:', (error as any).message, (error as any).code);
 
-          if (error.code === 'PGRST301') {
+          if ((error as any).code === 'PGRST301') {
             setError('Ошибка подключения к базе данных. Проверьте настройки Supabase.');
-          } else if (error.code === '42501') {
+          } else if ((error as any).code === '42501') {
             setError('Нет прав доступа к таблице profiles. Проверьте RLS политики.');
-          } else if (error.code === '42P01') {
+          } else if ((error as any).code === '42P01') {
             setError('Таблица profiles не существует в базе данных.');
           } else {
-            setError(`Ошибка загрузки профиля: ${error.message}`);
+            setError(`Ошибка загрузки профиля: ${(error as any).message}`);
           }
         }
       } else {
@@ -254,7 +254,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (error) {
         console.error('Error updating profile:', error);
-        throw error;
+        throw error as any;
       }
 
       setProfile(data);
@@ -263,7 +263,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Error updating profile:', error);
       setError('Ошибка обновления профиля');
-      throw error;
+      throw error as any;
     }
   };
 

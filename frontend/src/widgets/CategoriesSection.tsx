@@ -14,12 +14,14 @@ interface CategoriesSectionProps {
   description?: string;
 }
 
-enum LoadingState {
-  Loading = 'loading',
-  Loaded = 'loaded',
-  Error = 'error',
-  Empty = 'empty',
-}
+const LoadingState = {
+  Loading: 'loading',
+  Loaded: 'loaded',
+  Error: 'error',
+  Empty: 'empty',
+} as const;
+
+type LoadingState = typeof LoadingState[keyof typeof LoadingState];
 
 const CategoriesSection: React.FC<CategoriesSectionProps> = ({
   title = "Общие категории",

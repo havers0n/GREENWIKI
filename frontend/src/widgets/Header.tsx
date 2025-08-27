@@ -1,10 +1,10 @@
 
 import React from 'react';
-import { SearchInput } from 'shared/ui/molecules';
+import { SearchInput, ThemeToggle } from 'shared/ui/molecules';
 
 const Header = (): React.ReactNode => {
     return (
-        <header className="bg-white shadow-sm sticky top-0 z-10">
+        <header className="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-10">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     <div className="flex-shrink-0">
@@ -17,9 +17,10 @@ const Header = (): React.ReactNode => {
                     <div className="flex-1 max-w-lg mx-4">
                         <SearchInput placeholder="Поиск информации на сайте..." />
                     </div>
-                    <div className="flex items-center">
-                        <div className="w-10 h-10 bg-majestic-gray-200 rounded-full flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-majestic-gray-400"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    <div className="flex items-center gap-3">
+                        <ThemeToggle />
+                        <div className="w-10 h-10 bg-majestic-gray-200 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-majestic-gray-400 dark:text-gray-300"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                         </div>
                     </div>
                 </div>

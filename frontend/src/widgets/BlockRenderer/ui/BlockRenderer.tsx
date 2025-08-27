@@ -14,26 +14,28 @@ interface BlockRendererProps {
   pageIdentifier: string;
 }
 
-interface ComponentMapProps {
-  content?: any;
-  [key: string]: any;
-}
+// Use a permissive props type to allow different sections to define their own props contracts
+// while keeping mapping strongly keyed by string
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyComponent = React.ComponentType<any>;
 
-const componentMap: Record<string, React.ComponentType<ComponentMapProps>> = {
-  'header': Header,
-  'categories_section': CategoriesSection,
-  'controls_section': ControlsSection,
-  'properties_section': PropertiesSection,
-  'animations_section': AnimationsSection,
-  'changelog_section': ChangelogSection,
+const componentMap: Record<string, AnyComponent> = {
+  header: Header as AnyComponent,
+  categories_section: CategoriesSection as AnyComponent,
+  controls_section: ControlsSection as AnyComponent,
+  properties_section: PropertiesSection as AnyComponent,
+  animations_section: AnimationsSection as AnyComponent,
+  changelog_section: ChangelogSection as AnyComponent,
 };
 
-enum LoadingState {
-  Loading = 'loading',
-  Loaded = 'loaded',
-  Error = 'error',
-  Empty = 'empty',
-}
+const LoadingState = {
+  Loading: 'loading',
+  Loaded: 'loaded',
+  Error: 'error',
+  Empty: 'empty',
+} as const;
+
+type LoadingState = typeof LoadingState[keyof typeof LoadingState];
 
 const BlockRenderer: React.FC<BlockRendererProps> = ({ pageIdentifier }) => {
   const [blocks, setBlocks] = useState<LayoutBlock[]>([]);
@@ -88,7 +90,8 @@ const BlockRenderer: React.FC<BlockRendererProps> = ({ pageIdentifier }) => {
           return (
             <Component
               key={block.id}
-              {...(block.content as ComponentMapProps)}
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              {...(block.content as Record<string, unknown>)}
             />
           );
         })}

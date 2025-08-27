@@ -1,1 +1,3 @@
-﻿module.exports = { content: ["./index.html", "./src/**/*.{ts,tsx}"], theme: { extend: { colors: { majestic: { pink: "#E6007A", dark: "#111827", gray: { 100: "#F3F4F6", 200: "#E5E7EB", 300: "#D1D5DB", 400: "#9CA3AF", 500: "#6B7280" } }, status: { red: "#EF4444", green: "#10B981", blue: "#3B82F6" } } } }, plugins: [] }
+﻿const tokens = require('./src/shared/config/theme.json');
+
+module.exports = { darkMode: 'class', content: ["./index.html", "./src/**/*.{ts,tsx}"], theme: { extend: { colors: { majestic: { pink: tokens.colors.primary, dark: tokens.colors.dark, gray: { 100: tokens.colors.gray[100], 200: tokens.colors.gray[200], 300: tokens.colors.gray[300], 400: tokens.colors.gray[400], 500: tokens.colors.gray[500] } }, status: { red: tokens.colors.status.red, green: tokens.colors.status.green, blue: tokens.colors.status.blue }, primary: tokens.colors.primary, secondary: tokens.colors.secondary, dark: tokens.colors.dark } } }, plugins: [] }
