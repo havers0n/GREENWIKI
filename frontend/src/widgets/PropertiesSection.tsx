@@ -1,27 +1,27 @@
 import React from 'react';
 import { Typography } from 'shared/ui/atoms';
 import { PropertyCard } from 'entities/property';
+import type { Property } from 'shared/lib/types';
 
 interface PropertiesSectionProps {
   title?: string;
   subtitle?: string;
+  properties?: Property[];
 }
 
 const PropertiesSection: React.FC<PropertiesSectionProps> = ({
   title = "Недвижимость",
-  subtitle = "Таблица недвижимости"
+  subtitle = "Таблица недвижимости",
+  properties = []
 }) => {
-    // TODO: В будущем заменить на API загрузку данных
-    const properties = [
-        { id: '1', name: 'Дом #1554', price: 9500000, residents: 15, garageSpaces: 15, imageUrl: 'https://picsum.photos/seed/house1/400/300' },
-        { id: '2', name: 'Дом #1553', price: 800000, residents: 10, garageSpaces: 10, imageUrl: 'https://picsum.photos/seed/house2/400/300' },
-        { id: '3', name: 'Дом #1552', price: 6000000, residents: 10, garageSpaces: 10, imageUrl: 'https://picsum.photos/seed/house3/400/300' },
-    ];
+    if (!properties || properties.length === 0) {
+        return null;
+    }
 
     return (
         <section className="space-y-6">
             <Typography as="h2" variant="h2">{title}</Typography>
-            <Typography as="h3" variant="h3">{subtitle}</Typography>
+            {subtitle ? <Typography as="h3" variant="h3">{subtitle}</Typography> : null}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {properties.map(property => (
                     <PropertyCard key={property.id} property={property} />

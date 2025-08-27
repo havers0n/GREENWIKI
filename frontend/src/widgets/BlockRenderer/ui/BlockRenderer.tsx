@@ -72,7 +72,7 @@ const BlockRenderer: React.FC<BlockRendererProps> = ({ pageIdentifier }) => {
   }
 
   if (loadingState === LoadingState.Empty) {
-    return <div>No content available.</div>;
+    return null;
   }
 
   return (
