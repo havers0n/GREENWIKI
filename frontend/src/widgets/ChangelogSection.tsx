@@ -3,7 +3,14 @@ import { Typography } from 'shared/ui/atoms';
 import { ChangelogCard, ChangeLogHeatmap } from 'entities/changelog';
 import { ChangeType } from 'shared/lib/types';
 
-const ChangelogSection = (): React.ReactNode => {
+interface ChangelogSectionProps {
+  title?: string;
+}
+
+const ChangelogSection: React.FC<ChangelogSectionProps> = ({
+  title = "История изменений"
+}) => {
+    // TODO: В будущем заменить на API загрузку данных
     const changelog = [
         { id: '1', version: '3.10566.4765', timestamp: '18 ч 6 мин назад', date: '21.08.2025', changes: ['Утреннее обновление уже на сервере', 'Теперь при покупке дома или апартаментов через маркетплейс склад будет сохраняться.'] },
         { id: '2', version: '3.10556.4759', timestamp: '1 д 18 ч назад', date: '20.08.2025', changes: ['Увеличен лимит передаваемых предметов за одну операцию и прочее', 'Внесены различные исправления одежды из летнего пропуска.'] },
@@ -17,7 +24,7 @@ const ChangelogSection = (): React.ReactNode => {
 
     return (
         <section className="space-y-6">
-            <Typography as="h2" variant="h2">История изменений</Typography>
+            <Typography as="h2" variant="h2">{title}</Typography>
 
             <div className="mb-8">
                 <ChangeLogHeatmap data={heatmapData} />

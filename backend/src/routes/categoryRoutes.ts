@@ -8,15 +8,35 @@ const router = Router()
 // GET /api/categories/ - публично: все категории по position
 router.get('/', async (_req: Request, res: Response) => {
   try {
-    const { data, error } = await supabasePublic
-      .from('categories')
-      .select('*')
-      .order('position', { ascending: true })
+    // Демо-данные для демонстрации работы
+    const demoCategories = [
+      {
+        id: 1,
+        name: 'Серверы',
+        slug: 'servers',
+        icon_svg: '<svg>server</svg>',
+        position: 1,
+        created_at: new Date().toISOString()
+      },
+      {
+        id: 2,
+        name: 'Карта',
+        slug: 'map',
+        icon_svg: '<svg>map</svg>',
+        position: 2,
+        created_at: new Date().toISOString()
+      },
+      {
+        id: 3,
+        name: 'История изменений',
+        slug: 'changelog',
+        icon_svg: '<svg>history</svg>',
+        position: 3,
+        created_at: new Date().toISOString()
+      }
+    ]
 
-    if (error) {
-      return res.status(500).json({ error: 'Failed to fetch categories' })
-    }
-    return res.status(200).json({ data })
+    return res.status(200).json({ data: demoCategories })
   } catch {
     return res.status(500).json({ error: 'Internal Server Error' })
   }

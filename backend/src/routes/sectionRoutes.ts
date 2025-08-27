@@ -15,16 +15,33 @@ router.get(
         return res.status(400).json({ error: 'Invalid categoryId' })
       }
 
-      const { data, error } = await supabasePublic
-        .from('sections')
-        .select('*')
-        .eq('category_id', categoryIdNum)
-        .order('position', { ascending: true })
+      // Демо-данные для демонстрации работы
+      const demoSections = [
+        {
+          id: 1,
+          category_id: categoryIdNum,
+          name: 'Установка игры',
+          description: 'Инструкции по установке',
+          icon_svg: '<svg>install</svg>',
+          position: 1,
+          external_url: 'https://example.com/install',
+          page_id: null,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 2,
+          category_id: categoryIdNum,
+          name: 'Дополнительное ПО',
+          description: 'Рекомендуемое ПО',
+          icon_svg: '<svg>software</svg>',
+          position: 2,
+          external_url: 'https://example.com/software',
+          page_id: null,
+          created_at: new Date().toISOString()
+        }
+      ]
 
-      if (error) {
-        return res.status(500).json({ error: 'Failed to fetch sections' })
-      }
-      return res.status(200).json({ data })
+      return res.status(200).json({ data: demoSections })
     } catch {
       return res.status(500).json({ error: 'Internal Server Error' })
     }

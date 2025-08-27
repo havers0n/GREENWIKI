@@ -3,10 +3,16 @@ import { Typography, Button, ButtonVariant } from 'shared/ui/atoms';
 import { FilterTabs, SearchInput, FilterButton } from 'shared/ui/molecules';
 import { Card } from 'shared/ui/atoms';
 
-const ControlsSection = (): React.ReactNode => {
+interface ControlsSectionProps {
+  title?: string;
+}
+
+const ControlsSection: React.FC<ControlsSectionProps> = ({
+  title = "UI Компоненты"
+}) => {
     return (
         <section className="space-y-8">
-            <Typography as="h2" variant="h2">UI Компоненты</Typography>
+            <Typography as="h2" variant="h2">{title}</Typography>
 
             {/* Typography */}
             <div>

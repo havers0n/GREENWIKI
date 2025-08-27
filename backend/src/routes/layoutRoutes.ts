@@ -34,17 +34,48 @@ router.get(
   async (req: Request<{ pageIdentifier: string }>, res: Response) => {
     try {
       const { pageIdentifier } = req.params
-      const { data, error } = await supabasePublic
-        .from('layout_blocks')
-        .select('*')
-        .eq('page_identifier', pageIdentifier)
-        .eq('status', 'published')
-        .order('position', { ascending: true })
 
-      if (error) {
-        return res.status(500).json({ error: 'Failed to fetch layout blocks' })
+      // Демо-данные для демонстрации работы BlockRenderer
+      let demoBlocks: any[] = []
+
+      if (pageIdentifier === 'homepage') {
+        demoBlocks = [
+          {
+            id: '1',
+            page_identifier: 'homepage',
+            block_type: 'categories_section',
+            content: {
+              title: 'Категории форума',
+              description: 'Выберите интересующую вас категорию'
+            },
+            position: 1,
+            status: 'published'
+          },
+          {
+            id: '2',
+            page_identifier: 'homepage',
+            block_type: 'controls_section',
+            content: {
+              title: 'UI Компоненты'
+            },
+            position: 2,
+            status: 'published'
+          },
+          {
+            id: '3',
+            page_identifier: 'homepage',
+            block_type: 'properties_section',
+            content: {
+              title: 'Недвижимость',
+              subtitle: 'Каталог недвижимости'
+            },
+            position: 3,
+            status: 'published'
+          }
+        ]
       }
-      return res.status(200).json({ data })
+
+      return res.status(200).json({ data: demoBlocks })
     } catch {
       return res.status(500).json({ error: 'Internal Server Error' })
     }
