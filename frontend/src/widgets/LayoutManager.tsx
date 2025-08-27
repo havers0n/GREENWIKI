@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Database } from '@my-forum/db-types';
-import { Button, Card, Typography, Tag, Select, Textarea, Spinner } from 'shared/ui/atoms';
+import { Button, Card, Typography, Tag, Select, Spinner } from 'shared/ui/atoms';
 import { Modal } from 'shared/ui/molecules';
 import {
   fetchAdminLayoutByPage,
@@ -9,6 +9,7 @@ import {
   deleteLayoutBlock,
   updateLayoutPositions,
 } from 'shared/api/layout';
+import { blockRegistry } from 'shared/config/blockRegistry';
 
 // Types
  type LayoutBlock = Database['public']['Tables']['layout_blocks']['Row'];
@@ -25,7 +26,7 @@ import {
    'properties_section',
    'animations_section',
    'changelog_section',
-] as const;
+ ] as const;
  type BlockType = typeof BLOCK_TYPES[number];
 
  const STATUSES = ['published', 'draft'] as const;
@@ -110,23 +111,24 @@ import {
  const CreateLayoutBlockModal: React.FC<CreateLayoutBlockModalProps> = ({ pageIdentifier, onSubmit, onClose }) => {
    const [blockType, setBlockType] = useState<BlockType>('header');
    const [status, setStatus] = useState<BlockStatus>('published');
-   const [contentText, setContentText] = useState<string>('{}');
+   const [formData, setFormData] = useState<any>(() => blockRegistry['header']?.defaultData() ?? {});
    const [error, setError] = useState<string | null>(null);
    const [submitting, setSubmitting] = useState(false);
 
+   useEffect(() => {
+     const spec = blockRegistry[blockType];
+     if (spec) {
+       setFormData(spec.defaultData());
+     } else {
+       setFormData({});
+     }
+   }, [blockType]);
+
    const handleSubmit = async () => {
      setError(null);
-     let parsed: any = {};
-     try {
-       parsed = contentText.trim() ? JSON.parse(contentText) : {};
-     } catch (e: any) {
-       setError(`Некорректный JSON: ${e.message}`);
-       return;
-     }
-
      try {
        setSubmitting(true);
-       await onSubmit({ block_type: blockType, status, content: parsed });
+       await onSubmit({ block_type: blockType, status, content: formData as Json });
        onClose();
      } catch (e: any) {
        setError(e.message || 'Не удалось создать блок');
@@ -134,6 +136,8 @@ import {
        setSubmitting(false);
      }
    };
+
+   const spec = blockRegistry[blockType];
 
    return (
      <Modal title={`Добавить блок для «${pageIdentifier}»`} onClose={onClose}>
@@ -151,15 +155,12 @@ import {
              <option key={s} value={s}>{s}</option>
            ))}
          </Select>
-         <Textarea
-           label="JSON контент"
-           value={contentText}
-           onChange={(e) => setContentText(e.target.value)}
-           rows={8}
-           className="font-mono text-sm"
-           hint="Введите валидный JSON"
-           placeholder='{"title":"..."}'
-         />
+
+         {spec ? (
+           <spec.Editor data={formData} onChange={setFormData} />
+         ) : (
+           <div className="text-sm text-red-600 dark:text-red-400">Неизвестный тип блока: {blockType}</div>
+         )}
          <div className="flex justify-end gap-2 pt-2">
            <Button onClick={onClose} variant="secondary">Отмена</Button>
            <Button onClick={handleSubmit} disabled={submitting} variant="primary">
@@ -179,26 +180,27 @@ import {
  }
 
  const EditLayoutBlockModal: React.FC<EditLayoutBlockModalProps> = ({ block, onSubmit, onClose }) => {
-   const initialContent = useMemo(() => safeStringify(block.content ?? {}), [block.content]);
    const [blockType, setBlockType] = useState<BlockType>((block.block_type as BlockType) || 'header');
    const [status, setStatus] = useState<BlockStatus>((block.status as BlockStatus) || 'published');
-   const [contentText, setContentText] = useState<string>(initialContent);
+   const [formData, setFormData] = useState<any>(() => (block.content as any) ?? {});
    const [error, setError] = useState<string | null>(null);
    const [submitting, setSubmitting] = useState(false);
 
+   useEffect(() => {
+     const spec = blockRegistry[blockType];
+     if (spec) {
+       setFormData(spec.defaultData());
+     } else {
+       setFormData({});
+     }
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [blockType]);
+
    const handleSubmit = async () => {
      setError(null);
-     let parsed: any = {};
-     try {
-       parsed = contentText.trim() ? JSON.parse(contentText) : {};
-     } catch (e: any) {
-       setError(`Некорректный JSON: ${e.message}`);
-       return;
-     }
-
      try {
        setSubmitting(true);
-       await onSubmit({ block_type: blockType, status, content: parsed });
+       await onSubmit({ block_type: blockType, status, content: formData as Json });
        onClose();
      } catch (e: any) {
        setError(e.message || 'Не удалось обновить блок');
@@ -206,6 +208,8 @@ import {
        setSubmitting(false);
      }
    };
+
+   const spec = blockRegistry[blockType];
 
    return (
      <Modal title={`Редактировать блок #${block.position}`} onClose={onClose}>
@@ -223,13 +227,12 @@ import {
              <option key={s} value={s}>{s}</option>
            ))}
          </Select>
-         <Textarea
-           label="JSON контент"
-           value={contentText}
-           onChange={(e) => setContentText(e.target.value)}
-           rows={8}
-           className="font-mono text-sm"
-         />
+
+         {spec ? (
+           <spec.Editor data={formData} onChange={setFormData} />
+         ) : (
+           <div className="text-sm text-red-600 dark:text-red-400">Неизвестный тип блока: {blockType}</div>
+         )}
          <div className="flex justify-end gap-2 pt-2">
            <Button onClick={onClose} variant="secondary">Отмена</Button>
            <Button onClick={handleSubmit} disabled={submitting} variant="primary">
