@@ -1,16 +1,40 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import type { Database, TablesInsert } from '@my-forum/db-types';
-import { Card, Spinner } from 'shared/ui/atoms';
-import BlockRenderer from 'widgets/BlockRenderer';
-import EditorToolbar from 'widgets/EditorToolbar';
-import ContextualInspector from 'widgets/ContextualInspector';
-import { fetchAdminLayoutByPage, createLayoutBlock, updateLayoutBlock, deleteLayoutBlock, updateLayoutPositions, fetchLayoutRevisions, createLayoutRevision, revertToLayoutRevision } from 'shared/api/layout';
-import { blockRegistry } from 'shared/config/blockRegistry';
-import { DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, useDroppable, type DragEndEvent } from '@dnd-kit/core';
-// import { fetchTemplates, createTemplate } from 'shared/api/templates';
-import { fetchAdminPages } from 'shared/api/pages';
-// import type { PageTemplate } from 'shared/api/templates';
+import { Card, Spinner } from '../../shared/ui/atoms';
+import BlockRenderer from '../BlockRenderer';
+import EditorToolbar from '../EditorToolbar';
+import { ContextualInspector } from '../ContextualInspector/indexNew';
+import { fetchAdminLayoutByPage, createLayoutBlock, updateLayoutBlock, deleteLayoutBlock, updateLayoutPositions, fetchLayoutRevisions, createLayoutRevision, revertToLayoutRevision } from '../../shared/api/layout';
+import { blockRegistry } from '../../shared/config/blockRegistry';
+import { DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, useDroppable, DragOverlay, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
 import { useParams } from 'react-router-dom';
+import { fetchAdminPages } from '../../shared/api/pages';
+
+// Redux imports
+import { useAppDispatch, useAppSelector } from 'store/hooks';
+import {
+  setLayoutFromApi,
+  addBlockToTree,
+  updateBlockInTree,
+  removeBlockFromTree,
+  moveBlockInTree
+} from 'store/slices/contentSlice';
+import { instantiateReusableBlock } from 'store/slices/reusableBlocksSlice';
+// import type { BlockNode } from '../../../types/api';
+
+interface BlockNode {
+  id: string;
+  block_type: string;
+  content: Record<string, any> | null;
+  depth: number;
+  instance_id: string | null;
+  metadata: Record<string, any>;
+  page_id: number;
+  position: number | null;
+  slot: string | null;
+  status: string;
+  children: BlockNode[];
+}
 
 type LayoutBlock = Database['public']['Tables']['layout_blocks']['Row'];
 type PageRow = Database['public']['Tables']['pages']['Row'];
@@ -19,8 +43,17 @@ interface LiveEditorProps {
   pageSlug: string;
 }
 
-const LiveEditor: React.FC<LiveEditorProps> = ({ pageSlug }) => {
+const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
+  // Основная логика компонента
   const { pageSlug: urlPageSlug } = useParams<{ pageSlug: string }>();
+  const dispatch = useAppDispatch();
+
+  // Получаем состояние из Redux
+  const blockTree = useAppSelector(state => state.content.blockTree);
+
+  // Локальное состояние для загрузки и ошибок
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   	// console.log('NewLiveEditor: Initialized with pageSlug:', pageSlug);
 
@@ -31,11 +64,11 @@ const LiveEditor: React.FC<LiveEditorProps> = ({ pageSlug }) => {
   const { setNodeRef: setCanvasRef, isOver: isCanvasOver } = useDroppable({
     id: 'canvas-dropzone',
   });
-  const [blocks, setBlocks] = useState<LayoutBlock[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+
+  // Локальное состояние для UI
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [adding, setAdding] = useState<boolean>(false);
+  const [activeBlock, setActiveBlock] = useState<BlockNode | null>(null);
   
   // Confirm-сценарий
   const [isDirty, setIsDirty] = useState<boolean>(false);
@@ -64,36 +97,87 @@ const LiveEditor: React.FC<LiveEditorProps> = ({ pageSlug }) => {
     useSensor(KeyboardSensor)
   );
 
-  // Load blocks
+  // Load blocks using Redux
   useEffect(() => {
     let isMounted = true;
     const load = async () => {
       try {
-        setLoading(true);
-        setError(null);
+        // Загружаем данные с API
         const data = await fetchAdminLayoutByPage(currentPageSlug);
-        const ordered = data
-          .slice()
-          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+
+        // Преобразуем плоский массив в древовидную структуру
+        const treeData = buildTreeFromBlocks(data);
+
         if (!isMounted) return;
-        setBlocks(ordered);
-        setSelectedBlockId((prev) => (ordered.some((b) => b.id === prev) ? prev : null));
-        setIsDirty(false);
-        setChanged({});
+
+        // Сохраняем в Redux
+        dispatch(setLayoutFromApi({
+          pageId: 1, // TODO: получить реальный pageId
+          blocks: treeData
+        }));
+
+        setSelectedBlockId((prev) => (treeData.some((b) => b.id === prev) ? prev : null));
       } catch (e: unknown) {
         if (!isMounted) return;
-        const message = e instanceof Error ? e.message : 'Не удалось загрузить блоки';
-        setError(message);
-      } finally {
-        if (!isMounted) return;
-        setLoading(false);
+        console.error('Не удалось загрузить блоки:', e);
+        // TODO: обработка ошибок через Redux
       }
     };
     void load();
     return () => {
       isMounted = false;
     };
-  }, [currentPageSlug]);
+  }, [currentPageSlug, dispatch]);
+
+  // Helper function to convert flat blocks to tree structure
+  const buildTreeFromBlocks = (flatBlocks: LayoutBlock[]): BlockNode[] => {
+    // Сначала создаем все узлы
+    const blockMap = new Map<string, BlockNode>();
+    const rootBlocks: BlockNode[] = [];
+
+    flatBlocks.forEach(block => {
+      const node: BlockNode = {
+        id: block.id,
+        block_type: block.block_type,
+        content: (block.content as Record<string, any>) || null,
+        depth: 0,
+        instance_id: block.instance_id,
+        metadata: (block.metadata as Record<string, any>) || {},
+        page_id: block.page_id,
+        position: block.position,
+        slot: block.slot,
+        status: block.status,
+        children: []
+      };
+      blockMap.set(block.id, node);
+    });
+
+    // Затем строим иерархию
+    flatBlocks.forEach(block => {
+      const node = blockMap.get(block.id)!;
+      const parentId = block.parent_block_id;
+
+      if (parentId && blockMap.has(parentId)) {
+        const parent = blockMap.get(parentId)!;
+        parent.children.push(node);
+      } else {
+        rootBlocks.push(node);
+      }
+    });
+
+    // Сортируем дочерние элементы по позиции
+    function sortChildren(nodes: BlockNode[]): void {
+      nodes.forEach(node => {
+        if (node.children.length > 0) {
+          node.children.sort((a: BlockNode, b: BlockNode) => (a.position || 0) - (b.position || 0));
+          sortChildren(node.children);
+        }
+      });
+    }
+
+    sortChildren(rootBlocks);
+    return rootBlocks;
+  };
 
   // Load pages for navigation
   useEffect(() => {
@@ -161,6 +245,53 @@ const LiveEditor: React.FC<LiveEditorProps> = ({ pageSlug }) => {
     return () => { mounted = false; };
   }, [currentPageSlug]);
 
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const { active } = event;
+    const activeId = String(active.id ?? '');
+
+    // Находим активный блок для DragOverlay
+    if (activeId.startsWith('canvas-block:')) {
+      const blockId = activeId.substring('canvas-block:'.length);
+      const block = findBlockInTree(blockTree, blockId);
+      if (block) setActiveBlock(block);
+    } else if (activeId.startsWith('block-type:')) {
+      // Для новых блоков из библиотеки создаем временный блок для отображения
+      const type = activeId.substring('block-type:'.length);
+      const spec = blockRegistry[type];
+      if (spec) {
+        setActiveBlock({
+          id: 'temp-block',
+          block_type: type,
+          content: {},
+          depth: 0,
+          instance_id: null,
+          metadata: {},
+          page_id: 1,
+          position: 0,
+          slot: null,
+          status: 'draft',
+          children: []
+        });
+      }
+    }
+  }, [blockTree]);
+
+  const findBlockInTree = (nodes: BlockNode[], blockId: string): BlockNode | null => {
+    for (const node of nodes) {
+      if (node.id === blockId) return node;
+      if (node.children && node.children.length > 0) {
+        const found = findBlockInTree(node.children, blockId);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const selectedBlock = React.useMemo(() =>
+    selectedBlockId ? findBlockInTree(blockTree, selectedBlockId) : null,
+    [selectedBlockId, blockTree]
+  );
+
   const handleSelectBlock = (id: string | null) => {
     console.log('🎯 SELECT: Block selected, ID:', id);
     setSelectedBlockId(id);
@@ -192,92 +323,48 @@ const LiveEditor: React.FC<LiveEditorProps> = ({ pageSlug }) => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedBlockId, blocks]);
+  }, [selectedBlockId]);
 
   const handleBlockChange = (updatedBlock: LayoutBlock) => {
-    setBlocks((prev) => prev.map((b) => (b.id === updatedBlock.id ? updatedBlock : b)));
+    // Преобразуем LayoutBlock в BlockNode для Redux
+    const blockNode: BlockNode = {
+      id: updatedBlock.id,
+      block_type: updatedBlock.block_type,
+      content: (updatedBlock.content as Record<string, any>) || null,
+      depth: 0, // TODO: рассчитать глубину
+      instance_id: updatedBlock.instance_id,
+      metadata: (updatedBlock.metadata as Record<string, any>) || {},
+      page_id: updatedBlock.page_id,
+      position: updatedBlock.position,
+      slot: updatedBlock.slot,
+      status: updatedBlock.status,
+      children: [] // TODO: сохранить дочерние элементы
+    };
+
+    dispatch(updateBlockInTree({
+      blockId: updatedBlock.id,
+      updates: {
+        content: (updatedBlock.content as Record<string, any>) || {},
+        metadata: (updatedBlock.metadata as Record<string, any>) || {}
+      }
+    }));
+
     setChanged((prev) => ({ ...prev, [updatedBlock.id]: updatedBlock }));
     setIsDirty(true);
   };
 
-  // Перемещение блока влево
+  // Перемещение блока влево (упрощенная версия для Redux)
   const moveBlockLeft = async (blockId: string) => {
-    const block = blocks.find(b => b.id === blockId);
-    if (!block) return;
-
-    // Получить все блоки той же страницы
-    const allPageBlocks = blocks
-      .filter(b => b.page_identifier === currentPageSlug)
-      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-
-    const currentIndex = allPageBlocks.findIndex(b => b.id === blockId);
-    if (currentIndex <= 0) return; // Уже первый блок
-
-    const previousBlock = allPageBlocks[currentIndex - 1];
-    const currentPosition = block.position ?? 0;
-    const previousPosition = previousBlock.position ?? 0;
-
-    try {
-      // Обновляем позиции на сервере
-      await updateLayoutPositions([
-        { id: block.id, position: previousPosition },
-        { id: previousBlock.id, position: currentPosition }
-      ]);
-
-      // Обновляем локальное состояние
-      setBlocks(prev => prev.map(b => {
-        if (b.id === block.id) {
-          return { ...b, position: previousPosition };
-        } else if (b.id === previousBlock.id) {
-          return { ...b, position: currentPosition };
-        }
-        return b;
-      }));
-
-      setIsDirty(true);
-    } catch (error) {
-      console.error('Не удалось переместить блок влево:', error);
-    }
+    // Для Redux версии эти функции нужно реализовать через tree operations
+    // Пока оставим как заглушку
+    console.log('Move block left:', blockId);
   };
 
-  // Перемещение блока вправо
+  // Перемещение блока вправо (упрощенная версия для Redux)
   const moveBlockRight = async (blockId: string) => {
-    const block = blocks.find(b => b.id === blockId);
-    if (!block) return;
-
-    // Получить все блоки той же страницы
-    const allPageBlocks = blocks
-      .filter(b => b.page_identifier === currentPageSlug)
-      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-
-    const currentIndex = allPageBlocks.findIndex(b => b.id === blockId);
-    if (currentIndex === -1 || currentIndex >= allPageBlocks.length - 1) return; // Уже последний блок
-
-    const nextBlock = allPageBlocks[currentIndex + 1];
-    const currentPosition = block.position ?? 0;
-    const nextPosition = nextBlock.position ?? 0;
-
-    try {
-      // Обновляем позиции на сервере
-      await updateLayoutPositions([
-        { id: block.id, position: nextPosition },
-        { id: nextBlock.id, position: currentPosition }
-      ]);
-
-      // Обновляем локальное состояние
-      setBlocks(prev => prev.map(b => {
-        if (b.id === block.id) {
-          return { ...b, position: nextPosition };
-        } else if (b.id === nextBlock.id) {
-          return { ...b, position: currentPosition };
-        }
-        return b;
-      }));
-
-      setIsDirty(true);
-    } catch (error) {
-      console.error('Не удалось переместить блок вправо:', error);
-    }
+    // Для Redux версии эти функции нужно реализовать через tree operations
+    // Пока оставим как заглушку
+    console.log('Move block right:', blockId);
   };
 
   const handleAddBlockOfType = async (type: string) => {
@@ -291,22 +378,31 @@ const LiveEditor: React.FC<LiveEditorProps> = ({ pageSlug }) => {
     try {
       setAdding(true);
       console.log('🏗️ EDITOR: Creating block...');
-      const nextPosition = (blocks.reduce((max, b) => Math.max(max, b.position ?? 0), 0) || 0) + 1;
-      const payload: TablesInsert<'layout_blocks'> = {
+
+      // Создаем блок через Redux
+      const newBlockNode: BlockNode = {
+        id: `temp-${Date.now()}`, // Временный ID, будет заменен после создания
         block_type: type,
-        page_identifier: currentPageSlug,
-        position: nextPosition,
-        content: (spec.defaultData() as any),
-        status: 'draft' as any,
+        content: spec.defaultData ? spec.defaultData() : {},
+        depth: 0,
+        instance_id: null,
+        metadata: {},
+        page_id: 1,
+        position: blockTree.length,
+        slot: null,
+        status: 'draft',
+        children: []
       };
 
-      console.log('🏗️ EDITOR: Sending payload to API');
-      const created = await createLayoutBlock(payload);
-      console.log('✅ EDITOR: Block created successfully, ID:', created.id);
+      // Добавляем в Redux дерево
+      dispatch(addBlockToTree({
+        block: newBlockNode,
+        parentId: null,
+        position: blockTree.length
+      }));
 
-      setBlocks((prev) => [...prev, created]);
-      setSelectedBlockId(created.id);
-      console.log('✅ EDITOR: Block added to UI');
+      setSelectedBlockId(newBlockNode.id);
+      console.log('✅ EDITOR: Block added to Redux tree');
     } catch (e) {
       console.error('❌ EDITOR: Failed to create block:', e);
     } finally {
@@ -315,48 +411,40 @@ const LiveEditor: React.FC<LiveEditorProps> = ({ pageSlug }) => {
   };
 
   const handleSave = async () => {
-    const changes = Object.values(changed);
-    if (changes.length === 0) return;
-    setSaving(true);
-    setSaveError(null);
-    try {
-      const results = await Promise.allSettled(
-        changes.map(async (blk) => updateLayoutBlock(blk.id, { content: blk.content }))
-      );
-      const failures = results.filter((r) => r.status === 'rejected') as PromiseRejectedResult[];
-      if (failures.length > 0) {
-        throw new Error(`Не удалось сохранить ${failures.length} блок(ов)`);
-      }
-      const updatedBlocks = results
-        .filter((r): r is PromiseFulfilledResult<LayoutBlock> => r.status === 'fulfilled')
-        .map((r) => r.value);
-      if (updatedBlocks.length > 0) {
-        setBlocks((prev) => {
-          const byId = new Map(prev.map((b) => [b.id, b] as const));
-          for (const ub of updatedBlocks) byId.set(ub.id, ub);
-          return Array.from(byId.values()).sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-        });
-      }
-      setChanged({});
-      setIsDirty(false);
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Ошибка сохранения изменений';
-      setSaveError(message);
-    } finally {
-      setSaving(false);
-    }
+    // Для Redux версии сохранение нужно реализовать через API вызовы для всего дерева
+    console.log('Save functionality needs to be implemented for Redux tree structure');
+    setIsDirty(false);
+    setChanged({});
   };
 
   const handleCancel = async () => {
     try {
       setLoading(true);
       setError(null);
+      // Перезагружаем данные из API
       const data = await fetchAdminLayoutByPage(currentPageSlug);
-      const ordered = data
-        .slice()
-        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-      setBlocks(ordered);
-      setSelectedBlockId((prev) => (ordered.some((b) => b.id === prev) ? prev : null));
+      // Создаем простое дерево для Redux (пока без buildTreeFromBlocks)
+      const treeData = data.map(block => ({
+        id: block.id,
+        block_type: block.block_type,
+        content: (block.content as Record<string, any>) || {},
+        depth: 0,
+        instance_id: block.instance_id,
+        metadata: (block.metadata as Record<string, any>) || {},
+        page_id: block.page_id,
+        position: block.position,
+        slot: block.slot,
+        status: block.status,
+        children: []
+      }));
+
+      // Обновляем Redux состояние
+      dispatch(setLayoutFromApi({
+        pageId: 1,
+        blocks: treeData
+      }));
+
+      setSelectedBlockId(null);
       setChanged({});
       setIsDirty(false);
     } catch (e: unknown) {
@@ -382,10 +470,28 @@ const LiveEditor: React.FC<LiveEditorProps> = ({ pageSlug }) => {
       setReverting(true);
       await revertToLayoutRevision(currentPageSlug, revisionId);
       const data = await fetchAdminLayoutByPage(currentPageSlug);
-      const ordered = data
-        .slice()
-        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-      setBlocks(ordered);
+      // Создаем простое дерево для Redux (пока без buildTreeFromBlocks)
+      const treeData = data.map(block => ({
+        id: block.id,
+        block_type: block.block_type,
+        content: (block.content as Record<string, any>) || {},
+        depth: 0,
+        instance_id: block.instance_id,
+        metadata: (block.metadata as Record<string, any>) || {},
+        page_id: block.page_id,
+        position: block.position,
+        slot: block.slot,
+        status: block.status,
+        children: []
+      }));
+
+      // Обновляем Redux состояние
+      dispatch(setLayoutFromApi({
+        pageId: 1,
+        blocks: treeData
+      }));
+
+      setSelectedBlockId(null);
     } catch (e) {
       console.error('Не удалось откатить ревизию:', e);
     } finally {
@@ -393,72 +499,27 @@ const LiveEditor: React.FC<LiveEditorProps> = ({ pageSlug }) => {
     }
   };
 
-  // const handleApplyTemplate = async (templateId: string) => {
-  //   const template = templates.find((t) => t.id === templateId);
-  //   if (!template) return;
-  //   const list = Array.isArray(template.blocks) ? (template.blocks as Array<{ block_type?: string; content?: unknown }>) : [];
-  //   if (list.length === 0) return;
-  //   try {
-  //     setApplyingTemplate(true);
-  //     const start = (blocks.reduce((max, b) => Math.max(max, b.position ?? 0), 0) || 0) + 1;
-  //     const created: LayoutBlock[] = [] as unknown as LayoutBlock[];
-  //     for (let i = 0; i < list.length; i++) {
-  //       const item = list[i];
-  //       if (!item?.block_type) continue;
-  //       const spec = blockRegistry[item.block_type];
-  //       if (!spec) continue;
-  //       const payload: TablesInsert<'layout_blocks'> = {
-  //         block_type: item.block_type,
-  //         page_identifier: currentPageSlug,
-  //         position: start + i,
-  //         content: (item.content as any) ?? (spec.defaultData() as any),
-  //         status: 'draft' as any,
-  //       };
-  //       const c = await createLayoutBlock(payload);
-  //       const created: LayoutBlock[] = [] as unknown as LayoutBlock[];
-  //       for (let i = 0; i < list.length; i++) {
-  //         const item = list[i];
-  //         if (!item?.block_type) continue;
-  //         const spec = blockRegistry[item.block_type];
-  //         if (!spec) continue;
-  //         const payload: TablesInsert<'layout_blocks'> = {
-  //           block_type: item.block_type,
-  //           page_identifier: currentPageSlug,
-  //           position: start + i,
-  //           content: (item.content as any) ?? (spec.defaultData() as any),
-  //           status: 'draft' as any,
-  //         };
-  //         const c = await createLayoutBlock(payload);
-  //         created.push(c);
-  //       }
-  //       if (created.length > 0) {
-  //         setBlocks((prev) => {
-  //           const next = [...prev, ...created].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-  //           return next;
-  //         });
-  //         setSelectedBlockId(created[0].id);
-  //       }
-  //     } catch (e) {
-  //       console.error('Не удалось применить шаблон', e);
-  //     } finally {
-  //       setApplyingTemplate(false);
-  //     }
-  //   };
+
 
   const handlePublishToggle = async (blockId: string) => {
-    const blk = blocks.find((b) => b.id === blockId);
-    if (!blk) return;
+    // Находим блок в дереве
+    const blockToUpdate = findBlockInTree(blockTree, blockId);
+    if (!blockToUpdate) return;
 
-    const isPublished = blk.status === 'published';
+    const isPublished = blockToUpdate.status === 'published';
     const nextStatus = isPublished ? 'draft' : 'published';
-    setPublishing(true);
-    setBlocks((cur) => cur.map((b) => (b.id === blk.id ? { ...b, status: nextStatus } : b)));
 
     try {
-      const updated = await updateLayoutBlock(blk.id, { status: nextStatus as any });
-      setBlocks((cur) => cur.map((b) => (b.id === updated.id ? updated : b)));
+      setPublishing(true);
+      // Обновляем через Redux
+      dispatch(updateBlockInTree({
+        blockId,
+        updates: { status: nextStatus }
+      }));
+
+      // Синхронизируем с сервером
+      await updateLayoutBlock(blockId, { status: nextStatus as any });
     } catch (err) {
-      setBlocks((cur) => cur.map((b) => (b.id === blk.id ? blk : b)));
       console.error('Не удалось изменить статус публикации', err);
     } finally {
       setPublishing(false);
@@ -470,8 +531,8 @@ const LiveEditor: React.FC<LiveEditorProps> = ({ pageSlug }) => {
       // Удаляем блок из базы данных
       await deleteLayoutBlock(blockId);
 
-      // Обновляем локальное состояние, удаляя блок из массива
-      setBlocks((prevBlocks) => prevBlocks.filter(b => b.id !== blockId));
+      // Удаляем из Redux дерева
+      dispatch(removeBlockFromTree(blockId));
 
       // Если удаленный блок был выбран, очищаем выбор
       if (selectedBlockId === blockId) {
@@ -486,7 +547,6 @@ const LiveEditor: React.FC<LiveEditorProps> = ({ pageSlug }) => {
       });
     } catch (error) {
       console.error('Не удалось удалить блок:', error);
-      // В будущем можно добавить уведомление об ошибке
     }
   };
 
@@ -514,6 +574,27 @@ const LiveEditor: React.FC<LiveEditorProps> = ({ pageSlug }) => {
         const type = activeId.substring('block-type:'.length);
         console.log('🎯 DnD: No drop target (modal open). Fallback: create at root');
         await handleAddBlockOfType(type);
+      } else if (activeId.startsWith('reusable-')) {
+        // Переиспользуемый блок без цели - создаем в корне
+        const reusableBlockId = activeId.substring('reusable-'.length);
+        console.log('🔄 REUSABLE: No drop target, creating at root:', reusableBlockId);
+
+        try {
+          const newInstanceTree = await dispatch(instantiateReusableBlock({
+            reusableBlockId,
+            pageId: currentPageSlug, // используем slug как идентификатор страницы
+            parentId: null,
+            position: blockTree.length,
+            slot: null,
+          })).unwrap();
+
+          if (newInstanceTree) {
+            dispatch(addBlockToTree(newInstanceTree));
+            console.log('✅ REUSABLE: Block instantiated successfully at root');
+          }
+        } catch (error) {
+          console.error('❌ REUSABLE: Failed to instantiate block at root:', error);
+        }
       } else {
         console.log('❌ DnD: No drop target for existing block');
       }
@@ -523,211 +604,150 @@ const LiveEditor: React.FC<LiveEditorProps> = ({ pageSlug }) => {
     const activeId = String(active.id ?? '');
     const overId = String(over.id ?? '');
 
-    // Создание нового блока из библиотеки
-    if (activeId.startsWith('block-type:')) {
-      console.log('🎯 DnD: Block drag from library, type:', activeId.replace('block-type:', ''));
-      const type = activeId.substring('block-type:'.length);
-      const spec = blockRegistry[type];
-      if (!spec) return;
-      
-      try {
-        setAdding(true);
-        
-                // Дроп в слот контейнера: slot:parentBlockId:slotName:position
-        if (overId.startsWith('slot:')) {
-          const slotMatch = overId.match(/^slot:(.+):(.+):(-?\d+)$/);
-          if (!slotMatch) return;
-
-          const [, parentBlockId, slotName] = slotMatch;
-
-          // Проверяем, разрешен ли этот тип блока в контейнере
-          const parentBlock = blocks.find(b => b.id === parentBlockId);
-          const parentSpec = parentBlock ? blockRegistry[parentBlock.block_type] : null;
-
-          if (parentSpec?.allowedChildren && !parentSpec.allowedChildren.includes(type)) {
-            console.warn(`Блок типа ${type} не разрешен в контейнере ${parentBlock?.block_type}`);
-            return;
-          }
-
-          // Вычисляем глобальную позицию для нового блока
-          const maxGlobalPosition = blocks.reduce((max, b) => Math.max(max, b.position ?? 0), 0);
-          const newPosition = maxGlobalPosition + 1;
-
-          // Создаем новый вложенный блок
-          const payload: TablesInsert<'layout_blocks'> = {
-            block_type: type,
-            page_identifier: currentPageSlug,
-            parent_block_id: parentBlockId,
-            slot: slotName,
-            position: newPosition,
-            content: (spec.defaultData() as any),
-            status: 'draft' as any,
-          };
-
-          console.log('🏗️ DnD: Creating nested block, parent:', parentBlock?.block_type);
-          const created = await createLayoutBlock(payload);
-          setBlocks((prev) => [...prev, created]);
-          setSelectedBlockId(created.id);
-          return;
-        }
-        
-        // Дроп на корневой уровень: canvas-slot:position
-        if (overId.startsWith('canvas-slot:')) {
-          const index = Number(overId.substring('canvas-slot:'.length));
-          if (Number.isNaN(index)) return;
-
-          // Вычисляем глобальную позицию для нового блока
-          const maxGlobalPosition = blocks.reduce((max, b) => Math.max(max, b.position ?? 0), 0);
-          const newPosition = maxGlobalPosition + 1;
-
-          const payload: TablesInsert<'layout_blocks'> = {
-            block_type: type,
-            page_identifier: currentPageSlug,
-            position: newPosition,
-            content: (spec.defaultData() as any),
-            status: 'draft' as any,
-          };
-
-          console.log('🏗️ DnD: Creating root level block');
-          const created = await createLayoutBlock(payload);
-          setBlocks((prev) => [...prev, created]);
-          setSelectedBlockId(created.id);
-          return;
-        }
-        
-        // Фолбэк: дроп на общий канвас
-        if (overId === 'canvas-dropzone') {
-          console.log('🎯 DnD: Dropping on canvas, calling handleAddBlockOfType');
-          await handleAddBlockOfType(type);
-        } else if (overId.startsWith('slot:') || overId.startsWith('canvas-slot:')) {
-          console.log('🎯 DnD: Dropping in slot:', overId);
-          // Обработка дропа в слот будет обработана выше в коде
-        } else {
-          console.log('❌ DnD: Unknown drop target:', overId);
-        }
-      } finally {
-        setAdding(false);
-      }
-      return;
-    }
-    
-    // Перемещение существующего блока
-    if (activeId.startsWith('canvas-block:')) {
-      console.log('DnD: Detected canvas-block drag');
-      const blockId = activeId.substring('canvas-block:'.length);
-      const movingBlock = blocks.find(b => b.id === blockId);
-      if (!movingBlock) {
-        console.log('DnD: Moving block not found:', blockId);
+    // Обработка дропа в наши новые DropZone
+    if (overId.startsWith('dropzone-')) {
+      const dropZoneMatch = overId.match(/^dropzone-(.+)-(\d+)-(.+)$/);
+      if (!dropZoneMatch) {
+        console.log('❌ DnD: Invalid dropzone format:', overId);
         return;
       }
-      console.log('DnD: Moving block:', movingBlock);
-      
-      try {
-        // Перемещение в слот контейнера
-        if (overId.startsWith('slot:')) {
-          const slotMatch = overId.match(/^slot:(.+):(.+):(-?\d+)$/);
-          if (!slotMatch) return;
-          
-          const [, parentBlockId, slotName, positionStr] = slotMatch;
-          const position = Number(positionStr);
-          
-          // Проверяем разрешения
-          const parentBlock = blocks.find(b => b.id === parentBlockId);
-          const parentSpec = parentBlock ? blockRegistry[parentBlock.block_type] : null;
-          
-          if (parentSpec?.allowedChildren && !parentSpec.allowedChildren.includes(movingBlock.block_type)) {
-            console.warn(`Блок типа ${movingBlock.block_type} не разрешен в контейнере ${parentBlock?.block_type}`);
-            return;
-          }
-          
-          // Обновляем блок
-          const updatedBlock = {
-            ...movingBlock,
-            parent_block_id: parentBlockId,
+
+      const [, parentIdRaw, positionStr, slotName] = dropZoneMatch;
+      const parentId = parentIdRaw === 'root' ? null : parentIdRaw;
+      const position = Number(positionStr);
+
+      // Создание нового блока из библиотеки в DropZone
+      if (activeId.startsWith('block-type:')) {
+        const type = activeId.substring('block-type:'.length);
+        console.log('🎯 DnD: Creating new block from library in dropzone:', { type, parentId, position });
+
+        try {
+          setAdding(true);
+
+          // Создаем новый блок
+          const nextPosition = position + 1;
+          const payload: TablesInsert<'layout_blocks'> = {
+            block_type: type,
+            content: {},
+            metadata: {},
+            page_id: 1, // TODO: получить реальный pageId
+            position: nextPosition,
+            parent_block_id: parentId,
             slot: slotName,
-            position: position >= 0 ? position + 1 : 1,
+            status: 'published'
           };
-          
-          await updateLayoutBlock(blockId, {
-            parent_block_id: parentBlockId,
+
+          const created = await createLayoutBlock(payload);
+
+          // Добавляем в Redux дерево
+          const newBlockNode: BlockNode = {
+            id: created.id,
+            block_type: created.block_type,
+            content: (created.content as Record<string, any>) || null,
+            depth: 0,
+            instance_id: created.instance_id,
+            metadata: (created.metadata as Record<string, any>) || {},
+            page_id: created.page_id,
+            position: created.position,
+            slot: created.slot,
+            status: created.status,
+            children: []
+          };
+
+          dispatch(addBlockToTree({
+            block: newBlockNode,
+            parentId,
+            position
+          }));
+
+          setSelectedBlockId(created.id);
+        } catch (error) {
+          console.error('Failed to create block:', error);
+        } finally {
+          setAdding(false);
+        }
+        return;
+      }
+
+      // Создание экземпляра переиспользуемого блока в DropZone
+      if (activeId.startsWith('reusable-')) {
+        const reusableBlockId = activeId.substring('reusable-'.length);
+        console.log('🔄 REUSABLE: Creating instance from library in dropzone:', {
+          reusableBlockId,
+          parentId,
+          position,
+          slotName
+        });
+
+        try {
+          const newInstanceTree = await dispatch(instantiateReusableBlock({
+            reusableBlockId,
+            pageId: currentPageSlug, // используем slug как идентификатор страницы
+            parentId,
+            position: position + 1, // API ожидает следующую позицию
             slot: slotName,
-            position: updatedBlock.position,
-          });
-          
-          setBlocks(prev => prev.map(b => b.id === blockId ? updatedBlock : b));
-          return;
-        }
-        
-        // Перемещение на корневой уровень
-        if (overId.startsWith('canvas-slot:')) {
-          const index = Number(overId.substring('canvas-slot:'.length));
-          if (Number.isNaN(index)) return;
+          })).unwrap();
 
-          // Получить все корневые блоки для правильного пересчета позиций
-          const rootBlocks = blocks.filter(b => !b.parent_block_id || b.parent_block_id === '');
-          const ordered = rootBlocks.slice().sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+          if (newInstanceTree) {
+            dispatch(addBlockToTree(newInstanceTree));
+            console.log('✅ REUSABLE: Block instantiated successfully in dropzone');
 
-          // Если блок уже на корневом уровне, просто переместить его
-          if (!movingBlock.parent_block_id || movingBlock.parent_block_id === '') {
-            const currentIndex = ordered.findIndex(b => b.id === blockId);
-            if (currentIndex === -1) return;
-
-            // Удаляем блок из текущей позиции
-            ordered.splice(currentIndex, 1);
-
-            // Вставляем на новую позицию
-            const newPosition = index >= currentIndex ? index : index + 1;
-            ordered.splice(newPosition, 0, movingBlock);
-
-            // Пересчитываем позиции
-            const updates = ordered.map((b, idx) => ({
-              id: b.id,
-              position: idx + 1
-            }));
-
-            // Обновляем позиции на сервере
-            if (updates.length > 0) {
-              await updateLayoutPositions(updates);
+            // Выбираем первый блок из созданного дерева
+            if (newInstanceTree.children && newInstanceTree.children.length > 0) {
+              setSelectedBlockId(newInstanceTree.children[0].id);
+            } else {
+              setSelectedBlockId(newInstanceTree.id);
             }
-
-            // Обновляем локальное состояние
-            setBlocks(prev => {
-              const updated = prev.map(b => {
-                const update = updates.find(u => u.id === b.id);
-                return update ? { ...b, position: update.position } : b;
-              });
-              return updated.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-            });
-          } else {
-            // Блок перемещается из контейнера на корневой уровень
-            const updatedBlock = {
-              ...movingBlock,
-              parent_block_id: null,
-              slot: null,
-              position: index + 1,
-            };
-
-            await updateLayoutBlock(blockId, {
-              parent_block_id: null,
-              slot: null,
-              position: updatedBlock.position,
-            });
-
-            setBlocks(prev => prev.map(b => b.id === blockId ? updatedBlock : b));
           }
-          return;
+        } catch (error) {
+          console.error('❌ REUSABLE: Failed to instantiate block in dropzone:', error);
         }
-        
-      } catch (e) {
-        console.error('Не удалось переместить блок:', e);
+        return;
+      }
+
+      // Перемещение существующего блока
+      if (activeId.startsWith('canvas-block:')) {
+        const blockId = activeId.substring('canvas-block:'.length);
+        console.log('🎯 DnD: Moving existing block to dropzone:', { blockId, parentId, position });
+
+        // Используем Redux экшен для перемещения блока
+        dispatch(moveBlockInTree({
+          blockId,
+          newParentId: parentId,
+          newPosition: position
+        }));
+
+        // TODO: Синхронизировать с сервером
+        // await updateLayoutBlock(blockId, {
+        //   parent_block_id: parentId,
+        //   position: position + 1,
+        //   slot: slotName
+        // });
+
+        return;
       }
     }
+
+    // Обработка старых форматов дропа (для обратной совместимости)
+    if (overId === 'canvas-dropzone' && activeId.startsWith('block-type:')) {
+      const type = activeId.substring('block-type:'.length);
+      console.log('🎯 DnD: Fallback to canvas dropzone');
+      await handleAddBlockOfType(type);
+      return;
+    }
+
+    console.log('❌ DnD: Unhandled drop case:', { activeId, overId });
   };
 
-  const selectedBlock = selectedBlockId ? blocks.find(b => b.id === selectedBlockId) : null;
+
+
+
+
+
+
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDndEnd}>
+    <DndContext sensors={sensors} onDragEnd={handleDndEnd} onDragStart={handleDragStart}>
       <div className="h-screen flex flex-col">
         {/* Верхняя панель */}
         <EditorToolbar
@@ -773,7 +793,7 @@ const LiveEditor: React.FC<LiveEditorProps> = ({ pageSlug }) => {
                     }
                   `}
                 >
-                  {blocks.length === 0 && !isCanvasOver ? (
+                  {blockTree.length === 0 && !isCanvasOver ? (
                     <div className="flex items-center justify-center h-64 text-center text-gray-500 dark:text-gray-400">
                       <div>
                         <div className="text-4xl mb-4">📄</div>
@@ -783,14 +803,29 @@ const LiveEditor: React.FC<LiveEditorProps> = ({ pageSlug }) => {
                     </div>
                   ) : (
                     <BlockRenderer
-                      pageIdentifier={currentPageSlug}
-                      blocks={blocks}
+                      blockTree={blockTree}
                       editorMode
                       selectedBlockId={selectedBlockId ?? undefined}
                       onSelectBlock={handleSelectBlock}
                       onUpdateBlock={(updated) => {
-                        setBlocks((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
-                        setChanged((prev) => ({ ...prev, [updated.id]: updated }));
+                        // Преобразуем BlockNode обратно в LayoutBlock для совместимости
+                        const layoutBlock: LayoutBlock = {
+                          id: updated.id,
+                          block_type: updated.block_type,
+                          content: updated.content || {},
+                          metadata: updated.metadata,
+                          page_id: updated.page_id,
+                          position: updated.position,
+                          slot: updated.slot,
+                          status: updated.status,
+                          instance_id: updated.instance_id,
+                          created_at: new Date().toISOString(),
+                          updated_at: new Date().toISOString(),
+                          page_identifier: currentPageSlug,
+                          parent_block_id: null // TODO: рассчитать parent_block_id
+                        };
+
+                        setChanged((prev) => ({ ...prev, [updated.id]: layoutBlock }));
                         setIsDirty(true);
                       }}
                     />
@@ -810,7 +845,7 @@ const LiveEditor: React.FC<LiveEditorProps> = ({ pageSlug }) => {
               onPublishToggle={handlePublishToggle}
               publishing={publishing}
               onBlockDelete={handleDeleteBlock}
-              allBlocks={blocks}
+              allBlocks={blockTree.flatMap(node => [node, ...node.children])}
               onMoveLeft={moveBlockLeft}
               onMoveRight={moveBlockRight}
             />
@@ -825,6 +860,22 @@ const LiveEditor: React.FC<LiveEditorProps> = ({ pageSlug }) => {
           )}
         </div>
       </div>
+
+      {/* Drag Overlay для визуальной обратной связи */}
+      <DragOverlay>
+        {activeBlock ? (
+          <div className="bg-white dark:bg-gray-800 rounded-md shadow-lg border-2 border-blue-500 p-3 opacity-90 transform rotate-3">
+            <div className="text-sm font-medium text-gray-900 dark:text-white">
+              {blockRegistry[activeBlock.block_type]?.name || activeBlock.block_type}
+            </div>
+            {activeBlock.id !== 'temp-block' && (
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Перетаскивание блока
+              </div>
+            )}
+          </div>
+        ) : null}
+      </DragOverlay>
     </DndContext>
   );
 };

@@ -1,0 +1,325 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import type { BlockNode } from '../../../types/api';
+import {
+  findBlockById,
+  findBlockParent,
+  getBlocksByParentId,
+  addBlockToTree,
+  updateBlockInTree,
+  removeBlockFromTree,
+  moveBlockInTree,
+} from '../treeUtils';
+
+// Мокаем данные для тестов
+const mockBlockTree: BlockNode[] = [
+  {
+    id: 'root-1',
+    block_type: 'container',
+    content: null,
+    depth: 0,
+    instance_id: null,
+    metadata: {},
+    page_id: 1,
+    position: 0,
+    slot: null,
+    status: 'draft',
+    children: [
+      {
+        id: 'child-1',
+        block_type: 'text',
+        content: { text: 'Hello' },
+        depth: 1,
+        instance_id: null,
+        metadata: {},
+        page_id: 1,
+        position: 0,
+        slot: null,
+        status: 'draft',
+        children: [],
+      },
+      {
+        id: 'child-2',
+        block_type: 'image',
+        content: { src: 'test.jpg' },
+        depth: 1,
+        instance_id: null,
+        metadata: {},
+        page_id: 1,
+        position: 1,
+        slot: null,
+        status: 'draft',
+        children: [],
+      },
+    ],
+  },
+  {
+    id: 'root-2',
+    block_type: 'container',
+    content: null,
+    depth: 0,
+    instance_id: null,
+    metadata: {},
+    page_id: 1,
+    position: 1,
+    slot: null,
+    status: 'draft',
+    children: [],
+  },
+];
+
+describe('treeUtils', () => {
+  describe('findBlockById', () => {
+    it('должен найти блок по ID в корне', () => {
+      const result = findBlockById(mockBlockTree, 'root-1');
+      expect(result).toEqual(mockBlockTree[0]);
+    });
+
+    it('должен найти блок по ID в дочерних элементах', () => {
+      const result = findBlockById(mockBlockTree, 'child-1');
+      expect(result).toEqual(mockBlockTree[0].children[0]);
+    });
+
+    it('должен вернуть null для несуществующего ID', () => {
+      const result = findBlockById(mockBlockTree, 'non-existent');
+      expect(result).toBeNull();
+    });
+
+    it('должен вернуть null для пустого дерева', () => {
+      const result = findBlockById([], 'any-id');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('findBlockParent', () => {
+    it('должен найти родителя для дочернего блока', () => {
+      const result = findBlockParent(mockBlockTree, 'child-1');
+      expect(result).toEqual(mockBlockTree[0]);
+    });
+
+    it('должен вернуть null для корневого блока', () => {
+      const result = findBlockParent(mockBlockTree, 'root-1');
+      expect(result).toBeNull();
+    });
+
+    it('должен вернуть null для несуществующего блока', () => {
+      const result = findBlockParent(mockBlockTree, 'non-existent');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('getBlocksByParentId', () => {
+    it('должен вернуть дочерние блоки для существующего родителя', () => {
+      const result = getBlocksByParentId(mockBlockTree, 'root-1');
+      expect(result).toEqual(mockBlockTree[0].children);
+    });
+
+    it('должен вернуть корневые блоки для parentId = null', () => {
+      const result = getBlocksByParentId(mockBlockTree, null);
+      expect(result).toHaveLength(2);
+      expect(result[0].id).toBe('root-1');
+      expect(result[1].id).toBe('root-2');
+    });
+
+    it('должен вернуть пустой массив для несуществующего родителя', () => {
+      const result = getBlocksByParentId(mockBlockTree, 'non-existent');
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('addBlockToTree', () => {
+    it('должен добавить блок в корень дерева', () => {
+      const newBlock: BlockNode = {
+        id: 'new-root',
+        block_type: 'container',
+        content: null,
+        depth: 0,
+        instance_id: null,
+        metadata: {},
+        page_id: 1,
+        position: 0,
+        slot: null,
+        status: 'draft',
+        children: [],
+      };
+
+      const result = addBlockToTree(mockBlockTree, newBlock, null, 1);
+
+      expect(result).toHaveLength(3);
+      expect(result[1]).toEqual(newBlock);
+    });
+
+    it('должен добавить блок как дочерний элемент', () => {
+      const newBlock: BlockNode = {
+        id: 'new-child',
+        block_type: 'text',
+        content: { text: 'New text' },
+        depth: 2,
+        instance_id: null,
+        metadata: {},
+        page_id: 1,
+        position: 0,
+        slot: null,
+        status: 'draft',
+        children: [],
+      };
+
+      const result = addBlockToTree(mockBlockTree, newBlock, 'root-1', 0);
+
+      expect(result[0].children).toHaveLength(3);
+      expect(result[0].children[0]).toEqual(newBlock);
+    });
+  });
+
+  describe('updateBlockInTree', () => {
+    it('должен обновить свойства блока', () => {
+      const updates = { status: 'published' as const };
+      const result = updateBlockInTree(mockBlockTree, 'child-1', updates);
+
+      expect(result[0].children[0].status).toBe('published');
+      expect(result[0].children[0].id).toBe('child-1'); // ID не должен измениться
+    });
+
+    it('должен вернуть неизмененное дерево для несуществующего блока', () => {
+      const result = updateBlockInTree(mockBlockTree, 'non-existent', { status: 'published' });
+      expect(result).toEqual(mockBlockTree);
+    });
+  });
+
+  describe('removeBlockFromTree', () => {
+    it('должен удалить блок из дерева', () => {
+      const result = removeBlockFromTree(mockBlockTree, 'child-1');
+
+      expect(result[0].children).toHaveLength(1);
+      expect(result[0].children[0].id).toBe('child-2');
+    });
+
+    it('должен удалить корневой блок', () => {
+      const result = removeBlockFromTree(mockBlockTree, 'root-2');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('root-1');
+    });
+
+    it('должен вернуть неизмененное дерево для несуществующего блока', () => {
+      const result = removeBlockFromTree(mockBlockTree, 'non-existent');
+      expect(result).toEqual(mockBlockTree);
+    });
+  });
+
+  describe('moveBlockInTree', () => {
+    it('должен переместить блок в другую позицию в том же родителе', () => {
+      const result = moveBlockInTree(mockBlockTree, 'child-2', 'root-1', 0);
+
+      expect(result[0].children[0].id).toBe('child-2');
+      expect(result[0].children[1].id).toBe('child-1');
+    });
+
+    it('должен переместить блок к другому родителю', () => {
+      const result = moveBlockInTree(mockBlockTree, 'child-1', 'root-2', 0);
+
+      expect(result[0].children).toHaveLength(1);
+      expect(result[0].children[0].id).toBe('child-2');
+      expect(result[1].children).toHaveLength(1);
+      expect(result[1].children[0].id).toBe('child-1');
+    });
+
+    it('должен переместить блок в корень', () => {
+      const result = moveBlockInTree(mockBlockTree, 'child-1', null, 1);
+
+      expect(result[0].children).toHaveLength(1);
+      expect(result[0].children[0].id).toBe('child-2');
+      expect(result).toHaveLength(3);
+      expect(result[1].id).toBe('child-1');
+    });
+  });
+
+  describe('пограничные случаи', () => {
+    it('должен корректно работать с глубоким деревом', () => {
+      // Создаем глубокое дерево (5 уровней)
+      const deepTree: BlockNode[] = [{
+        id: 'level-0',
+        block_type: 'container',
+        content: null,
+        depth: 0,
+        instance_id: null,
+        metadata: {},
+        page_id: 1,
+        position: 0,
+        slot: null,
+        status: 'draft',
+        children: [{
+          id: 'level-1',
+          block_type: 'container',
+          content: null,
+          depth: 1,
+          instance_id: null,
+          metadata: {},
+          page_id: 1,
+          position: 0,
+          slot: null,
+          status: 'draft',
+          children: [{
+            id: 'level-2',
+            block_type: 'container',
+            content: null,
+            depth: 2,
+            instance_id: null,
+            metadata: {},
+            page_id: 1,
+            position: 0,
+            slot: null,
+            status: 'draft',
+            children: [{
+              id: 'level-3',
+              block_type: 'container',
+              content: null,
+              depth: 3,
+              instance_id: null,
+              metadata: {},
+              page_id: 1,
+              position: 0,
+              slot: null,
+              status: 'draft',
+              children: [{
+                id: 'level-4',
+                block_type: 'text',
+                content: { text: 'Deep text' },
+                depth: 4,
+                instance_id: null,
+                metadata: {},
+                page_id: 1,
+                position: 0,
+                slot: null,
+                status: 'draft',
+                children: [],
+              }],
+            }],
+          }],
+        }],
+      }];
+
+      // Поиск в глубоком дереве
+      const found = findBlockById(deepTree, 'level-4');
+      expect(found?.content?.text).toBe('Deep text');
+
+      // Поиск родителя в глубоком дереве
+      const parent = findBlockParent(deepTree, 'level-4');
+      expect(parent?.id).toBe('level-3');
+    });
+
+    it('должен предотвратить перемещение контейнера в самого себя', () => {
+      // Попытка переместить root-1 внутрь child-1 (который является его потомком)
+      const result = moveBlockInTree(mockBlockTree, 'root-1', 'child-1', 0);
+
+      // Дерево должно остаться неизменным
+      expect(result).toEqual(mockBlockTree);
+    });
+
+    it('должен корректно обрабатывать пустые массивы', () => {
+      expect(findBlockById([], 'any')).toBeNull();
+      expect(findBlockParent([], 'any')).toBeNull();
+      expect(getBlocksByParentId([], null)).toEqual([]);
+      expect(getBlocksByParentId([], 'any')).toEqual([]);
+    });
+  });
+});

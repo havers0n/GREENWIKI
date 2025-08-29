@@ -4,6 +4,9 @@ import { Card, Typography, Button, Spinner } from 'shared/ui/atoms';
 import BlockLibrary from 'widgets/BlockLibrary';
 import RevisionsModal from 'widgets/RevisionsModal';
 import { Modal } from 'shared/ui/molecules';
+import { ReusableBlocksLibrary } from 'features/ReusableBlocksLibrary';
+import { useAppDispatch, useAppSelector } from 'store/hooks';
+import { setLibraryOpen } from 'store/slices/reusableBlocksSlice';
 import type { Database } from '@my-forum/db-types';
 
 type PageRow = Database['public']['Tables']['pages']['Row'];
@@ -58,9 +61,13 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   console.log('EditorToolbar: Rendering with pageIdentifier:', pageIdentifier);
 
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const [showBlockLibrary, setShowBlockLibrary] = useState(false);
   // const [showTemplatesModal, setShowTemplatesModal] = useState(false);
   const [showRevisionsModal, setShowRevisionsModal] = useState(false);
+
+  // Получаем состояние библиотеки переиспользуемых блоков
+  const isReusableLibraryOpen = useAppSelector(state => state.reusableBlocks.isLibraryOpen);
 
   const handlePageChange = (pageSlug: string) => {
     if (pageSlug !== pageIdentifier) {
@@ -116,7 +123,17 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
               >
                 ➕ Добавить блок
               </Button>
-              
+
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  console.log('🔄 REUSABLE: Opening reusable blocks library');
+                  dispatch(setLibraryOpen(true));
+                }}
+              >
+                📚 Переиспользуемые блоки
+              </Button>
+
               {/* <Button
                 variant="secondary"
                 onClick={() => setShowTemplatesModal(true)}
@@ -124,7 +141,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
               >
                 📄 Шаблоны
               </Button> */}
-              
+
               <Button
                 variant="secondary"
                 onClick={() => setShowRevisionsModal(true)}
@@ -224,6 +241,12 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         reverting={reverting}
         onCreateRevision={onCreateRevision}
         onRevertRevision={onRevertRevision}
+      />
+
+      {/* Библиотека переиспользуемых блоков */}
+      <ReusableBlocksLibrary
+        isOpen={isReusableLibraryOpen}
+        onClose={() => dispatch(setLibraryOpen(false))}
       />
     </>
   );

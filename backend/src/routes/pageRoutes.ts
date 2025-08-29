@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express'
 import { supabasePublic, supabaseAdmin } from '../supabaseClient'
 import type { TablesInsert, TablesUpdate } from '@my-forum/db-types'
 import { isAdmin } from '../middleware/authMiddleware'
+import { cacheMiddleware, cacheHelpers, cacheTags } from '../middleware/cacheMiddleware'
 
 const router = Router()
 
@@ -23,22 +24,29 @@ router.get('/admin', isAdmin, async (_req: Request, res: Response) => {
 })
 
 // GET /api/pages - публично: только опубликованные страницы
-router.get('/', async (_req: Request, res: Response) => {
-  try {
-    const { data, error } = await supabasePublic
-      .from('pages')
-      .select('*')
-      .eq('status', 'published')
-      .order('created_at', { ascending: true })
+router.get('/',
+  cacheMiddleware({
+    ttl: 300, // 5 minutes
+    tags: cacheTags.pages(),
+    condition: (req) => req.method === 'GET' && !req.query.nocache
+  }),
+  async (_req: Request, res: Response) => {
+    try {
+      const { data, error } = await supabasePublic
+        .from('pages')
+        .select('*')
+        .eq('status', 'published')
+        .order('created_at', { ascending: true })
 
-    if (error) {
-      return res.status(500).json({ error: 'Failed to fetch pages' })
+      if (error) {
+        return res.status(500).json({ error: 'Failed to fetch pages' })
+      }
+      return res.status(200).json({ data: data ?? [] })
+    } catch {
+      return res.status(500).json({ error: 'Internal Server Error' })
     }
-    return res.status(200).json({ data: data ?? [] })
-  } catch {
-    return res.status(500).json({ error: 'Internal Server Error' })
   }
-})
+)
 
 // POST /api/pages - админ: создать страницу
 router.post(
@@ -71,6 +79,10 @@ router.post(
           .status(400)
           .json({ error: 'Failed to create page', details: error.message })
       }
+
+      // Invalidate cache for pages
+      await cacheHelpers.invalidateTags(cacheTags.pages());
+
       return res.status(201).json({ data })
     } catch {
       return res.status(500).json({ error: 'Internal Server Error' })
@@ -131,6 +143,12 @@ router.put(
         return res.status(404).json({ error: 'Page not found' })
       }
 
+      // Invalidate cache for pages (both general and specific page)
+      await cacheHelpers.invalidateTags([
+        ...cacheTags.pages(),
+        ...cacheTags.pages(data.id)
+      ]);
+
       return res.status(200).json({ data })
     } catch {
       return res.status(500).json({ error: 'Internal Server Error' })
@@ -164,6 +182,12 @@ router.delete(
           .status(400)
           .json({ error: 'Failed to delete page', details: error.message })
       }
+
+      // Invalidate cache for pages (both general and specific page)
+      await cacheHelpers.invalidateTags([
+        ...cacheTags.pages(),
+        ...cacheTags.pages(pageIdNum)
+      ]);
 
       return res.status(200).json({ deleted: true, id: data?.id })
     } catch {

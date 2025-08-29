@@ -6,6 +6,7 @@ export * from './Tag';
 export * from './Typography';
 export { Input, InputSize } from '@my-forum/ui';
 export type { InputProps } from '@my-forum/ui';
-export { Select, Textarea, Spinner, Tooltip } from '@my-forum/ui';
+export { Select, Textarea, Spinner, Tooltip, Badge, Checkbox } from '@my-forum/ui';
 export type { SelectProps, TextareaProps, SpinnerProps } from '@my-forum/ui';
+export { Progress } from '@my-forum/ui';
 export { default as Accordion } from './Accordion';

@@ -36,3 +36,7 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Re-export all API modules
+export * from './reusableBlocks';
+export * from './blockInstances';

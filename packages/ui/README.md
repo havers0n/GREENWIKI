@@ -24,7 +24,87 @@ import { Button, Input, Modal } from '@my-forum/ui'
 Сводка токенов пакета — `packages/ui/tokens/tokens.json`. Значения токенов маппятся на CSS‑переменные (var(...)), что позволяет централизованно менять тему без правок компонентов.
 
 ## Компоненты
-### Button
+
+### Новые компоненты для CMS
+
+#### FormField
+Обертка для полей формы с лейблом, подсказкой и ошибками:
+```ts
+interface FormFieldProps {
+  label?: string;
+  hint?: string;
+  error?: string;
+  required?: boolean;
+  children: React.ReactNode;
+  className?: string;
+  id?: string;
+}
+```
+
+#### Progress
+Компонент прогресс-бара:
+```ts
+interface ProgressProps {
+  value: number; // 0-100
+  max?: number;
+  showValue?: boolean;
+  size?: 'sm' | 'md' | 'lg';
+  variant?: 'default' | 'success' | 'warning' | 'error';
+}
+```
+
+#### Dropdown
+Улучшенный селект с поиском и множественным выбором:
+```ts
+interface DropdownProps {
+  options: DropdownOption[];
+  value?: string;
+  placeholder?: string;
+  searchable?: boolean;
+  multiple?: boolean;
+  onChange: (value: string | string[]) => void;
+  renderOption?: (option: DropdownOption) => React.ReactNode;
+}
+```
+
+#### Toast
+Система уведомлений:
+```ts
+const { success, error, warning, info } = useToast();
+
+// Использование
+success('Данные сохранены!');
+error('Ошибка при сохранении');
+```
+
+#### Pagination
+Компонент пагинации:
+```ts
+interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  showFirstLast?: boolean;
+  maxVisiblePages?: number;
+}
+```
+
+#### FileUpload
+Загрузчик файлов с drag & drop:
+```ts
+interface FileUploadProps {
+  accept?: string;
+  multiple?: boolean;
+  maxSize?: number;
+  maxFiles?: number;
+  onFilesSelected: (files: File[]) => void;
+  dragAndDrop?: boolean;
+}
+```
+
+### Базовые компоненты
+
+#### Button
 ```ts
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost'
 export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg'
@@ -42,7 +122,7 @@ interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>
 - Размеры: `xs|sm|md|lg` (поддержка `xs` для обратной совместимости)
 - Иконки: `leftIcon/rightIcon` (не участвуют в доступности — `aria-hidden`)
 
-### Input
+#### Input
 ```ts
 export type InputSize = 'sm' | 'md' | 'lg'
 
@@ -58,7 +138,7 @@ interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, '
 - Доступность: `aria-invalid`, `aria-describedby`, обязательные поля помечаются `required` + визуальный индикатор
 - Размеры: `sm|md|lg`
 
-### Modal
+#### Modal
 ```ts
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl'
 

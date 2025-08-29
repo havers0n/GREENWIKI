@@ -6,6 +6,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Tabs } from '@mantine/core';
 import { SpacingControl, ColorPicker, BorderControl, BackgroundControl } from './controls';
 import { Breadcrumbs } from 'widgets/Breadcrumbs';
+import { OverridesPanel } from 'widgets/OverridesPanel';
+import { useAppSelector } from '../../store/hooks';
+import { selectIsBlockInstance } from '../../store/selectors/blockSelectors';
 
 type LayoutBlock = Database['public']['Tables']['layout_blocks']['Row'];
 
@@ -22,6 +25,8 @@ interface ContextualInspectorProps {
   // Для перемещения блоков
   onMoveLeft?: (blockId: string) => void;
   onMoveRight?: (blockId: string) => void;
+  // Для работы с переопределениями
+  blockId?: string; // ID блока в новой системе
 }
 
 const ContextualInspector: React.FC<ContextualInspectorProps> = ({
@@ -35,6 +40,7 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
   allBlocks = [],
   onMoveLeft,
   onMoveRight,
+  blockId,
 }) => {
   // console.log('ContextualInspector: Rendered with block:', block?.id, 'isOpen:', isOpen);
 
@@ -42,6 +48,9 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
 
   const spec = blockRegistry[block.block_type];
   if (!spec) return null;
+
+  // Проверяем, является ли блок экземпляром переиспользуемого блока
+  const isInstance = blockId ? useAppSelector(state => selectIsBlockInstance(state, blockId)) : false;
 
   const Editor = spec.Editor as React.FC<{ data: unknown; onChange: (d: unknown) => void }>;
   const data = (block.content ?? spec.defaultData()) as unknown;
@@ -85,7 +94,7 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
     if (!allBlocks) return false;
 
     const pageBlocks = allBlocks
-      .filter(b => b.page_identifier === block.page_identifier)
+      .filter(b => b.page_id === block.page_id)
       .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
     const currentIndex = pageBlocks.findIndex(b => b.id === block.id);
@@ -96,7 +105,7 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
     if (!allBlocks) return false;
 
     const pageBlocks = allBlocks
-      .filter(b => b.page_identifier === block.page_identifier)
+      .filter(b => b.page_id === block.page_id)
       .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
     const currentIndex = pageBlocks.findIndex(b => b.id === block.id);
@@ -224,8 +233,13 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
             )}
 
             {/* Вкладки с настройками */}
-            <Tabs defaultValue="content" className="w-full">
+            <Tabs defaultValue={isInstance ? "overrides" : "content"} className="w-full">
               <Tabs.List className="mb-4">
+                {isInstance && (
+                  <Tabs.Tab value="overrides" className="text-sm">
+                    🔄 Переопределения
+                  </Tabs.Tab>
+                )}
                 <Tabs.Tab value="content" className="text-sm">
                   📝 Настройки блока
                 </Tabs.Tab>
@@ -233,6 +247,22 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
                   🎨 Дизайн
                 </Tabs.Tab>
               </Tabs.List>
+
+              {isInstance && blockId && (
+                <Tabs.Panel value="overrides" className="space-y-4">
+                  <OverridesPanel
+                    blockId={blockId}
+                    onSave={() => {
+                      // Можно добавить уведомление об успешном сохранении
+                      console.log('Overrides saved successfully');
+                    }}
+                    onError={(error) => {
+                      // Можно добавить обработку ошибок
+                      console.error('Overrides save error:', error);
+                    }}
+                  />
+                </Tabs.Panel>
+              )}
 
               <Tabs.Panel value="content" className="space-y-4">
                 <Editor

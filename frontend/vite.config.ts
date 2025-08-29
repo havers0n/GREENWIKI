@@ -15,6 +15,8 @@ export default defineConfig({
       features: path.resolve(rootDir, 'src/features'),
       entities: path.resolve(rootDir, 'src/entities'),
       shared: path.resolve(rootDir, 'src/shared'),
+      store: path.resolve(rootDir, 'src/store'),
+      blocks: path.resolve(rootDir, 'src/blocks'),
     },
   },
 })

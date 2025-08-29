@@ -106,8 +106,7 @@ const ContainerSection: React.FC<ContainerSectionProps> = ({
             
             <div className="min-h-[100px] rounded-lg border border-dashed border-gray-200 dark:border-gray-700 p-2">
               <BlockRenderer
-                pageIdentifier="" // Не используется для вложенных блоков
-                blocks={allBlocks}
+                blockTree={allBlocks || []}
                 editorMode={editorMode}
                 selectedBlockId={selectedBlockId}
                 onSelectBlock={onSelectBlock}

@@ -3,50 +3,70 @@ import { supabasePublic, supabaseAdmin } from '../supabaseClient'
 import type { TablesInsert, TablesUpdate, Json } from '@my-forum/db-types'
 import { isAdmin } from '../middleware/authMiddleware'
 import { isValidPlacement } from '../blockRegistry'
+import { LayoutService } from '../services/layoutService'
 
 const router = Router()
 
-// GET /api/layout/admin/:pageIdentifier - админ: все блоки
+// GET /api/layout/admin/:pageIdentifier - админ: все блоки в иерархической структуре
 router.get(
   '/admin/:pageIdentifier',
   isAdmin,
   async (req: Request<{ pageIdentifier: string }>, res: Response) => {
     try {
       const { pageIdentifier } = req.params
-      const { data, error } = await supabaseAdmin
-        .from('layout_blocks')
-        .select('id, block_type, content, metadata, page_identifier, position, status, parent_block_id, slot')
-        .eq('page_identifier', pageIdentifier)
-        .order('position', { ascending: true })
 
-      if (error) {
+      // Получаем page_id по slug (pageIdentifier)
+      const { data: pageData, error: pageError } = await supabaseAdmin
+        .from('pages')
+        .select('id')
+        .eq('slug', pageIdentifier)
+        .single()
+
+      if (pageError || !pageData) {
+        return res.status(404).json({ error: 'Page not found' })
+      }
+
+      const blocks = await LayoutService.getBlockTreeForPage(pageData.id)
+
+      if (blocks === null) {
         return res.status(500).json({ error: 'Failed to fetch layout blocks' })
       }
-      return res.status(200).json({ data })
+
+      return res.status(200).json({ pageId: pageData.id, blocks })
     } catch {
       return res.status(500).json({ error: 'Internal Server Error' })
     }
   }
 )
 
-// GET /api/layout/:pageIdentifier - публично: опубликованные блоки
+// GET /api/layout/:pageIdentifier - публично: опубликованные блоки в иерархической структуре
 router.get(
   '/:pageIdentifier',
   async (req: Request<{ pageIdentifier: string }>, res: Response) => {
     try {
       const { pageIdentifier } = req.params
-      const { data, error } = await supabasePublic
-        .from('layout_blocks')
-        .select('id, block_type, content, metadata, page_identifier, position, status, parent_block_id, slot')
-        .eq('page_identifier', pageIdentifier)
-        .eq('status', 'published')
-        .order('position', { ascending: true })
 
-      if (error) {
+      // Получаем page_id по slug (pageIdentifier)
+      const { data: pageData, error: pageError } = await supabasePublic
+        .from('pages')
+        .select('id')
+        .eq('slug', pageIdentifier)
+        .single()
+
+      if (pageError || !pageData) {
+        return res.status(404).json({ error: 'Page not found' })
+      }
+
+      const blocks = await LayoutService.getBlockTreeForPage(pageData.id)
+
+      if (blocks === null) {
         return res.status(500).json({ error: 'Failed to fetch layout blocks' })
       }
 
-      return res.status(200).json({ data: data ?? [] })
+      // Фильтруем только опубликованные блоки (поскольку дерево может содержать черновики)
+      const publishedBlocks = blocks.filter(block => block.status === 'published')
+
+      return res.status(200).json({ pageId: pageData.id, blocks: publishedBlocks })
     } catch {
       return res.status(500).json({ error: 'Internal Server Error' })
     }
@@ -56,34 +76,43 @@ router.get(
 // POST /api/layout - админ: создать блок
 router.post(
   '/',
-  // isAdmin, // Временно отключена проверка admin для отладки
-  async (req: Request<{}, {}, TablesInsert<'layout_blocks'>>, res: Response) => {
+  isAdmin,
+  async (req: Request<{}, {}, {
+    page_id: number
+    block_type: string
+    content?: Json | null
+    metadata?: Json
+    position?: number | null
+    status?: string
+    parent_block_id?: string | null
+    slot?: string | null
+  }>, res: Response) => {
     try {
       console.log('POST /api/layout called with body:', req.body);
-      const { page_identifier, block_type, content, metadata, position, status, parent_block_id, slot } = req.body
+      const { page_id, block_type, content, metadata, position, status, parent_block_id, slot } = req.body
 
-      if (!page_identifier || !block_type) {
+      if (!page_id || !block_type) {
         return res
           .status(400)
-          .json({ error: 'page_identifier and block_type are required' })
+          .json({ error: 'page_id and block_type are required' })
       }
       if (content !== undefined && typeof content !== 'object') {
         return res.status(400).json({ error: 'content must be a JSON object' })
       }
 
-      // Валидация иерархии блоков (временно отключена для отладки DnD)
-      // const isValid = await isValidPlacement(block_type, parent_block_id || null, slot || null)
-      // if (!isValid) {
-      //   return res.status(400).json({
-      //     error: 'Недопустимое размещение блока',
-      //     details: 'Блок данного типа не может быть размещен в указанном родительском блоке или слоте'
-      //   })
-      // }
+      // Валидация иерархии блоков
+      const isValid = await isValidPlacement(block_type, parent_block_id || null, slot || null)
+      if (!isValid) {
+        return res.status(400).json({
+          error: 'Недопустимое размещение блока',
+          details: 'Блок данного типа не может быть размещен в указанном родительском блоке или слоте'
+        })
+      }
 
-      console.log('Creating block:', { page_identifier, block_type, parent_block_id, slot })
+      console.log('Creating block:', { page_id, block_type, parent_block_id, slot })
 
-      const payload: TablesInsert<'layout_blocks'> = {
-        page_identifier,
+      const blockData = {
+        page_id,
         block_type,
         content: (content as Json | undefined) ?? {},
         metadata: (metadata as Json | undefined) ?? {},
@@ -93,21 +122,14 @@ router.post(
         slot: slot || null
       }
 
-      console.log('Final payload for database:', payload)
+      console.log('Block data for service:', blockData)
 
-      const { data, error } = await supabaseAdmin
-        .from('layout_blocks')
-        .insert(payload)
-        .select('*')
-        .single()
+      const data = await LayoutService.createBlock(blockData)
 
-      console.log('Database response:', { data, error })
+      console.log('Service response:', data)
 
-      if (error) {
-        console.error('Database error details:', error)
-        return res
-          .status(400)
-          .json({ error: 'Failed to create block', details: error.message })
+      if (!data) {
+        return res.status(400).json({ error: 'Failed to create block' })
       }
       return res.status(201).json({ data })
     } catch {
@@ -121,12 +143,21 @@ router.put(
   '/:blockId',
   isAdmin,
   async (
-    req: Request<{ blockId: string }, {}, Partial<TablesUpdate<'layout_blocks'>>>,
+    req: Request<{ blockId: string }, {}, {
+      page_id?: number
+      block_type?: string
+      content?: Json | null
+      metadata?: Json
+      position?: number | null
+      status?: string
+      parent_block_id?: string | null
+      slot?: string | null
+    }>,
     res: Response
   ) => {
     try {
-      const allowed: Array<keyof TablesUpdate<'layout_blocks'>> = [
-        'page_identifier',
+      const allowed = [
+        'page_id',
         'block_type',
         'content',
         'metadata',
@@ -136,7 +167,7 @@ router.put(
         'slot'
       ]
       const body = req.body ?? {}
-      const updates: Partial<TablesUpdate<'layout_blocks'>> = {}
+      const updates: any = {}
 
       for (const key of allowed) {
         if (Object.prototype.hasOwnProperty.call(body, key)) {
@@ -168,23 +199,10 @@ router.put(
         }
 
         const blockType = updates.block_type || currentBlock.block_type
-        const parentBlockId = updates.parent_block_id !== undefined ? updates.parent_block_id : undefined
-        const slot = updates.slot !== undefined ? updates.slot : undefined
+        const parentBlockId = updates.parent_block_id
+        const slot = updates.slot
 
-        // Если parent_block_id не был передан в обновлении, нам нужно получить текущее значение
-        let actualParentBlockId: string | null = null
-        if (parentBlockId === undefined) {
-          const { data: blockWithParent } = await supabaseAdmin
-            .from('layout_blocks')
-            .select('parent_block_id')
-            .eq('id', req.params.blockId)
-            .single()
-          actualParentBlockId = blockWithParent?.parent_block_id || null
-        } else {
-          actualParentBlockId = parentBlockId
-        }
-
-        const isValid = await isValidPlacement(blockType, actualParentBlockId, slot || null)
+        const isValid = await isValidPlacement(blockType, parentBlockId || null, slot || null)
         if (!isValid) {
           return res.status(400).json({
             error: 'Недопустимое размещение блока',
@@ -193,21 +211,8 @@ router.put(
         }
       }
 
-      const { data, error } = await supabaseAdmin
-        .from('layout_blocks')
-        .update(updates)
-        .eq('id', req.params.blockId)
-        .select('*')
-        .single()
+      const data = await LayoutService.updateBlock(req.params.blockId, updates)
 
-      if (error && (error as { code?: string }).code === 'PGRST116') {
-        return res.status(404).json({ error: 'Block not found' })
-      }
-      if (error) {
-        return res
-          .status(400)
-          .json({ error: 'Failed to update block', details: error.message })
-      }
       if (!data) {
         return res.status(404).json({ error: 'Block not found' })
       }
@@ -219,29 +224,19 @@ router.put(
   }
 )
 
-// DELETE /api/layout/:blockId - админ: удалить блок
+// DELETE /api/layout/:blockId - админ: удалить блок и все дочерние элементы (каскадное удаление)
 router.delete(
   '/:blockId',
   isAdmin,
   async (req: Request<{ blockId: string }>, res: Response) => {
     try {
-      const { data, error } = await supabaseAdmin
-        .from('layout_blocks')
-        .delete()
-        .eq('id', req.params.blockId)
-        .select('id')
-        .single()
+      const success = await LayoutService.deleteBlock(req.params.blockId)
 
-      if (error && (error as { code?: string }).code === 'PGRST116') {
-        return res.status(404).json({ error: 'Block not found' })
-      }
-      if (error) {
-        return res
-          .status(400)
-          .json({ error: 'Failed to delete block', details: error.message })
+      if (!success) {
+        return res.status(404).json({ error: 'Block not found or failed to delete' })
       }
 
-      return res.status(200).json({ deleted: true, id: data?.id })
+      return res.status(200).json({ deleted: true, id: req.params.blockId })
     } catch {
       return res.status(500).json({ error: 'Internal Server Error' })
     }
@@ -310,17 +305,26 @@ router.post(
   async (req: Request<{ pageIdentifier: string }>, res: Response) => {
     try {
       const { pageIdentifier } = req.params
-      const { data: blocks, error: selectError } = await supabaseAdmin
-        .from('layout_blocks')
-        .select('id, block_type, content, position, status, parent_block_id, slot')
-        .eq('page_identifier', pageIdentifier)
-        .order('position', { ascending: true })
 
-      if (selectError) {
+      // Получаем page_id по slug
+      const { data: pageData, error: pageError } = await supabaseAdmin
+        .from('pages')
+        .select('id')
+        .eq('slug', pageIdentifier)
+        .single()
+
+      if (pageError || !pageData) {
+        return res.status(404).json({ error: 'Page not found' })
+      }
+
+      // Получаем дерево блоков для создания снимка
+      const blocks = await LayoutService.getBlockTreeForPage(pageData.id)
+
+      if (blocks === null) {
         return res.status(500).json({ error: 'Failed to read layout for snapshot' })
       }
 
-      const snapshot = Array.isArray(blocks) ? blocks : []
+      const snapshot = blocks
       const { data, error } = await supabaseAdmin
         .from('layout_revisions')
         .insert({ page_identifier: pageIdentifier, snapshot, created_by: (req.user as any)?.id ?? null })
@@ -368,10 +372,21 @@ router.post(
     try {
       const { pageIdentifier, revisionId } = req.params
 
+      // Получаем page_id по slug
+      const { data: pageData, error: pageError } = await supabaseAdmin
+        .from('pages')
+        .select('id')
+        .eq('slug', pageIdentifier)
+        .single()
+
+      if (pageError || !pageData) {
+        return res.status(404).json({ error: 'Page not found' })
+      }
+
       // Сначала пробуем RPC для атомарности
       try {
         const { error: rpcError } = await supabaseAdmin.rpc('revert_layout_to_revision', {
-          p_page_identifier: pageIdentifier,
+          p_page_id: pageData.id,
           p_revision_id: revisionId
         })
         if (!rpcError) {
@@ -395,41 +410,55 @@ router.post(
         return res.status(404).json({ error: 'Revision not found' })
       }
 
-      const snapshot: Array<{ id?: string; block_type?: string; content?: Json; position?: number; status?: string; parent_block_id?: string | null; slot?: string | null }>
-        = Array.isArray(rev.snapshot) ? rev.snapshot as any : (rev.snapshot?.blocks as any) || []
-
       // Удаляем текущие блоки страницы
       const { error: delError } = await supabaseAdmin
         .from('layout_blocks')
         .delete()
-        .eq('page_identifier', pageIdentifier)
+        .eq('page_id', pageData.id)
       if (delError) {
         return res.status(400).json({ error: 'Failed to clear current layout', details: delError.message })
       }
 
-      // Вставляем из снимка
-      for (const item of snapshot) {
-        if (!item?.block_type) continue
-        const insertPayload: TablesInsert<'layout_blocks'> = {
-          id: item.id, // ВАЖНО: сохранить исходный ID для восстановления связей
-          page_identifier: pageIdentifier,
-          block_type: item.block_type,
-          content: (item.content as Json | undefined) ?? {},
-          position: typeof item.position === 'number' ? item.position : 0,
-          status: (item.status as any) || 'draft',
-          parent_block_id: item.parent_block_id || null, // ДОБАВИТЬ
-          slot: item.slot || null                      // ДОБАВИТЬ
-        }
-        const { error: insError } = await supabaseAdmin
-          .from('layout_blocks')
-          .insert(insertPayload)
-        if (insError) {
-          return res.status(400).json({ error: 'Failed to insert block from snapshot', details: insError.message })
+      // Функция для рекурсивного восстановления блоков из дерева
+      const restoreBlocksFromTree = async (blocks: BlockNode[], parentId: string | null = null): Promise<void> => {
+        for (const block of blocks) {
+          if (!block?.block_type) continue
+
+          const insertPayload = {
+            id: block.id,
+            page_id: pageData.id,
+            block_type: block.block_type,
+            content: block.content ?? {},
+            metadata: block.metadata ?? {},
+            position: typeof block.position === 'number' ? block.position : 0,
+            status: block.status || 'draft',
+            parent_block_id: parentId,
+            slot: block.slot || null,
+            depth: block.depth || 0
+          }
+
+          const { error: insError } = await supabaseAdmin
+            .from('layout_blocks')
+            .insert(insertPayload)
+
+          if (insError) {
+            throw new Error(`Failed to insert block from snapshot: ${insError.message}`)
+          }
+
+          // Рекурсивно восстанавливаем дочерние блоки
+          if (block.children && block.children.length > 0) {
+            await restoreBlocksFromTree(block.children, block.id)
+          }
         }
       }
 
+      // Восстанавливаем блоки из дерева snapshot
+      const snapshot = Array.isArray(rev.snapshot) ? rev.snapshot as BlockNode[] : []
+      await restoreBlocksFromTree(snapshot)
+
       return res.status(200).json({ reverted: true })
-    } catch {
+    } catch (error) {
+      console.error('Revert error:', error)
       return res.status(500).json({ error: 'Internal Server Error' })
     }
   }

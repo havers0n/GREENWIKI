@@ -14,15 +14,19 @@ const PropertiesSection = React.lazy(() => import('widgets/PropertiesSection'));
 const AnimationsSection = React.lazy(() => import('widgets/AnimationsSection'));
 const ChangelogSection = React.lazy(() => import('widgets/ChangelogSection'));
 const ButtonGroup = React.lazy(() => import('widgets/ButtonGroup'));
-const ContainerSection = React.lazy(() => import('widgets/ContainerSection'));
+const ContainerSection = React.lazy(() => import('blocks/layout/ContainerBlock'));
 const TabsBlock = React.lazy(() => import('widgets/TabsBlock'));
 const AccordionBlock = React.lazy(() => import('widgets/AccordionBlock'));
+
+// Новые композитные блоки
+const CardSection = React.lazy(() => import('widgets/CardSection'));
+const HeroSection = React.lazy(() => import('widgets/HeroSection'));
 
 // Ленивые импорты атомарных блоков
 const LazyHeadingBlock = React.lazy(() => import('widgets/AtomicBlocks/HeadingBlock'));
 const LazyParagraphBlock = React.lazy(() => import('widgets/AtomicBlocks/ParagraphBlock'));
 const LazyImageBlock = React.lazy(() => import('widgets/AtomicBlocks/ImageBlock'));
-const LazyButtonBlock = React.lazy(() => import('widgets/AtomicBlocks/ButtonBlock'));
+const LazyButtonBlock = React.lazy(() => import('blocks/atomic/ButtonBlock'));
 const LazySpacerBlock = React.lazy(() => import('widgets/AtomicBlocks/SpacerBlock'));
 
 export interface BlockSpec<T = unknown> {
@@ -616,5 +620,280 @@ export const blockRegistry: Record<string, BlockSpec<any>> = {
 			'container_section'
 		],
 		// allowedSlots будет генерироваться динамически на основе sections
+	},
+
+	// Новые композитные блоки с поддержкой вложенности
+
+	// Универсальный контейнер
+	container: {
+		type: 'container',
+		name: 'Контейнер',
+		defaultData: () => ({
+			title: '',
+			layout: 'vertical' as const,
+			gap: 'medium' as const,
+			padding: 'medium' as const,
+			backgroundColor: '',
+			borderRadius: '',
+			maxWidth: '',
+		}),
+		Editor: ({ data, onChange }: { data: any; onChange: (data: any) => void }) => (
+			<div className="space-y-4">
+				<Input
+					label="Заголовок контейнера"
+					value={data.title || ''}
+					onChange={(e) => onChange({ ...data, title: e.target.value })}
+					placeholder="Необязательный заголовок"
+				/>
+				<Select
+					label="Layout"
+					value={data.layout || 'vertical'}
+					onChange={(value) => onChange({ ...data, layout: value })}
+					options={[
+						{ value: 'vertical', label: 'Вертикальный' },
+						{ value: 'horizontal', label: 'Горизонтальный' },
+						{ value: 'grid', label: 'Сетка' },
+					]}
+				/>
+				<Select
+					label="Отступы между элементами"
+					value={data.gap || 'medium'}
+					onChange={(value) => onChange({ ...data, gap: value })}
+					options={[
+						{ value: 'none', label: 'Без отступов' },
+						{ value: 'small', label: 'Маленькие' },
+						{ value: 'medium', label: 'Средние' },
+						{ value: 'large', label: 'Большие' },
+					]}
+				/>
+				<Select
+					label="Внутренние отступы"
+					value={data.padding || 'medium'}
+					onChange={(value) => onChange({ ...data, padding: value })}
+					options={[
+						{ value: 'none', label: 'Без отступов' },
+						{ value: 'small', label: 'Маленькие' },
+						{ value: 'medium', label: 'Средние' },
+						{ value: 'large', label: 'Большие' },
+					]}
+				/>
+				<Input
+					label="Цвет фона"
+					type="color"
+					value={data.backgroundColor || '#ffffff'}
+					onChange={(e) => onChange({ ...data, backgroundColor: e.target.value })}
+				/>
+				<Input
+					label="Скругление углов (CSS)"
+					value={data.borderRadius || ''}
+					onChange={(e) => onChange({ ...data, borderRadius: e.target.value })}
+					placeholder="например: 8px или 1rem"
+				/>
+				<Input
+					label="Максимальная ширина"
+					value={data.maxWidth || ''}
+					onChange={(e) => onChange({ ...data, maxWidth: e.target.value })}
+					placeholder="например: 1200px или 80%"
+				/>
+			</div>
+		),
+		Renderer: ContainerSection,
+		category: 'Контейнеры',
+		icon: '📦',
+		tags: ['контейнер', 'группа', 'layout'],
+		description: 'Универсальный контейнер для группировки блоков с различными layout',
+		allowedChildren: [
+			'heading', 'paragraph', 'single_image', 'single_button', 'spacer',
+			'button_group', 'categories_section', 'controls_section',
+			'card', 'hero', 'container' // Рекурсивная вложенность
+		],
+		allowedSlots: ['default'],
+	},
+
+	// Карточка
+	card: {
+		type: 'card',
+		name: 'Карточка',
+		defaultData: () => ({
+			title: '',
+			description: '',
+			variant: 'default' as const,
+			size: 'medium' as const,
+			showHeader: true,
+			showFooter: false,
+		}),
+		Editor: ({ data, onChange }: { data: any; onChange: (data: any) => void }) => (
+			<div className="space-y-4">
+				<Input
+					label="Заголовок карточки"
+					value={data.title || ''}
+					onChange={(e) => onChange({ ...data, title: e.target.value })}
+					placeholder="Заголовок"
+				/>
+				<Textarea
+					label="Описание"
+					value={data.description || ''}
+					onChange={(e) => onChange({ ...data, description: e.target.value })}
+					placeholder="Краткое описание карточки"
+					rows={3}
+				/>
+				<Select
+					label="Вариант стиля"
+					value={data.variant || 'default'}
+					onChange={(value) => onChange({ ...data, variant: value })}
+					options={[
+						{ value: 'default', label: 'По умолчанию' },
+						{ value: 'elevated', label: 'Приподнятая' },
+						{ value: 'outlined', label: 'Обведенная' },
+						{ value: 'filled', label: 'Заполненная' },
+					]}
+				/>
+				<Select
+					label="Размер"
+					value={data.size || 'medium'}
+					onChange={(value) => onChange({ ...data, size: value })}
+					options={[
+						{ value: 'small', label: 'Маленький' },
+						{ value: 'medium', label: 'Средний' },
+						{ value: 'large', label: 'Большой' },
+					]}
+				/>
+				<div className="flex items-center space-x-4">
+					<label className="flex items-center">
+						<input
+							type="checkbox"
+							checked={data.showHeader !== false}
+							onChange={(e) => onChange({ ...data, showHeader: e.target.checked })}
+							className="mr-2"
+						/>
+						Отображать заголовок
+					</label>
+					<label className="flex items-center">
+						<input
+							type="checkbox"
+							checked={data.showFooter || false}
+							onChange={(e) => onChange({ ...data, showFooter: e.target.checked })}
+							className="mr-2"
+						/>
+						Отображать футер
+					</label>
+				</div>
+			</div>
+		),
+		Renderer: CardSection,
+		category: 'Контейнеры',
+		icon: '🃏',
+		tags: ['карточка', 'контейнер', 'группа'],
+		description: 'Карточка с заголовком, контентом и футером для группировки элементов',
+		allowedChildren: [
+			'heading', 'paragraph', 'single_image', 'single_button', 'spacer',
+			'button_group', 'container'
+		],
+		allowedSlots: ['header', 'content', 'footer'],
+	},
+
+	// Hero-секция
+	hero: {
+		type: 'hero',
+		name: 'Hero-секция',
+		defaultData: () => ({
+			title: '',
+			subtitle: '',
+			backgroundImage: '',
+			backgroundColor: '#f8f9fa',
+			textColor: '#212529',
+			height: 'medium' as const,
+			alignment: 'center' as const,
+			overlay: false,
+			overlayOpacity: 0.5,
+		}),
+		Editor: ({ data, onChange }: { data: any; onChange: (data: any) => void }) => (
+			<div className="space-y-4">
+				<Input
+					label="Основной заголовок"
+					value={data.title || ''}
+					onChange={(e) => onChange({ ...data, title: e.target.value })}
+					placeholder="Главный заголовок секции"
+				/>
+				<Input
+					label="Подзаголовок"
+					value={data.subtitle || ''}
+					onChange={(e) => onChange({ ...data, subtitle: e.target.value })}
+					placeholder="Дополнительный текст"
+				/>
+				<Input
+					label="URL фонового изображения"
+					value={data.backgroundImage || ''}
+					onChange={(e) => onChange({ ...data, backgroundImage: e.target.value })}
+					placeholder="https://example.com/image.jpg"
+				/>
+				<div className="grid grid-cols-2 gap-4">
+					<Input
+						label="Цвет фона"
+						type="color"
+						value={data.backgroundColor || '#f8f9fa'}
+						onChange={(e) => onChange({ ...data, backgroundColor: e.target.value })}
+					/>
+					<Input
+						label="Цвет текста"
+						type="color"
+						value={data.textColor || '#212529'}
+						onChange={(e) => onChange({ ...data, textColor: e.target.value })}
+					/>
+				</div>
+				<Select
+					label="Высота секции"
+					value={data.height || 'medium'}
+					onChange={(value) => onChange({ ...data, height: value })}
+					options={[
+						{ value: 'small', label: 'Маленькая' },
+						{ value: 'medium', label: 'Средняя' },
+						{ value: 'large', label: 'Большая' },
+						{ value: 'full', label: 'На весь экран' },
+					]}
+				/>
+				<Select
+					label="Выравнивание текста"
+					value={data.alignment || 'center'}
+					onChange={(value) => onChange({ ...data, alignment: value })}
+					options={[
+						{ value: 'left', label: 'По левому краю' },
+						{ value: 'center', label: 'По центру' },
+						{ value: 'right', label: 'По правому краю' },
+					]}
+				/>
+				<div className="space-y-2">
+					<label className="flex items-center">
+						<input
+							type="checkbox"
+							checked={data.overlay || false}
+							onChange={(e) => onChange({ ...data, overlay: e.target.checked })}
+							className="mr-2"
+						/>
+						Добавить overlay
+					</label>
+					{data.overlay && (
+						<Input
+							label="Прозрачность overlay"
+							type="range"
+							min="0"
+							max="1"
+							step="0.1"
+							value={data.overlayOpacity || 0.5}
+							onChange={(e) => onChange({ ...data, overlayOpacity: parseFloat(e.target.value) })}
+						/>
+					)}
+				</div>
+			</div>
+		),
+		Renderer: HeroSection,
+		category: 'Секции',
+		icon: '🎯',
+		tags: ['hero', 'баннер', 'заголовок', 'секция'],
+		description: 'Hero-секция с фоновым изображением, заголовком и возможностью добавления контента',
+		allowedChildren: [
+			'heading', 'paragraph', 'single_button', 'button_group', 'spacer'
+		],
+		allowedSlots: ['content'],
 	},
 };

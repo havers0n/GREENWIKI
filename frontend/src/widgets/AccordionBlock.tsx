@@ -137,8 +137,7 @@ const AccordionBlock: React.FC<AccordionBlockProps> = ({
 
               <div className="min-h-[100px] rounded-lg border border-dashed border-gray-200 dark:border-gray-700 p-4">
                 <BlockRenderer
-                  pageIdentifier=""
-                  blocks={allBlocks}
+                  blockTree={allBlocks || []}
                   editorMode={editorMode}
                   selectedBlockId={selectedBlockId}
                   onSelectBlock={onSelectBlock}

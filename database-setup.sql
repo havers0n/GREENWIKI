@@ -77,6 +77,24 @@ CREATE INDEX IF NOT EXISTS idx_layout_blocks_position ON public.layout_blocks(pa
 CREATE INDEX IF NOT EXISTS idx_layout_blocks_parent ON public.layout_blocks(parent_block_id, position);
 CREATE INDEX IF NOT EXISTS idx_layout_revisions_page ON public.layout_revisions(page_identifier, created_at DESC);
 
+-- Дополнительные индексы для таблиц reusable_blocks
+CREATE INDEX IF NOT EXISTS idx_reusable_blocks_category ON public.reusable_blocks(category);
+CREATE INDEX IF NOT EXISTS idx_reusable_blocks_created_by ON public.reusable_blocks(created_by);
+CREATE INDEX IF NOT EXISTS idx_reusable_blocks_created_at ON public.reusable_blocks(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reusable_blocks_search ON public.reusable_blocks USING gin(to_tsvector('russian', name || ' ' || COALESCE(description, '')));
+
+-- Индексы для таблиц block_instances
+CREATE INDEX IF NOT EXISTS idx_block_instances_reusable_block_id ON public.block_instances(reusable_block_id);
+CREATE INDEX IF NOT EXISTS idx_block_instances_page_id ON public.block_instances(page_id);
+
+-- Индексы для таблиц reusable_block_content
+CREATE INDEX IF NOT EXISTS idx_reusable_block_content_reusable_block_id ON public.reusable_block_content(reusable_block_id);
+CREATE INDEX IF NOT EXISTS idx_reusable_block_content_version ON public.reusable_block_content(reusable_block_id, version DESC);
+
+-- Составные индексы для сложных запросов
+CREATE INDEX IF NOT EXISTS idx_layout_blocks_page_parent_position ON public.layout_blocks(page_identifier, parent_block_id, position);
+CREATE INDEX IF NOT EXISTS idx_layout_blocks_status_page ON public.layout_blocks(status, page_identifier);
+
 -- RLS политики для безопасности
 ALTER TABLE public.pages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
