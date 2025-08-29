@@ -1,0 +1,27 @@
+﻿{
+    "include":  [
+                    "src"
+                ],
+    "compilerOptions":  {
+                            "moduleResolution":  "bundler",
+                            "esModuleInterop":  true,
+                            "outDir":  "./dist",
+                            "resolveJsonModule":  true,
+                            "jsx":  "react-jsx",
+                            "declaration":  true,
+                            "strict":  true,
+                            "target":  "ES2022",
+                            "skipLibCheck":  true,
+                            "module":  "ESNext",
+                            "rootDir":  "./src",
+                            "lib":  [
+                                        "ES2022",
+                                        "DOM",
+                                        "DOM.Iterable"
+                                    ],
+                            "types":  [
+                                          "react",
+                                          "react-dom"
+                                      ]
+                        }
+}

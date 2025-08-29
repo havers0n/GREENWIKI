@@ -1,8 +1,8 @@
 import React from 'react';
-import LiveEditor from 'widgets/LiveEditor';
+import NewLiveEditor from 'widgets/NewLiveEditor';
 
 const AdminHomePage: React.FC = () => {
-  return <LiveEditor pageIdentifier="homepage" />;
+  return <NewLiveEditor pageSlug="homepage" />;
 };
 
 export default AdminHomePage;

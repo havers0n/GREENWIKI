@@ -1,4 +1,4 @@
-import LiveEditor from 'widgets/LiveEditor';
+import LiveEditor from 'widgets/NewLiveEditor';
 
 export default LiveEditor;
 

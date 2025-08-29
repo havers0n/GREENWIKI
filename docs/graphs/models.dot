@@ -1,0 +1,52 @@
+digraph Models {
+  rankdir=TB;
+  node [shape=record, style=rounded];
+
+  // Таблицы
+  pages [label="{pages|id: SERIAL\l|slug: TEXT\l|title: TEXT\l|content: TEXT\l|status: TEXT\l|author_id: UUID\l|created_at: TIMESTAMPTZ\l|updated_at: TIMESTAMPTZ\l}"];
+
+  layout_blocks [label="{layout_blocks|id: UUID\l|page_identifier: TEXT\l|block_type: TEXT\l|content: JSONB\l|position: INTEGER\l|status: TEXT\l|parent_block_id: UUID\l|slot: TEXT\l|created_at: TIMESTAMPTZ\l|updated_at: TIMESTAMPTZ\l}"];
+
+  layout_revisions [label="{layout_revisions|id: UUID\l|page_identifier: TEXT\l|snapshot: JSONB\l|created_by: UUID\l|created_at: TIMESTAMPTZ\l}"];
+
+  categories [label="{categories|id: SERIAL\l|name: TEXT\l|slug: TEXT\l|icon_svg: TEXT\l|position: INTEGER\l|created_at: TIMESTAMPTZ\l}"];
+
+  sections [label="{sections|id: SERIAL\l|category_id: INTEGER\l|name: TEXT\l|description: TEXT\l|icon_svg: TEXT\l|external_url: TEXT\l|page_id: INTEGER\l|position: INTEGER\l|created_at: TIMESTAMPTZ\l}"];
+
+  page_templates [label="{page_templates|id: UUID\l|title: TEXT\l|description: TEXT\l|preview_url: TEXT\l|blocks: JSONB\l|created_by: UUID\l|created_at: TIMESTAMPTZ\l}"];
+
+  profiles [label="{profiles|id: UUID\l|... другие поля\l}"];
+
+  // Связи
+  pages -> layout_blocks [label="pages.slug → layout_blocks.page_identifier\n(логическая связь)", color=blue, style=dashed];
+  pages -> layout_revisions [label="pages.slug → layout_revisions.page_identifier\n(логическая связь)", color=blue, style=dashed];
+
+  layout_blocks -> layout_blocks [label="parent_block_id\n(самоссылка)", color=green];
+
+  categories -> sections [label="category_id\n(внешний ключ)", color=red];
+  pages -> sections [label="page_id\n(внешний ключ)", color=red];
+
+  profiles -> pages [label="author_id", color=purple];
+  profiles -> layout_revisions [label="created_by", color=purple];
+  profiles -> page_templates [label="created_by", color=purple];
+
+  // Проблемные области
+  subgraph cluster_issues {
+    label="Проблемы";
+    node [color=red, shape=box];
+
+    MissingFK [label="ОТСУТСТВИЕ FK:\nlayout_blocks.page_identifier → pages.slug"];
+    BrokenRevisions [label="РЕВИЗИИ НЕ СОХРАНЯЮТ:\nparent_block_id, slot"];
+    NoCascade [label="НЕТ КАСКАДНОГО УДАЛЕНИЯ"];
+  }
+
+  // Легенда
+  subgraph cluster_legend {
+    label="Легенда";
+    FK [label="Внешний ключ", color=red];
+    Logical [label="Логическая связь", color=blue, style=dashed];
+    SelfRef [label="Самоссылка", color=green];
+    UserRef [label="Ссылка на пользователя", color=purple];
+    Problem [label="Проблема", color=red];
+  }
+}

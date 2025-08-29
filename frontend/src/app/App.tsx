@@ -1,12 +1,12 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import HomePage from 'pages/HomePage';
 import LoginPage from 'pages/LoginPage';
 import ForbiddenPage from 'pages/ForbiddenPage';
 import AdminLayout from 'pages/AdminLayout';
-import AdminHomePage from 'pages/AdminHomePage';
 import AdminCategoriesPage from 'pages/AdminCategoriesPage';
 import AdminSectionsPage from 'pages/AdminSectionsPage';
+import AdminEditorPage from 'pages/AdminEditorPage';
 import DebugPage from 'pages/DebugPage';
 import { ProtectedRoute } from 'shared/ui/molecules';
 import AdminPagesPage from 'pages/AdminPagesPage';
@@ -30,7 +30,8 @@ const App: React.FC = () => {
         }
       >
         {/* Вложенные роуты админки */}
-        <Route index element={<AdminHomePage />} />
+        <Route index element={<Navigate to="/admin/editor/home" replace />} />
+        <Route path="editor/:pageSlug" element={<AdminEditorPage />} />
         <Route path="categories" element={<AdminCategoriesPage />} />
         <Route path="sections" element={<AdminSectionsPage />} />
         <Route path="pages" element={<AdminPagesPage />} />

@@ -1,0 +1,198 @@
+{
+  "page": {
+    "id": 1,
+    "slug": "home",
+    "title": "Главная страница",
+    "status": "published"
+  },
+  "blocks": [
+    {
+      "id": "header-block-1",
+      "page_identifier": "home",
+      "block_type": "header",
+      "content": {},
+      "position": 1,
+      "status": "published",
+      "parent_block_id": null,
+      "slot": null,
+      "depth": 0,
+      "description": "Шапка сайта - корневой уровень"
+    },
+    {
+      "id": "container-block-1",
+      "page_identifier": "home",
+      "block_type": "container_section",
+      "content": {
+        "title": "Основные разделы",
+        "layout": "two"
+      },
+      "position": 2,
+      "status": "published",
+      "parent_block_id": null,
+      "slot": null,
+      "depth": 0,
+      "description": "Контейнер с двумя колонками - корневой уровень"
+    },
+    {
+      "id": "heading-block-1",
+      "page_identifier": "home",
+      "block_type": "heading",
+      "content": {
+        "text": "Добро пожаловать на наш форум",
+        "level": 1,
+        "align": "center"
+      },
+      "position": 1,
+      "status": "published",
+      "parent_block_id": "container-block-1",
+      "slot": "column1",
+      "depth": 1,
+      "description": "Заголовок в первой колонке контейнера"
+    },
+    {
+      "id": "paragraph-block-1",
+      "page_identifier": "home",
+      "block_type": "paragraph",
+      "content": {
+        "text": "Здесь вы найдете интересные обсуждения и сможете пообщаться с единомышленниками."
+      },
+      "position": 2,
+      "status": "published",
+      "parent_block_id": "container-block-1",
+      "slot": "column1",
+      "depth": 1,
+      "description": "Параграф в первой колонке контейнера"
+    },
+    {
+      "id": "button-group-block-1",
+      "page_identifier": "home",
+      "block_type": "button_group",
+      "content": {
+        "items": [
+          {
+            "id": "btn-1",
+            "text": "Регистрация",
+            "link": "/register",
+            "variant": "primary"
+          },
+          {
+            "id": "btn-2",
+            "text": "Войти",
+            "link": "/login",
+            "variant": "secondary"
+          }
+        ]
+      },
+      "position": 3,
+      "status": "published",
+      "parent_block_id": "container-block-1",
+      "slot": "column1",
+      "depth": 1,
+      "description": "Группа кнопок в первой колонке контейнера"
+    },
+    {
+      "id": "categories-section-block-1",
+      "page_identifier": "home",
+      "block_type": "categories_section",
+      "content": {
+        "title": "Разделы форума",
+        "description": "Выберите интересующий вас раздел"
+      },
+      "position": 1,
+      "status": "published",
+      "parent_block_id": "container-block-1",
+      "slot": "column2",
+      "depth": 1,
+      "description": "Секция категорий во второй колонке контейнера"
+    },
+    {
+      "id": "image-block-1",
+      "page_identifier": "home",
+      "block_type": "single_image",
+      "content": {
+        "imageUrl": "https://via.placeholder.com/400x200?text=Форум",
+        "altText": "Изображение форума"
+      },
+      "position": 2,
+      "status": "published",
+      "parent_block_id": "container-block-1",
+      "slot": "column2",
+      "depth": 1,
+      "description": "Изображение во второй колонке контейнера"
+    },
+    {
+      "id": "spacer-block-1",
+      "page_identifier": "home",
+      "block_type": "spacer",
+      "content": {
+        "height": "lg"
+      },
+      "position": 3,
+      "status": "published",
+      "parent_block_id": null,
+      "slot": null,
+      "depth": 0,
+      "description": "Отступ между секциями - корневой уровень"
+    },
+    {
+      "id": "changelog-section-block-1",
+      "page_identifier": "home",
+      "block_type": "changelog_section",
+      "content": {
+        "title": "Последние обновления"
+      },
+      "position": 4,
+      "status": "published",
+      "parent_block_id": null,
+      "slot": null,
+      "depth": 0,
+      "description": "Секция истории изменений - корневой уровень"
+    }
+  ],
+  "tree_structure": {
+    "root": [
+      "header-block-1",
+      "container-block-1",
+      "spacer-block-1",
+      "changelog-section-block-1"
+    ],
+    "container-block-1": {
+      "column1": [
+        "heading-block-1",
+        "paragraph-block-1",
+        "button-group-block-1"
+      ],
+      "column2": [
+        "categories-section-block-1",
+        "image-block-1"
+      ]
+    }
+  },
+  "statistics": {
+    "total_blocks": 9,
+    "root_blocks": 4,
+    "nested_blocks": 5,
+    "containers": 1,
+    "max_depth": 1,
+    "blocks_by_type": {
+      "header": 1,
+      "container_section": 1,
+      "heading": 1,
+      "paragraph": 1,
+      "button_group": 1,
+      "categories_section": 1,
+      "single_image": 1,
+      "spacer": 1,
+      "changelog_section": 1
+    },
+    "blocks_by_category": {
+      "Навигация": 1,
+      "Секции": 1,
+      "Контент": 2,
+      "UI": 1,
+      "Медиа": 1,
+      "Лэйаут": 1,
+      "Данные": 0
+    }
+  }
+}

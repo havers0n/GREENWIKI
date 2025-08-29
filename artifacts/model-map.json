@@ -1,0 +1,394 @@
+{
+  "database": "Supabase PostgreSQL",
+  "schema": "public",
+  "tables": {
+    "pages": {
+      "description": "Основная таблица страниц",
+      "columns": {
+        "id": {
+          "type": "SERIAL",
+          "primaryKey": true,
+          "nullable": false,
+          "description": "Уникальный идентификатор страницы"
+        },
+        "slug": {
+          "type": "TEXT",
+          "nullable": false,
+          "unique": true,
+          "description": "URL-friendly идентификатор страницы"
+        },
+        "title": {
+          "type": "TEXT",
+          "nullable": false,
+          "description": "Заголовок страницы"
+        },
+        "content": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Основной контент страницы"
+        },
+        "status": {
+          "type": "TEXT",
+          "nullable": false,
+          "default": "'draft'",
+          "check": "status IN ('draft', 'published')",
+          "description": "Статус публикации страницы"
+        },
+        "author_id": {
+          "type": "UUID",
+          "nullable": true,
+          "foreignKey": "public.profiles(id)",
+          "description": "ID автора страницы"
+        },
+        "created_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()",
+          "description": "Дата создания"
+        },
+        "updated_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": true,
+          "description": "Дата последнего обновления"
+        }
+      },
+      "indexes": [],
+      "constraints": {
+        "primary": "pages_pkey",
+        "unique": ["pages_slug_key"],
+        "foreign": ["pages_author_id_fkey"]
+      }
+    },
+    "categories": {
+      "description": "Категории для навигации",
+      "columns": {
+        "id": {
+          "type": "SERIAL",
+          "primaryKey": true,
+          "nullable": false,
+          "description": "Уникальный идентификатор категории"
+        },
+        "name": {
+          "type": "TEXT",
+          "nullable": false,
+          "description": "Название категории"
+        },
+        "slug": {
+          "type": "TEXT",
+          "nullable": false,
+          "unique": true,
+          "description": "URL-friendly идентификатор категории"
+        },
+        "icon_svg": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "SVG иконка категории"
+        },
+        "position": {
+          "type": "INTEGER",
+          "nullable": true,
+          "description": "Позиция для сортировки"
+        },
+        "created_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()",
+          "description": "Дата создания"
+        }
+      },
+      "indexes": [],
+      "constraints": {
+        "primary": "categories_pkey",
+        "unique": ["categories_slug_key"]
+      }
+    },
+    "sections": {
+      "description": "Разделы внутри категорий",
+      "columns": {
+        "id": {
+          "type": "SERIAL",
+          "primaryKey": true,
+          "nullable": false,
+          "description": "Уникальный идентификатор раздела"
+        },
+        "category_id": {
+          "type": "INTEGER",
+          "nullable": false,
+          "foreignKey": "public.categories(id)",
+          "description": "ID родительской категории"
+        },
+        "name": {
+          "type": "TEXT",
+          "nullable": false,
+          "description": "Название раздела"
+        },
+        "description": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Описание раздела"
+        },
+        "icon_svg": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "SVG иконка раздела"
+        },
+        "external_url": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Внешняя ссылка"
+        },
+        "page_id": {
+          "type": "INTEGER",
+          "nullable": true,
+          "foreignKey": "public.pages(id)",
+          "description": "ID связанной страницы"
+        },
+        "position": {
+          "type": "INTEGER",
+          "nullable": true,
+          "description": "Позиция для сортировки"
+        },
+        "created_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()",
+          "description": "Дата создания"
+        }
+      },
+      "indexes": [],
+      "constraints": {
+        "primary": "sections_pkey",
+        "foreign": ["sections_category_id_fkey", "sections_page_id_fkey"]
+      }
+    },
+    "layout_blocks": {
+      "description": "Блоки макета страниц с поддержкой вложенности",
+      "columns": {
+        "id": {
+          "type": "UUID",
+          "primaryKey": true,
+          "nullable": false,
+          "default": "gen_random_uuid()",
+          "description": "Уникальный идентификатор блока"
+        },
+        "page_identifier": {
+          "type": "TEXT",
+          "nullable": false,
+          "description": "Идентификатор страницы (соответствует pages.slug)"
+        },
+        "block_type": {
+          "type": "TEXT",
+          "nullable": false,
+          "description": "Тип блока из реестра компонентов"
+        },
+        "content": {
+          "type": "JSONB",
+          "nullable": true,
+          "description": "JSON контент блока"
+        },
+        "position": {
+          "type": "INTEGER",
+          "nullable": true,
+          "description": "Позиция блока для сортировки"
+        },
+        "status": {
+          "type": "TEXT",
+          "nullable": false,
+          "default": "'draft'",
+          "check": "status IN ('draft', 'published')",
+          "description": "Статус публикации блока"
+        },
+        "parent_block_id": {
+          "type": "UUID",
+          "nullable": true,
+          "foreignKey": "public.layout_blocks(id)",
+          "description": "ID родительского блока для вложенности"
+        },
+        "slot": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Именованный слот внутри родительского блока"
+        },
+        "created_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()",
+          "description": "Дата создания"
+        },
+        "updated_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": true,
+          "description": "Дата последнего обновления"
+        }
+      },
+      "indexes": [
+        "idx_layout_blocks_page_identifier",
+        "idx_layout_blocks_position",
+        "idx_layout_blocks_parent"
+      ],
+      "constraints": {
+        "primary": "layout_blocks_pkey",
+        "foreign": ["layout_blocks_parent_block_id_fkey"]
+      },
+      "comments": "Блоки макета страниц с поддержкой вложенности"
+    },
+    "layout_revisions": {
+      "description": "Ревизии макета для отката изменений",
+      "columns": {
+        "id": {
+          "type": "UUID",
+          "primaryKey": true,
+          "nullable": false,
+          "default": "gen_random_uuid()",
+          "description": "Уникальный идентификатор ревизии"
+        },
+        "page_identifier": {
+          "type": "TEXT",
+          "nullable": false,
+          "description": "Идентификатор страницы"
+        },
+        "snapshot": {
+          "type": "JSONB",
+          "nullable": false,
+          "description": "Снимок состояния блоков страницы в JSON формате"
+        },
+        "created_by": {
+          "type": "UUID",
+          "nullable": true,
+          "foreignKey": "public.profiles(id)",
+          "description": "ID пользователя, создавшего ревизию"
+        },
+        "created_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()",
+          "description": "Дата создания ревизии"
+        }
+      },
+      "indexes": ["idx_layout_revisions_page"],
+      "constraints": {
+        "primary": "layout_revisions_pkey",
+        "foreign": ["layout_revisions_created_by_fkey"]
+      },
+      "comments": "Ревизии макета для отката изменений"
+    },
+    "page_templates": {
+      "description": "Шаблоны страниц для быстрого создания",
+      "columns": {
+        "id": {
+          "type": "UUID",
+          "primaryKey": true,
+          "nullable": false,
+          "default": "gen_random_uuid()",
+          "description": "Уникальный идентификатор шаблона"
+        },
+        "title": {
+          "type": "TEXT",
+          "nullable": false,
+          "description": "Название шаблона"
+        },
+        "description": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Описание шаблона"
+        },
+        "preview_url": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "URL превью шаблона"
+        },
+        "blocks": {
+          "type": "JSONB",
+          "nullable": false,
+          "description": "Массив блоков шаблона"
+        },
+        "created_by": {
+          "type": "UUID",
+          "nullable": true,
+          "foreignKey": "public.profiles(id)",
+          "description": "ID пользователя, создавшего шаблон"
+        },
+        "created_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()",
+          "description": "Дата создания шаблона"
+        }
+      },
+      "indexes": [],
+      "constraints": {
+        "primary": "page_templates_pkey",
+        "foreign": ["page_templates_created_by_fkey"]
+      },
+      "comments": "Шаблоны страниц для быстрого создания"
+    }
+  },
+  "enums": {
+    "block_status": {
+      "values": ["draft", "published"],
+      "description": "Статус публикации для блоков и страниц"
+    }
+  },
+  "relationships": {
+    "pages->layout_blocks": {
+      "type": "one-to-many",
+      "source": "pages.slug",
+      "target": "layout_blocks.page_identifier",
+      "description": "Одна страница может иметь много блоков"
+    },
+    "categories->sections": {
+      "type": "one-to-many",
+      "source": "categories.id",
+      "target": "sections.category_id",
+      "description": "Одна категория может содержать много разделов"
+    },
+    "sections->pages": {
+      "type": "many-to-one",
+      "source": "sections.page_id",
+      "target": "pages.id",
+      "description": "Раздел может ссылаться на одну страницу"
+    },
+    "layout_blocks->layout_blocks": {
+      "type": "self-referencing",
+      "source": "layout_blocks.id",
+      "target": "layout_blocks.parent_block_id",
+      "description": "Блок может иметь родительский блок для вложенности"
+    },
+    "pages->layout_revisions": {
+      "type": "one-to-many",
+      "source": "pages.slug",
+      "target": "layout_revisions.page_identifier",
+      "description": "Одна страница может иметь много ревизий"
+    },
+    "profiles->pages": {
+      "type": "one-to-many",
+      "source": "profiles.id",
+      "target": "pages.author_id",
+      "description": "Пользователь может быть автором многих страниц"
+    },
+    "profiles->layout_revisions": {
+      "type": "one-to-many",
+      "source": "profiles.id",
+      "target": "layout_revisions.created_by",
+      "description": "Пользователь может создавать много ревизий"
+    },
+    "profiles->page_templates": {
+      "type": "one-to-many",
+      "source": "profiles.id",
+      "target": "page_templates.created_by",
+      "description": "Пользователь может создавать много шаблонов"
+    }
+  },
+  "issues": {
+    "missing_foreign_key": {
+      "description": "layout_blocks.page_identifier ссылается на pages.slug, но FK не определена",
+      "impact": "Нарушение ссылочной целостности данных",
+      "severity": "high"
+    },
+    "missing_cascade_delete": {
+      "description": "Отсутствует каскадное удаление для layout_blocks при удалении страницы",
+      "impact": "Орфанные блоки после удаления страницы",
+      "severity": "medium"
+    }
+  }
+}

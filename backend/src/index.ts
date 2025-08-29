@@ -8,6 +8,7 @@ import layoutRouter from './routes/layoutRoutes'
 import categoryRouter from './routes/categoryRoutes'
 import sectionRouter from './routes/sectionRoutes'
 import pageRouter from './routes/pageRoutes'
+import templatesRouter from './routes/templatesRoutes'
 
 const app = express()
 
@@ -22,6 +23,7 @@ app.use('/api/layout', layoutRouter)
 app.use('/api/categories', categoryRouter)
 app.use('/api/sections', sectionRouter)
 app.use('/api/pages', pageRouter)
+app.use('/api/templates', templatesRouter)
 
 app.use('/api', (_req: Request, res: Response) => {
   res.status(404).json({ error: 'Not Found' })

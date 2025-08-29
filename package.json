@@ -1,20 +1,23 @@
-{
-  "name": "my-forum",
-  "version": "1.0.0",
-  "description": "Forum application with backend, frontend and shared types",
-  "private": true,
-  "scripts": {
-    "dev": "pnpm --parallel dev",
-    "build": "pnpm --recursive build",
-    "test": "pnpm --recursive test",
-    "lint": "pnpm --recursive lint",
-    "gen:types": "supabase gen types typescript --linked > packages/db-types/src/index.ts"
-  },
-  "devDependencies": {
-    "supabase": "^2.39.2"
-  },
-  "engines": {
-    "node": ">=18.0.0",
-    "pnpm": ">=8.0.0"
-  }
+﻿{
+    "name":  "my-forum",
+    "version":  "1.0.0",
+    "description":  "Forum application with backend, frontend and shared types",
+    "private":  true,
+    "scripts":  {
+                    "dev":  "pnpm --parallel dev",
+                    "build":  "pnpm --recursive build",
+                    "test":  "pnpm --recursive test",
+                    "lint":  "pnpm --recursive lint",
+                    "gen:types":  "supabase gen types typescript --linked \u003e packages/db-types/src/index.ts"
+                },
+    "devDependencies":  {
+                            "@types/react":  "19.1.7",
+                            "@types/react-dom":  "19.1.7",
+                            "supabase":  "^2.39.2",
+                            "typescript":  "5.8.3"
+                        },
+    "engines":  {
+                    "node":  "\u003e=18.0.0",
+                    "pnpm":  "\u003e=8.0.0"
+                }
 }

@@ -1,0 +1,38 @@
+{
+    "module":  "./dist/index.js",
+    "peerDependencies":  {
+                             "react":  "\u003e=18",
+                             "react-dom":  "\u003e=18"
+                         },
+    "type":  "module",
+    "types":  "./dist/index.d.ts",
+    "version":  "0.1.0",
+    "files":  [
+                  "dist",
+                  "tokens"
+              ],
+    "scripts":  {
+                    "build":  "tsc -p tsconfig.json"
+                },
+    "name":  "@my-forum/ui",
+    "private":  false,
+    "exports":  {
+                    "./tokens":  "./tokens/tokens.json",
+                    "./molecules/*":  {
+                                          "types":  "./dist/molecules/*.d.ts",
+                                          "import":  "./dist/molecules/*.js"
+                                      },
+                    "./atoms/*":  {
+                                      "types":  "./dist/atoms/*.d.ts",
+                                      "import":  "./dist/atoms/*.js"
+                                  },
+                    ".":  {
+                              "types":  "./dist/index.d.ts",
+                              "import":  "./dist/index.js"
+                          }
+                },
+    "main":  "./dist/index.js",
+    "devDependencies":  {
+                            "typescript":  "~5.8.3"
+                        }
+}

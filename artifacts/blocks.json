@@ -1,0 +1,237 @@
+{
+  "blocks": {
+    "header": {
+      "type": "header",
+      "name": "Шапка",
+      "category": "Навигация",
+      "hasSlots": false,
+      "isContainer": false,
+      "allowedChildren": [],
+      "allowedSlots": [],
+      "description": "Шапка сайта с навигацией и брендингом",
+      "schemaValidation": true,
+      "files": ["frontend/src/widgets/Header.tsx"]
+    },
+    "categories_section": {
+      "type": "categories_section",
+      "name": "Сетка разделов форума",
+      "category": "Секции",
+      "hasSlots": false,
+      "isContainer": false,
+      "allowedChildren": [],
+      "allowedSlots": [],
+      "description": "Секция со списком/сеткой разделов форума",
+      "schemaValidation": true,
+      "files": ["frontend/src/widgets/CategoriesSection.tsx"]
+    },
+    "controls_section": {
+      "type": "controls_section",
+      "name": "Демо UI контролов",
+      "category": "UI",
+      "hasSlots": false,
+      "isContainer": false,
+      "allowedChildren": [],
+      "allowedSlots": [],
+      "description": "Демонстрационная секция UI-контролов",
+      "schemaValidation": true,
+      "files": ["frontend/src/widgets/ControlsSection.tsx"]
+    },
+    "button_group": {
+      "type": "button_group",
+      "name": "Группа кнопок",
+      "category": "UI",
+      "hasSlots": false,
+      "isContainer": false,
+      "allowedChildren": [],
+      "allowedSlots": [],
+      "description": "Группа кнопок c настраиваемыми вариантами и ссылками",
+      "schemaValidation": true,
+      "files": ["frontend/src/widgets/ButtonGroup/index.tsx"]
+    },
+    "properties_section": {
+      "type": "properties_section",
+      "name": "Недвижимость",
+      "category": "Данные",
+      "hasSlots": false,
+      "isContainer": false,
+      "allowedChildren": [],
+      "allowedSlots": [],
+      "description": "Секция с таблицей объектов недвижимости",
+      "schemaValidation": false,
+      "files": ["frontend/src/widgets/PropertiesSection.tsx"]
+    },
+    "animations_section": {
+      "type": "animations_section",
+      "name": "Анимации",
+      "category": "Данные",
+      "hasSlots": false,
+      "isContainer": false,
+      "allowedChildren": [],
+      "allowedSlots": [],
+      "description": "Секция со списком анимаций",
+      "schemaValidation": false,
+      "files": ["frontend/src/widgets/AnimationsSection.tsx"]
+    },
+    "changelog_section": {
+      "type": "changelog_section",
+      "name": "История изменений",
+      "category": "Контент",
+      "hasSlots": false,
+      "isContainer": false,
+      "allowedChildren": [],
+      "allowedSlots": [],
+      "description": "Секция с историей изменений и активностей",
+      "schemaValidation": true,
+      "files": ["frontend/src/widgets/ChangelogSection.tsx"]
+    },
+    "container_section": {
+      "type": "container_section",
+      "name": "Контейнер (колонки)",
+      "category": "Секции",
+      "hasSlots": true,
+      "isContainer": true,
+      "allowedChildren": [
+        "button_group",
+        "categories_section",
+        "controls_section",
+        "properties_section",
+        "animations_section",
+        "changelog_section",
+        "heading",
+        "paragraph",
+        "single_image",
+        "single_button",
+        "spacer"
+      ],
+      "allowedSlots": ["column1", "column2", "column3"],
+      "description": "Контейнерная секция с 2/3 колонками для вложенных блоков",
+      "schemaValidation": true,
+      "files": ["frontend/src/widgets/ContainerSection.tsx"]
+    },
+    "heading": {
+      "type": "heading",
+      "name": "Заголовок",
+      "category": "Контент",
+      "hasSlots": false,
+      "isContainer": false,
+      "allowedChildren": [],
+      "allowedSlots": [],
+      "description": "Заголовок любого уровня (H1-H6) с настраиваемым выравниванием",
+      "schemaValidation": true,
+      "files": ["frontend/src/widgets/AtomicBlocks/HeadingBlock/index.tsx"]
+    },
+    "paragraph": {
+      "type": "paragraph",
+      "name": "Параграф",
+      "category": "Контент",
+      "hasSlots": false,
+      "isContainer": false,
+      "allowedChildren": [],
+      "allowedSlots": [],
+      "description": "Текстовый блок с поддержкой базовой Markdown-разметки",
+      "schemaValidation": true,
+      "files": ["frontend/src/widgets/AtomicBlocks/ParagraphBlock/index.tsx"]
+    },
+    "single_image": {
+      "type": "single_image",
+      "name": "Изображение",
+      "category": "Медиа",
+      "hasSlots": false,
+      "isContainer": false,
+      "allowedChildren": [],
+      "allowedSlots": [],
+      "description": "Одиночное изображение с альтернативным текстом",
+      "schemaValidation": true,
+      "files": ["frontend/src/widgets/AtomicBlocks/ImageBlock/index.tsx"]
+    },
+    "single_button": {
+      "type": "single_button",
+      "name": "Кнопка",
+      "category": "UI",
+      "hasSlots": false,
+      "isContainer": false,
+      "allowedChildren": [],
+      "allowedSlots": [],
+      "description": "Одиночная кнопка с настраиваемым стилем и ссылкой",
+      "schemaValidation": true,
+      "files": ["frontend/src/widgets/AtomicBlocks/ButtonBlock/index.tsx"]
+    },
+    "spacer": {
+      "type": "spacer",
+      "name": "Отступ",
+      "category": "Лэйаут",
+      "hasSlots": false,
+      "isContainer": false,
+      "allowedChildren": [],
+      "allowedSlots": [],
+      "description": "Вертикальный отступ для создания пространства между блоками",
+      "schemaValidation": true,
+      "files": ["frontend/src/widgets/AtomicBlocks/SpacerBlock/index.tsx"]
+    }
+  },
+  "categories": {
+    "Навигация": {
+      "description": "Компоненты навигации и структуры сайта",
+      "blocks": ["header"]
+    },
+    "Секции": {
+      "description": "Контейнерные секции для группировки контента",
+      "blocks": ["categories_section", "container_section"]
+    },
+    "UI": {
+      "description": "Пользовательские интерфейсные компоненты",
+      "blocks": ["controls_section", "button_group", "single_button"]
+    },
+    "Контент": {
+      "description": "Базовые компоненты контента",
+      "blocks": ["changelog_section", "heading", "paragraph"]
+    },
+    "Медиа": {
+      "description": "Медиа-компоненты",
+      "blocks": ["single_image"]
+    },
+    "Данные": {
+      "description": "Компоненты для отображения данных",
+      "blocks": ["properties_section", "animations_section"]
+    },
+    "Лэйаут": {
+      "description": "Компоненты для управления layout",
+      "blocks": ["spacer"]
+    }
+  },
+  "container_blocks": ["container_section"],
+  "atomic_blocks": [
+    "header",
+    "categories_section",
+    "controls_section",
+    "button_group",
+    "properties_section",
+    "animations_section",
+    "changelog_section",
+    "heading",
+    "paragraph",
+    "single_image",
+    "single_button",
+    "spacer"
+  ],
+  "issues": {
+    "no_delete_button": {
+      "description": "В UI редактора отсутствует кнопка удаления блоков",
+      "impact": "Пользователи не могут удалять блоки",
+      "severity": "high",
+      "files": ["frontend/src/widgets/ContextualInspector/index.tsx"]
+    },
+    "no_page_selector": {
+      "description": "В редакторе нет селектора для выбора страницы",
+      "impact": "Невозможно редактировать не-первую страницу",
+      "severity": "high",
+      "files": ["frontend/src/widgets/EditorToolbar/index.tsx"]
+    },
+    "missing_depth_visualization": {
+      "description": "Отсутствует визуализация глубины вложенности блоков",
+      "impact": "Пользователи не понимают иерархию блоков",
+      "severity": "medium",
+      "files": ["frontend/src/widgets/BlockRenderer/ui/BlockRenderer.tsx"]
+    }
+  }
+}

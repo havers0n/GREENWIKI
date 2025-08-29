@@ -1,0 +1,182 @@
+{
+  "revision": {
+    "id": "revision-uuid-123",
+    "page_identifier": "home",
+    "created_at": "2025-08-28T10:30:00Z",
+    "created_by": "user-uuid-456",
+    "snapshot": [
+      {
+        "id": "header-block-1",
+        "block_type": "header",
+        "content": {},
+        "position": 1,
+        "status": "published",
+        "parent_block_id": null,
+        "slot": null
+      },
+      {
+        "id": "container-block-1",
+        "block_type": "container_section",
+        "content": {
+          "title": "Основные разделы",
+          "layout": "two"
+        },
+        "position": 2,
+        "status": "published",
+        "parent_block_id": null,
+        "slot": null
+      },
+      {
+        "id": "heading-block-1",
+        "block_type": "heading",
+        "content": {
+          "text": "Добро пожаловать на наш форум",
+          "level": 1,
+          "align": "center"
+        },
+        "position": 1,
+        "status": "published",
+        "parent_block_id": "container-block-1",
+        "slot": "column1"
+      },
+      {
+        "id": "paragraph-block-1",
+        "block_type": "paragraph",
+        "content": {
+          "text": "Здесь вы найдете интересные обсуждения и сможете пообщаться с единомышленниками."
+        },
+        "position": 2,
+        "status": "published",
+        "parent_block_id": "container-block-1",
+        "slot": "column1"
+      },
+      {
+        "id": "categories-section-block-1",
+        "block_type": "categories_section",
+        "content": {
+          "title": "Разделы форума",
+          "description": "Выберите интересующий вас раздел"
+        },
+        "position": 1,
+        "status": "published",
+        "parent_block_id": "container-block-1",
+        "slot": "column2"
+      }
+    ]
+  },
+  "expected_restore_result": {
+    "blocks_created": 5,
+    "tree_structure_preserved": true,
+    "relationships_restored": [
+      {
+        "child_id": "heading-block-1",
+        "parent_id": "container-block-1",
+        "slot": "column1"
+      },
+      {
+        "child_id": "paragraph-block-1",
+        "parent_id": "container-block-1",
+        "slot": "column1"
+      },
+      {
+        "child_id": "categories-section-block-1",
+        "parent_id": "container-block-1",
+        "slot": "column2"
+      }
+    ]
+  },
+  "broken_revision_example": {
+    "id": "broken-revision-uuid-789",
+    "page_identifier": "home",
+    "created_at": "2025-08-28T09:15:00Z",
+    "snapshot": [
+      {
+        "block_type": "header",
+        "content": {},
+        "position": 1,
+        "status": "published"
+      },
+      {
+        "block_type": "container_section",
+        "content": {
+          "title": "Основные разделы",
+          "layout": "two"
+        },
+        "position": 2,
+        "status": "published"
+      },
+      {
+        "block_type": "heading",
+        "content": {
+          "text": "Добро пожаловать на наш форум",
+          "level": 1,
+          "align": "center"
+        },
+        "position": 1,
+        "status": "published"
+      },
+      {
+        "block_type": "paragraph",
+        "content": {
+          "text": "Здесь вы найдете интересные обсуждения и сможете пообщаться с единомышленниками."
+        },
+        "position": 2,
+        "status": "published"
+      }
+    ]
+  },
+  "broken_restore_problems": [
+    "Все блоки станут корневыми (потеряют parent_block_id)",
+    "Пропадут слоты (потеряют slot)",
+    "Структура контейнер→содержимое будет разрушена",
+    "Невозможно будет понять, какие блоки были вложенными",
+    "Придется вручную восстанавливать иерархию"
+  ],
+  "test_scenarios": {
+    "complete_restore": {
+      "description": "Полное восстановление структуры из корректной ревизии",
+      "input": "revision.snapshot",
+      "expected": "expected_restore_result"
+    },
+    "partial_restore": {
+      "description": "Восстановление из неполной ревизии (текущая проблема)",
+      "input": "broken_revision_example.snapshot",
+      "expected_problems": "broken_restore_problems"
+    },
+    "nested_container_restore": {
+      "description": "Восстановление контейнера с глубоким уровнем вложенности",
+      "input": {
+        "snapshot": [
+          {
+            "id": "outer-container",
+            "block_type": "container_section",
+            "content": { "title": "Внешний контейнер" },
+            "position": 1,
+            "status": "published",
+            "parent_block_id": null,
+            "slot": null
+          },
+          {
+            "id": "inner-container",
+            "block_type": "container_section",
+            "content": { "title": "Внутренний контейнер" },
+            "position": 1,
+            "status": "published",
+            "parent_block_id": "outer-container",
+            "slot": "column1"
+          },
+          {
+            "id": "deep-heading",
+            "block_type": "heading",
+            "content": { "text": "Глубоко вложенный заголовок" },
+            "position": 1,
+            "status": "published",
+            "parent_block_id": "inner-container",
+            "slot": "column1"
+          }
+        ]
+      },
+      "expected_depth": 2
+    }
+  }
+}

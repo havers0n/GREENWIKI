@@ -5,16 +5,21 @@ export interface ModalProps {
   children: React.ReactNode;
   onClose: () => void;
   className?: string;
+  isOpen?: boolean;
 }
 
-export const Modal: React.FC<ModalProps> = ({ title, children, onClose, className = '' }) => {
+export const Modal: React.FC<ModalProps> = ({ title, children, onClose, className = '', isOpen = true }) => {
   useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
+    if (isOpen) {
+      const onKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') onClose();
+      };
+      document.addEventListener('keydown', onKeyDown);
+      return () => document.removeEventListener('keydown', onKeyDown);
+    }
+  }, [onClose, isOpen]);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50">
