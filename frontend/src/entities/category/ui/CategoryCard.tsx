@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Icon, Typography } from 'shared/ui/atoms';
+import { Card, Icon, Typography } from '@my-forum/ui';
 
 interface CategoryCardProps {
   icon: string;

@@ -1,14 +1,17 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import type { Database, TablesInsert } from '@my-forum/db-types';
-import { Card, Spinner } from '../../shared/ui/atoms';
+import { Card, Spinner } from '@my-forum/ui';
 import BlockRenderer from '../BlockRenderer';
+import { VirtualizedCanvas } from '../VirtualizedCanvas';
 import EditorToolbar from '../EditorToolbar';
-import { ContextualInspector } from '../ContextualInspector/indexNew';
+import { UnifiedSidebar, type SidebarView } from '../UnifiedSidebar';
 import { fetchAdminLayoutByPage, createLayoutBlock, updateLayoutBlock, deleteLayoutBlock, updateLayoutPositions, fetchLayoutRevisions, createLayoutRevision, revertToLayoutRevision } from '../../shared/api/layout';
 import { blockRegistry } from '../../shared/config/blockRegistry';
-import { DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, useDroppable, DragOverlay, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
+import { DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, useDroppable, DragOverlay, type DragEndEvent, type DragStartEvent, pointerWithin, closestCenter } from '@dnd-kit/core';
+import { rectSortingStrategy } from '@dnd-kit/sortable';
 import { useParams } from 'react-router-dom';
 import { fetchAdminPages } from '../../shared/api/pages';
+import OnboardingTutorial from '../OnboardingTutorial';
 
 // Redux imports
 import { useAppDispatch, useAppSelector } from 'store/hooks';
@@ -43,13 +46,36 @@ interface LiveEditorProps {
   pageSlug: string;
 }
 
+/**
+ * Вспомогательная функция для безопасного чтения истории из localStorage
+ */
+const getInitialHistory = (key: string): BlockNode[][] => {
+  try {
+    const savedHistory = window.localStorage.getItem(key);
+    // Если история есть, парсим ее, иначе возвращаем пустой массив
+    return savedHistory ? JSON.parse(savedHistory) : [];
+  } catch (error) {
+    console.error(`Failed to parse history from localStorage for key: ${key}`, error);
+    // В случае ошибки парсинга, возвращаем пустой массив для безопасности
+    return [];
+  }
+};
+
 const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
   // Основная логика компонента
   const { pageSlug: urlPageSlug } = useParams<{ pageSlug: string }>();
   const dispatch = useAppDispatch();
 
   // Получаем состояние из Redux
-  const blockTree = useAppSelector(state => state.content.blockTree);
+  const blockTree = useAppSelector(state => {
+    console.log('🔄 NewLiveEditor: blockTree from Redux:', state.content.blockTree.map(b => ({
+      id: b.id,
+      parent: b.parent_block_id,
+      position: b.position,
+      children: b.children?.length || 0
+    })));
+    return state.content.blockTree;
+  });
 
   // Локальное состояние для загрузки и ошибок
   const [loading, setLoading] = useState<boolean>(false);
@@ -67,15 +93,27 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
 
   // Локальное состояние для UI
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [selectedBlockIds, setSelectedBlockIds] = useState<string[]>([]);
+  const [isShiftPressed, setIsShiftPressed] = useState<boolean>(false);
   const [adding, setAdding] = useState<boolean>(false);
   const [activeBlock, setActiveBlock] = useState<BlockNode | null>(null);
-  
+
+  // Состояние для UnifiedSidebar
+  const [sidebarActiveView, setSidebarActiveView] = useState<SidebarView>('PAGE_SETTINGS');
+
   // Confirm-сценарий
   const [isDirty, setIsDirty] = useState<boolean>(false);
   const [changed, setChanged] = useState<Record<string, LayoutBlock>>({});
   const [saving, setSaving] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState<boolean>(false);
+
+  // Onboarding tutorial
+  const [showTutorial, setShowTutorial] = useState<boolean>(() => {
+    // Показываем туториал только при первом запуске
+    const hasSeenTutorial = localStorage.getItem('hasSeenTutorial');
+    return !hasSeenTutorial;
+  });
   
   // Templates - temporarily disabled
   // const [templates, setTemplates] = useState<PageTemplate[]>([]);
@@ -91,15 +129,130 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
   const [pages, setPages] = useState<PageRow[]>([]);
   const [pagesLoading, setPagesLoading] = useState<boolean>(false);
 
-  // DnD sensors
+  // Undo/Redo history stacks for blockTree snapshots
+  const [historyPast, setHistoryPast] = useState<BlockNode[][]>(() => getInitialHistory('editorHistoryPast'));
+  const [historyFuture, setHistoryFuture] = useState<BlockNode[][]>(() => getInitialHistory('editorHistoryFuture'));
+  const HISTORY_LIMIT = 50;
+
+  const deepCloneTree = (tree: BlockNode[]): BlockNode[] => JSON.parse(JSON.stringify(tree)) as BlockNode[];
+
+  // Tutorial handlers
+  const handleTutorialComplete = () => {
+    setShowTutorial(false);
+    localStorage.setItem('hasSeenTutorial', 'true');
+  };
+
+  const handleTutorialSkip = () => {
+    setShowTutorial(false);
+    localStorage.setItem('hasSeenTutorial', 'true');
+  };
+  const pushHistoryBeforeChange = () => {
+    setHistoryPast(prev => {
+      const next = [...prev, deepCloneTree(blockTree)];
+      // Ограничиваем историю последними HISTORY_LIMIT состояниями
+      return next.length > HISTORY_LIMIT ? next.slice(next.length - HISTORY_LIMIT) : next;
+    });
+    // сбрасываем redo после нового действия
+    setHistoryFuture([]);
+  };
+
+  const handleUndo = () => {
+    if (historyPast.length === 0) return;
+    const prev = historyPast[historyPast.length - 1];
+    const rest = historyPast.slice(0, -1);
+    // Текущую версию отправляем в будущее для возможного redo (также ограничиваем объем)
+    setHistoryPast(rest);
+    setHistoryFuture(f => {
+      const nf = [deepCloneTree(blockTree), ...f];
+      return nf.length > HISTORY_LIMIT ? nf.slice(0, HISTORY_LIMIT) : nf;
+    });
+    dispatch(setLayoutFromApi({ pageId: 1, blocks: deepCloneTree(prev) }));
+    setIsDirty(true);
+  };
+
+  const handleRedo = () => {
+    if (historyFuture.length === 0) return;
+    const [next, ...rest] = historyFuture;
+    setHistoryFuture(rest);
+    setHistoryPast(p => {
+      const np = [...p, deepCloneTree(blockTree)];
+      return np.length > HISTORY_LIMIT ? np.slice(np.length - HISTORY_LIMIT) : np;
+    });
+    dispatch(setLayoutFromApi({ pageId: 1, blocks: deepCloneTree(next) }));
+    setIsDirty(true);
+  };
+
+  // Сохранение истории в localStorage при каждом изменении
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('editorHistoryPast', JSON.stringify(historyPast));
+      window.localStorage.setItem('editorHistoryFuture', JSON.stringify(historyFuture));
+    } catch (error) {
+      console.error('Failed to save history to localStorage:', error);
+    }
+  }, [historyPast, historyFuture]);
+
+  // DnD sensors с поддержкой виртуализации
   const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor)
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Минимальное расстояние для активации drag
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: (event, args) => {
+        // Для клавиатурной навигации в виртуализированном списке
+        const { currentCoordinates } = args;
+        return {
+          x: currentCoordinates.x,
+          y: currentCoordinates.y,
+        };
+      },
+    })
   );
+
+  // Трекинг состояния Shift и горячие клавиши для Undo/Redo
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') setIsShiftPressed(true);
+
+      // Undo: Ctrl+Z или Cmd+Z
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      }
+
+      // Redo: Ctrl+Y или Ctrl+Shift+Z или Cmd+Y или Cmd+Shift+Z
+      if ((e.ctrlKey || e.metaKey) &&
+          ((e.key === 'y') || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+
+    const up = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') setIsShiftPressed(false);
+    };
+
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+
+    return () => {
+      window.removeEventListener('keydown', down);
+      window.removeEventListener('keyup', up);
+    };
+  }, [handleUndo, handleRedo]);
 
   // Load blocks using Redux
   useEffect(() => {
     let isMounted = true;
+    // Сброс истории и локальных измененных данных при смене страницы
+    setHistoryPast([]);
+    setHistoryFuture([]);
+    setChanged({});
+    setIsDirty(false);
+    setSelectedBlockId(null);
+
     const load = async () => {
       try {
         // Загружаем данные с API
@@ -293,25 +446,69 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
   );
 
   const handleSelectBlock = (id: string | null) => {
-    console.log('🎯 SELECT: Block selected, ID:', id);
-    setSelectedBlockId(id);
+    console.log('🎯 SELECT: Block selected, ID:', id, 'shift:', isShiftPressed);
+    if (!id) {
+      setSelectedBlockId(null);
+      setSelectedBlockIds([]);
+      return;
+    }
+    if (isShiftPressed) {
+      // Toggle поведение для Shift+клик
+      setSelectedBlockIds(prev => {
+        const exists = prev.includes(id);
+        const next = exists ? prev.filter(x => x !== id) : [...prev, id];
+        // Выставляем single-selected для инспектора, если остался один
+        setSelectedBlockId(next.length === 1 ? next[0] : null);
+        return next;
+      });
+    } else {
+      setSelectedBlockIds([id]);
+      setSelectedBlockId(id);
+    }
   };
 
-  // Обработчик клавиш для перемещения блоков
+  // Обработчик клавиш для перемещения блоков и глобальных горячих клавиш
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!selectedBlockId) return;
-
       // Только если фокус не в поле ввода
       const activeElement = document.activeElement;
       const isInputFocused = activeElement instanceof HTMLInputElement ||
                            activeElement instanceof HTMLTextAreaElement ||
                            activeElement instanceof HTMLSelectElement ||
                            (activeElement as HTMLElement)?.contentEditable === 'true';
-
       if (isInputFocused) return;
 
-      // Обработка стрелок
+      // Ctrl/Cmd + S — сохранить
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        void handleSave();
+        return;
+      }
+
+      // Ctrl/Cmd + Z — undo
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+        return;
+      }
+
+      // Ctrl/Cmd + Shift + Z или Ctrl/Cmd + Y — redo
+      if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        handleRedo();
+        return;
+      }
+
+      // Delete — удалить выделенные блоки
+      if (e.key === 'Delete' && selectedBlockIds.length > 0) {
+        e.preventDefault();
+        const confirmed = window.confirm(`Удалить выбранные блоки (${selectedBlockIds.length} шт.)? Действие необратимо.`);
+        if (confirmed) void handleDeleteSelected();
+        return;
+      }
+
+      // Обработка стрелок (позиционирование)
+      if (!selectedBlockId) return;
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
         moveBlockLeft(selectedBlockId);
@@ -323,24 +520,10 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedBlockId]);
+  }, [selectedBlockId, selectedBlockIds, blockTree]);
 
   const handleBlockChange = (updatedBlock: LayoutBlock) => {
-    // Преобразуем LayoutBlock в BlockNode для Redux
-    const blockNode: BlockNode = {
-      id: updatedBlock.id,
-      block_type: updatedBlock.block_type,
-      content: (updatedBlock.content as Record<string, any>) || null,
-      depth: 0, // TODO: рассчитать глубину
-      instance_id: updatedBlock.instance_id,
-      metadata: (updatedBlock.metadata as Record<string, any>) || {},
-      page_id: updatedBlock.page_id,
-      position: updatedBlock.position,
-      slot: updatedBlock.slot,
-      status: updatedBlock.status,
-      children: [] // TODO: сохранить дочерние элементы
-    };
-
+    // Обновляем блок в Redux store
     dispatch(updateBlockInTree({
       blockId: updatedBlock.id,
       updates: {
@@ -379,22 +562,43 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
       setAdding(true);
       console.log('🏗️ EDITOR: Creating block...');
 
-      // Создаем блок через Redux
-      const newBlockNode: BlockNode = {
-        id: `temp-${Date.now()}`, // Временный ID, будет заменен после создания
+      // Снимок для undo
+      pushHistoryBeforeChange();
+
+      // Находим ID текущей страницы
+      const currentPage = pages.find(page => page.slug === currentPageSlug);
+      const pageId = currentPage?.id || 1; // Fallback на 1 если страница не найдена
+
+      console.log('🏗️ EDITOR: Using page ID:', pageId, 'for page slug:', currentPageSlug);
+
+      // Создаем блок в базе данных
+      const newBlockData = await createLayoutBlock({
         block_type: type,
         content: spec.defaultData ? spec.defaultData() : {},
-        depth: 0,
-        instance_id: null,
         metadata: {},
-        page_id: 1,
+        page_id: pageId,
         position: blockTree.length,
-        slot: null,
-        status: 'draft',
+        status: 'draft'
+      });
+
+      console.log('✅ EDITOR: Block created in database with ID:', newBlockData.id);
+
+      // Создаем BlockNode для Redux с реальным ID из базы данных
+      const newBlockNode: BlockNode = {
+        id: newBlockData.id, // Используем реальный ID из базы данных
+        block_type: type,
+        content: (newBlockData.content as Record<string, any>) || {},
+        depth: 0,
+        instance_id: newBlockData.instance_id,
+        metadata: (newBlockData.metadata as Record<string, any>) || {},
+        page_id: newBlockData.page_id,
+        position: newBlockData.position,
+        slot: newBlockData.slot,
+        status: newBlockData.status,
         children: []
       };
 
-      // Добавляем в Redux дерево
+      // Добавляем в Redux дерево с реальным ID
       dispatch(addBlockToTree({
         block: newBlockNode,
         parentId: null,
@@ -402,19 +606,70 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
       }));
 
       setSelectedBlockId(newBlockNode.id);
-      console.log('✅ EDITOR: Block added to Redux tree');
+      console.log('✅ EDITOR: Block added to Redux tree with persistent ID');
     } catch (e) {
       console.error('❌ EDITOR: Failed to create block:', e);
+      // Откатываем снимок в случае ошибки
+      if (historyPast.length > 0) {
+        const prev = historyPast[historyPast.length - 1];
+        dispatch(setLayoutFromApi({ pageId: 1, blocks: deepCloneTree(prev) }));
+      }
     } finally {
       setAdding(false);
     }
   };
 
   const handleSave = async () => {
-    // Для Redux версии сохранение нужно реализовать через API вызовы для всего дерева
-    console.log('Save functionality needs to be implemented for Redux tree structure');
-    setIsDirty(false);
-    setChanged({});
+    try {
+      setSaving(true);
+      setSaveError(null);
+
+      // 1) Обновляем позиции блоков для всех узлов дерева
+      const positionUpdates: Array<{ id: string; position: number }> = [];
+      const collectPositions = (nodes: BlockNode[]) => {
+        nodes.forEach((node, index) => {
+          // позиция считаем 1-базной для согласованности с API
+          positionUpdates.push({ id: node.id, position: index + 1 });
+          if (node.children && node.children.length > 0) {
+            collectPositions(node.children);
+          }
+        });
+      };
+      // Собираем позиции постранично (по каждому корневому списку — это разные уровни, но API ожидает просто id+position)
+      blockTree.forEach((root, rootIndex) => {
+        positionUpdates.push({ id: root.id, position: rootIndex + 1 });
+        if (root.children && root.children.length > 0) collectPositions(root.children);
+      });
+
+      if (positionUpdates.length > 0) {
+        await updateLayoutPositions(positionUpdates);
+      }
+
+      // 2) Обновляем измененные блоки (контент/метаданные/статус)
+      const changedBlocks = Object.values(changed);
+      if (changedBlocks.length > 0) {
+        await Promise.all(
+          changedBlocks.map((blk) =>
+            updateLayoutBlock(blk.id, {
+              // сохраняем только валидируемые поля
+              content: blk.content as any,
+              metadata: blk.metadata as any,
+              status: blk.status as any,
+              slot: blk.slot as any,
+            })
+          )
+        );
+      }
+
+      setIsDirty(false);
+      setChanged({});
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Не удалось сохранить изменения';
+      setSaveError(message);
+      console.error('SAVE ERROR:', e);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = async () => {
@@ -445,6 +700,7 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
       }));
 
       setSelectedBlockId(null);
+      setSelectedBlockIds([]);
       setChanged({});
       setIsDirty(false);
     } catch (e: unknown) {
@@ -511,6 +767,9 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
 
     try {
       setPublishing(true);
+      // Снимок для undo
+      pushHistoryBeforeChange();
+
       // Обновляем через Redux
       dispatch(updateBlockInTree({
         blockId,
@@ -528,40 +787,101 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
 
   const handleDeleteBlock = async (blockId: string) => {
     try {
-      // Удаляем блок из базы данных
+      const ok = window.confirm('Вы уверены, что хотите удалить блок и все его дочерние элементы? Это действие необратимо.');
+      if (!ok) return;
+      pushHistoryBeforeChange();
       await deleteLayoutBlock(blockId);
-
-      // Удаляем из Redux дерева
       dispatch(removeBlockFromTree(blockId));
-
-      // Если удаленный блок был выбран, очищаем выбор
       if (selectedBlockId === blockId) {
         setSelectedBlockId(null);
       }
-
-      // Удаляем блок из списка измененных, если он там был
+      setSelectedBlockIds(prev => prev.filter(id => id !== blockId));
       setChanged((prevChanged) => {
         const updated = { ...prevChanged };
         delete updated[blockId];
         return updated;
       });
+      setIsDirty(true);
     } catch (error) {
       console.error('Не удалось удалить блок:', error);
     }
   };
 
+  const handleDeleteSelected = async () => {
+    if (selectedBlockIds.length === 0) return;
+    try {
+      pushHistoryBeforeChange();
+      // Удаляем последовательно, чтобы не перегрузить API
+      for (const id of selectedBlockIds) {
+        try {
+          await deleteLayoutBlock(id);
+        } catch (e) {
+          console.warn('Не удалось удалить блок:', id, e);
+        }
+        dispatch(removeBlockFromTree(id));
+        setChanged(prev => {
+          const copy = { ...prev } as Record<string, LayoutBlock>;
+          delete copy[id];
+          return copy;
+        });
+      }
+      setSelectedBlockIds([]);
+      setSelectedBlockId(null);
+      setIsDirty(true);
+    } catch (e) {
+      console.error('Массовое удаление не удалось:', e);
+    }
+  };
 
+  const handleGroupSelectedIntoContainer = async () => {
+    if (selectedBlockIds.length < 2) return;
+    try {
+      pushHistoryBeforeChange();
+      // Создаем контейнер в корне
+      const payload: TablesInsert<'layout_blocks'> = {
+        block_type: 'container_section',
+        content: { layout: 'vertical', gap: 'medium', padding: 'medium' } as any,
+        metadata: {},
+        page_id: 1,
+        position: blockTree.length + 1,
+        parent_block_id: null,
+        slot: null,
+        status: 'draft'
+      };
+      const container = await createLayoutBlock(payload);
+
+      // Перемещаем выделенные блоки внутрь контейнера
+      let pos = 1;
+      for (const id of selectedBlockIds) {
+        dispatch(moveBlockInTree({ blockId: id, newParentId: container.id, newPosition: pos - 1 }));
+        // Синхронизация с сервером
+        try {
+          await updateLayoutBlock(id, { parent_block_id: container.id, position: pos } as any);
+        } catch (e) {
+          console.warn('Не удалось синхронизировать перемещение блока:', id, e);
+        }
+        pos += 1;
+      }
+
+      // Выбираем новый контейнер
+      setSelectedBlockIds([container.id]);
+      setSelectedBlockId(container.id);
+      setIsDirty(true);
+    } catch (e) {
+      console.error('Не удалось сгруппировать блоки в контейнер:', e);
+    }
+  };
 
   // Обработчик клика вне блоков для закрытия инспектора
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
     console.log('NewLiveEditor: Canvas clicked');
-    // Проверяем, что клик был именно по канвасу, а не по блоку
     const target = e.target as HTMLElement;
     const blockElement = target.closest('[data-block-id]');
     console.log('NewLiveEditor: Canvas click target:', target, 'blockElement:', blockElement);
     if (!blockElement) {
-      console.log('NewLiveEditor: Deselecting block');
+      console.log('NewLiveEditor: Deselecting blocks');
       setSelectedBlockId(null);
+      setSelectedBlockIds([]);
     }
   };
 
@@ -569,174 +889,299 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
     const { active, over } = event;
 
     if (!over) {
-      const activeId = String(active.id ?? '');
-      if (activeId.startsWith('block-type:')) {
-        const type = activeId.substring('block-type:'.length);
-        console.log('🎯 DnD: No drop target (modal open). Fallback: create at root');
-        await handleAddBlockOfType(type);
-      } else if (activeId.startsWith('reusable-')) {
-        // Переиспользуемый блок без цели - создаем в корне
-        const reusableBlockId = activeId.substring('reusable-'.length);
-        console.log('🔄 REUSABLE: No drop target, creating at root:', reusableBlockId);
-
-        try {
-          const newInstanceTree = await dispatch(instantiateReusableBlock({
-            reusableBlockId,
-            pageId: currentPageSlug, // используем slug как идентификатор страницы
-            parentId: null,
-            position: blockTree.length,
-            slot: null,
-          })).unwrap();
-
-          if (newInstanceTree) {
-            dispatch(addBlockToTree(newInstanceTree));
-            console.log('✅ REUSABLE: Block instantiated successfully at root');
-          }
-        } catch (error) {
-          console.error('❌ REUSABLE: Failed to instantiate block at root:', error);
-        }
-      } else {
-        console.log('❌ DnD: No drop target for existing block');
-      }
+      console.log('❌ DnD: No drop target');
       return;
     }
 
     const activeId = String(active.id ?? '');
     const overId = String(over.id ?? '');
 
-    // Обработка дропа в наши новые DropZone
-    if (overId.startsWith('dropzone-')) {
-      const dropZoneMatch = overId.match(/^dropzone-(.+)-(\d+)-(.+)$/);
-      if (!dropZoneMatch) {
-        console.log('❌ DnD: Invalid dropzone format:', overId);
-        return;
-      }
+    console.log('🎯 DnD: Drag end event:', { activeId, overId });
 
-      const [, parentIdRaw, positionStr, slotName] = dropZoneMatch;
-      const parentId = parentIdRaw === 'root' ? null : parentIdRaw;
-      const position = Number(positionStr);
-
-      // Создание нового блока из библиотеки в DropZone
-      if (activeId.startsWith('block-type:')) {
-        const type = activeId.substring('block-type:'.length);
-        console.log('🎯 DnD: Creating new block from library in dropzone:', { type, parentId, position });
-
-        try {
-          setAdding(true);
-
-          // Создаем новый блок
-          const nextPosition = position + 1;
-          const payload: TablesInsert<'layout_blocks'> = {
-            block_type: type,
-            content: {},
-            metadata: {},
-            page_id: 1, // TODO: получить реальный pageId
-            position: nextPosition,
-            parent_block_id: parentId,
-            slot: slotName,
-            status: 'published'
-          };
-
-          const created = await createLayoutBlock(payload);
-
-          // Добавляем в Redux дерево
-          const newBlockNode: BlockNode = {
-            id: created.id,
-            block_type: created.block_type,
-            content: (created.content as Record<string, any>) || null,
-            depth: 0,
-            instance_id: created.instance_id,
-            metadata: (created.metadata as Record<string, any>) || {},
-            page_id: created.page_id,
-            position: created.position,
-            slot: created.slot,
-            status: created.status,
-            children: []
-          };
-
-          dispatch(addBlockToTree({
-            block: newBlockNode,
-            parentId,
-            position
-          }));
-
-          setSelectedBlockId(created.id);
-        } catch (error) {
-          console.error('Failed to create block:', error);
-        } finally {
-          setAdding(false);
-        }
-        return;
-      }
-
-      // Создание экземпляра переиспользуемого блока в DropZone
-      if (activeId.startsWith('reusable-')) {
-        const reusableBlockId = activeId.substring('reusable-'.length);
-        console.log('🔄 REUSABLE: Creating instance from library in dropzone:', {
-          reusableBlockId,
-          parentId,
-          position,
-          slotName
-        });
-
-        try {
-          const newInstanceTree = await dispatch(instantiateReusableBlock({
-            reusableBlockId,
-            pageId: currentPageSlug, // используем slug как идентификатор страницы
-            parentId,
-            position: position + 1, // API ожидает следующую позицию
-            slot: slotName,
-          })).unwrap();
-
-          if (newInstanceTree) {
-            dispatch(addBlockToTree(newInstanceTree));
-            console.log('✅ REUSABLE: Block instantiated successfully in dropzone');
-
-            // Выбираем первый блок из созданного дерева
-            if (newInstanceTree.children && newInstanceTree.children.length > 0) {
-              setSelectedBlockId(newInstanceTree.children[0].id);
-            } else {
-              setSelectedBlockId(newInstanceTree.id);
-            }
-          }
-        } catch (error) {
-          console.error('❌ REUSABLE: Failed to instantiate block in dropzone:', error);
-        }
-        return;
-      }
-
-      // Перемещение существующего блока
-      if (activeId.startsWith('canvas-block:')) {
-        const blockId = activeId.substring('canvas-block:'.length);
-        console.log('🎯 DnD: Moving existing block to dropzone:', { blockId, parentId, position });
-
-        // Используем Redux экшен для перемещения блока
-        dispatch(moveBlockInTree({
-          blockId,
-          newParentId: parentId,
-          newPosition: position
-        }));
-
-        // TODO: Синхронизировать с сервером
-        // await updateLayoutBlock(blockId, {
-        //   parent_block_id: parentId,
-        //   position: position + 1,
-        //   slot: slotName
-        // });
-
-        return;
-      }
-    }
-
-    // Обработка старых форматов дропа (для обратной совместимости)
-    if (overId === 'canvas-dropzone' && activeId.startsWith('block-type:')) {
-      const type = activeId.substring('block-type:'.length);
-      console.log('🎯 DnD: Fallback to canvas dropzone');
-      await handleAddBlockOfType(type);
+    // === СЛУЧАЙ 1: Перетаскивание нового блока из библиотеки ===
+    if (activeId.startsWith('block-type:')) {
+      await handleNewBlockDrop(activeId, overId);
       return;
     }
 
-    console.log('❌ DnD: Unhandled drop case:', { activeId, overId });
+    // === СЛУЧАЙ 2: Перетаскивание переиспользуемого блока ===
+    if (activeId.startsWith('reusable-')) {
+      await handleReusableBlockDrop(activeId, overId);
+      return;
+    }
+
+    // === СЛУЧАЙ 3: Перемещение существующего блока ===
+    if (activeId.startsWith('canvas-block:')) {
+      await handleExistingBlockMove(activeId, overId);
+      return;
+    }
+
+    console.log('❌ DnD: Unknown drag source:', activeId);
+  };
+
+  // Обработка дропа нового блока из библиотеки
+  const handleNewBlockDrop = async (activeId: string, overId: string) => {
+    const blockType = activeId.substring('block-type:'.length);
+    console.log('🆕 DnD: Creating new block from library:', blockType);
+
+    if (overId.startsWith('dropzone-')) {
+      await handleNewBlockInDropZone(blockType, overId);
+    } else {
+      // Создание в корне, если нет цели
+      await handleAddBlockOfType(blockType);
+    }
+  };
+
+  // Обработка дропа переиспользуемого блока
+  const handleReusableBlockDrop = async (activeId: string, overId: string) => {
+    const reusableBlockId = activeId.substring('reusable-'.length);
+    console.log('🔄 REUSABLE: Dropping reusable block:', reusableBlockId);
+
+    if (overId.startsWith('dropzone-')) {
+      await handleReusableBlockInDropZone(reusableBlockId, overId);
+    } else {
+      // Создание в корне
+      await handleReusableBlockAtRoot(reusableBlockId);
+    }
+  };
+
+  // Обработка перемещения существующего блока
+  const handleExistingBlockMove = async (activeId: string, overId: string) => {
+    const blockId = activeId.substring('canvas-block:'.length);
+    console.log('📦 DnD: Moving existing block:', blockId);
+
+    if (overId.startsWith('dropzone-')) {
+      await handleExistingBlockToDropZone(blockId, overId);
+    } else if (overId.startsWith('canvas-block:')) {
+      await handleExistingBlockToBlock(blockId, overId);
+    } else if (overId === 'canvas-dropzone') {
+      await handleExistingBlockToCanvas(blockId);
+    }
+  };
+
+  // Создание нового блока в DropZone
+  const handleNewBlockInDropZone = async (blockType: string, overId: string) => {
+    const dropZoneMatch = overId.match(/^dropzone-(.+)-(\d+)-(.+)$/);
+    if (!dropZoneMatch) {
+      console.log('❌ DnD: Invalid dropzone format:', overId);
+      return;
+    }
+
+    const [, parentIdRaw, positionStr, slotName] = dropZoneMatch;
+    const parentId = parentIdRaw === 'root' ? undefined : parentIdRaw;
+    const position = Number(positionStr);
+
+    console.log('🎯 DnD: Creating new block in dropzone:', { blockType, parentId, position, slotName });
+
+    try {
+      setAdding(true);
+
+      // Снимок для undo
+      pushHistoryBeforeChange();
+
+      // Создаем новый блок
+      const payload: TablesInsert<'layout_blocks'> = {
+        block_type: blockType,
+        content: {},
+        metadata: {},
+        page_id: 1, // TODO: получить реальный pageId
+        position: position + 1,
+        parent_block_id: parentId,
+        slot: slotName,
+        status: 'published'
+      };
+
+      const created = await createLayoutBlock(payload);
+
+      // Добавляем в Redux дерево
+      const newBlockNode: BlockNode = {
+        id: created.id,
+        block_type: created.block_type,
+        content: (created.content as Record<string, any>) || null,
+        depth: 0,
+        instance_id: created.instance_id,
+        metadata: (created.metadata as Record<string, any>) || {},
+        page_id: created.page_id,
+        position: created.position,
+        slot: created.slot,
+        status: created.status,
+        children: []
+      };
+
+      dispatch(addBlockToTree({
+        block: newBlockNode,
+        parentId: parentId || null,
+        position
+      }));
+
+      setSelectedBlockId(created.id);
+      console.log('✅ DnD: New block created successfully in dropzone');
+    } catch (error) {
+      console.error('❌ DnD: Failed to create block in dropzone:', error);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  // Создание переиспользуемого блока в DropZone
+  const handleReusableBlockInDropZone = async (reusableBlockId: string, overId: string) => {
+    const dropZoneMatch = overId.match(/^dropzone-(.+)-(\d+)-(.+)$/);
+    if (!dropZoneMatch) {
+      console.log('❌ DnD: Invalid dropzone format:', overId);
+      return;
+    }
+
+    const [, parentIdRaw, positionStr, slotName] = dropZoneMatch;
+    const parentId = parentIdRaw === 'root' ? undefined : parentIdRaw;
+    const position = Number(positionStr);
+
+    console.log('🔄 REUSABLE: Creating instance in dropzone:', { reusableBlockId, parentId, position, slotName });
+
+    try {
+      const newInstanceTree = await dispatch(instantiateReusableBlock({
+        reusableBlockId,
+        pageId: currentPageSlug,
+        parentId,
+        position: position + 1,
+        slot: slotName,
+      })).unwrap();
+
+      if (newInstanceTree) {
+        // Снимок для undo
+        pushHistoryBeforeChange();
+        dispatch(addBlockToTree(newInstanceTree));
+        console.log('✅ REUSABLE: Block instantiated successfully in dropzone');
+
+        // Выбираем первый блок из созданного дерева
+        if (newInstanceTree.children && newInstanceTree.children.length > 0) {
+          setSelectedBlockId(newInstanceTree.children[0].id);
+        } else {
+          setSelectedBlockId(newInstanceTree.id);
+        }
+      }
+    } catch (error) {
+      console.error('❌ REUSABLE: Failed to instantiate block in dropzone:', error);
+    }
+  };
+
+  // Создание переиспользуемого блока в корне
+  const handleReusableBlockAtRoot = async (reusableBlockId: string) => {
+    console.log('🔄 REUSABLE: Creating instance at root:', reusableBlockId);
+
+    try {
+      const newInstanceTree = await dispatch(instantiateReusableBlock({
+        reusableBlockId,
+        pageId: currentPageSlug,
+        parentId: undefined,
+        position: blockTree.length,
+        slot: undefined,
+      })).unwrap();
+
+      if (newInstanceTree) {
+        // Снимок для undo
+        pushHistoryBeforeChange();
+        dispatch(addBlockToTree(newInstanceTree));
+        console.log('✅ REUSABLE: Block instantiated successfully at root');
+      }
+    } catch (error) {
+      console.error('❌ REUSABLE: Failed to instantiate block at root:', error);
+    }
+  };
+
+  // Перемещение существующего блока в DropZone
+  const handleExistingBlockToDropZone = async (blockId: string, overId: string) => {
+    const dropZoneMatch = overId.match(/^dropzone-(.+)-(\d+)-(.+)$/);
+    if (!dropZoneMatch) {
+      console.log('❌ DnD: Invalid dropzone format:', overId);
+      return;
+    }
+
+    const [, parentIdRaw, positionStr, slotName] = dropZoneMatch;
+    const newParentId = parentIdRaw === 'root' ? null : parentIdRaw;
+    const newPosition = Number(positionStr);
+
+    console.log('📦 DnD: Moving existing block to dropzone:', { blockId, newParentId, newPosition, slotName });
+
+    // Снимок для undo
+    pushHistoryBeforeChange();
+
+    // Оптимистичное обновление UI
+    dispatch(moveBlockInTree({
+      blockId,
+      newParentId,
+      newPosition
+    }));
+
+    // Синхронизация с сервером
+    try {
+      console.log('📡 DnD: Updating block on server:', {
+        blockId,
+        parent_block_id: newParentId,
+        position: newPosition + 1,
+        slot: slotName
+      });
+
+      const updatedBlock = await updateLayoutBlock(blockId, {
+        parent_block_id: newParentId,
+        position: newPosition + 1,
+        slot: slotName
+      });
+
+      console.log('✅ DnD: Block moved successfully:', {
+        blockId,
+        newParentId: updatedBlock.parent_block_id,
+        newPosition: updatedBlock.position,
+        slot: updatedBlock.slot
+      });
+
+      setIsDirty(true);
+    } catch (error) {
+      console.error('❌ DnD: Failed to move block:', error);
+
+      // Откат изменений
+      const prevState = historyPast[historyPast.length - 1];
+      if (prevState) {
+        console.log('🔄 DnD: Rolling back UI changes');
+        dispatch(setLayoutFromApi({
+          pageId: 1,
+          blocks: deepCloneTree(prevState)
+        }));
+        setHistoryPast(prev => prev.slice(0, -1));
+      }
+
+      setError('Не удалось переместить блок. Изменения отменены.');
+    }
+  };
+
+  // Перемещение блока на другой блок (вложенность)
+  const handleExistingBlockToBlock = async (blockId: string, overId: string) => {
+    const targetBlockId = overId.substring('canvas-block:'.length);
+    console.log('📦 DnD: Moving block onto another block:', { blockId, targetBlockId });
+
+    // Находим target блок
+    const targetBlock = findBlockInTree(blockTree, targetBlockId);
+    if (!targetBlock) {
+      console.error('❌ DnD: Target block not found:', targetBlockId);
+      return;
+    }
+
+    // Проверяем, может ли target блок содержать дочерние блоки
+    const blockSpec = blockRegistry[targetBlock.block_type];
+    if (!blockSpec?.allowedChildren || blockSpec.allowedChildren.length === 0) {
+      console.log('❌ DnD: Target block cannot have children:', targetBlock.block_type);
+      return;
+    }
+
+    // Перемещаем блок как первого ребенка target блока
+    await handleExistingBlockToDropZone(blockId, `dropzone-${targetBlockId}-0-default`);
+  };
+
+  // Перемещение блока на канвас (в корень)
+  const handleExistingBlockToCanvas = async (blockId: string) => {
+    console.log('📦 DnD: Moving block to canvas root:', blockId);
+
+    // Перемещаем в конец корневого уровня
+    await handleExistingBlockToDropZone(blockId, `dropzone-root-${blockTree.length}-default`);
   };
 
 
@@ -747,7 +1192,12 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
 
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDndEnd} onDragStart={handleDragStart}>
+    <DndContext
+      sensors={sensors}
+      onDragEnd={handleDndEnd}
+      onDragStart={handleDragStart}
+      collisionDetection={pointerWithin}
+    >
       <div className="h-screen flex flex-col">
         {/* Верхняя панель */}
         <EditorToolbar
@@ -766,11 +1216,20 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
           onRevertRevision={handleRevertRevision}
           pages={pages}
           pagesLoading={pagesLoading}
+          onOpenBlockLibrary={() => setSidebarActiveView('BLOCK_LIBRARY')}
+          onOpenReusableLibrary={() => setSidebarActiveView('REUSABLE_LIBRARY')}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          canUndo={historyPast.length > 0}
+          canRedo={historyFuture.length > 0}
         />
 
         {/* Основная область с превью */}
         <div className="flex-1 flex overflow-hidden">
-          <main className="flex-1 overflow-y-auto pr-96">
+          <main
+            className="flex-1 overflow-y-auto pr-96"
+            data-tutorial="canvas"
+          >
             <div className="p-6" onClick={handleCanvasClick}>
               {loading ? (
                 <div className="flex justify-center items-center h-64">
@@ -793,6 +1252,28 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
                     }
                   `}
                 >
+                  {/* Панель групповых операций при множественном выделении */}
+                  {selectedBlockIds.length > 1 && (
+                    <div className="sticky top-2 z-20 mb-3 inline-flex items-center gap-2 bg-white/90 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-700 rounded-md shadow px-3 py-2">
+                      <span className="text-sm text-gray-700 dark:text-gray-200">Выбрано: {selectedBlockIds.length}</span>
+                      <button
+                        className="text-sm px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded"
+                        onClick={() => {
+                          const confirmed = window.confirm(`Удалить выбранные блоки (${selectedBlockIds.length} шт.)?`);
+                          if (confirmed) void handleDeleteSelected();
+                        }}
+                      >
+                        Удалить выбранные
+                      </button>
+                      <button
+                        className="text-sm px-2 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+                        onClick={() => void handleGroupSelectedIntoContainer()}
+                      >
+                        Сгруппировать в контейнер
+                      </button>
+                    </div>
+                  )}
+
                   {blockTree.length === 0 && !isCanvasOver ? (
                     <div className="flex items-center justify-center h-64 text-center text-gray-500 dark:text-gray-400">
                       <div>
@@ -802,7 +1283,7 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
                       </div>
                     </div>
                   ) : (
-                    <BlockRenderer
+                    <VirtualizedCanvas
                       blockTree={blockTree}
                       editorMode
                       selectedBlockId={selectedBlockId ?? undefined}
@@ -819,15 +1300,14 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
                           slot: updated.slot,
                           status: updated.status,
                           instance_id: updated.instance_id,
-                          created_at: new Date().toISOString(),
-                          updated_at: new Date().toISOString(),
-                          page_identifier: currentPageSlug,
-                          parent_block_id: null // TODO: рассчитать parent_block_id
+                          parent_block_id: null, // TODO: рассчитать parent_block_id
+                          depth: updated.depth || 0
                         };
 
                         setChanged((prev) => ({ ...prev, [updated.id]: layoutBlock }));
                         setIsDirty(true);
                       }}
+                      isCanvasOver={isCanvasOver}
                     />
                   )}
                 </div>
@@ -835,29 +1315,23 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
             </div>
           </main>
 
-          {/* Контекстный инспектор */}
-          {selectedBlockId ? (
-            <ContextualInspector
-              block={selectedBlock || null}
-              isOpen={!!selectedBlockId}
-              onClose={() => setSelectedBlockId(null)}
-              onBlockChange={handleBlockChange}
-              onPublishToggle={handlePublishToggle}
-              publishing={publishing}
-              onBlockDelete={handleDeleteBlock}
-              allBlocks={blockTree.flatMap(node => [node, ...node.children])}
-              onMoveLeft={moveBlockLeft}
-              onMoveRight={moveBlockRight}
-            />
-          ) : (
-            <div className="w-96 bg-gray-50 dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 p-6 flex items-center justify-center">
-              <div className="text-center text-gray-500 dark:text-gray-400">
-                <div className="text-3xl mb-2">👆</div>
-                <p className="text-sm">Выберите блок для редактирования</p>
-                <p className="text-xs mt-1 opacity-75">Кликните на любой блок слева</p>
-              </div>
-            </div>
-          )}
+          {/* Unified Sidebar */}
+          <UnifiedSidebar
+            selectedBlockId={selectedBlockId}
+            selectedBlock={selectedBlock || null}
+            onBlockChange={handleBlockChange}
+            onPublishToggle={handlePublishToggle}
+            publishing={publishing}
+            onBlockDelete={handleDeleteBlock}
+            allBlocks={blockTree.flatMap(node => [node, ...node.children])}
+            onMoveLeft={moveBlockLeft}
+            onMoveRight={moveBlockRight}
+            onAddBlock={handleAddBlockOfType}
+            adding={adding}
+            pageIdentifier={currentPageSlug}
+            externalActiveView={sidebarActiveView}
+            onViewChange={setSidebarActiveView}
+          />
         </div>
       </div>
 
@@ -876,6 +1350,13 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
           </div>
         ) : null}
       </DragOverlay>
+
+      {/* Onboarding Tutorial */}
+      <OnboardingTutorial
+        isVisible={showTutorial}
+        onComplete={handleTutorialComplete}
+        onSkip={handleTutorialSkip}
+      />
     </DndContext>
   );
 };

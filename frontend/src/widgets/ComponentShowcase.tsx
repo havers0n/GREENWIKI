@@ -1,10 +1,5 @@
 import React from 'react';
-import { Button, ButtonVariant } from 'shared/ui/atoms/Button';
-import { Card } from 'shared/ui/atoms/Card';
-import { Icon } from 'shared/ui/atoms/Icon';
-import { Typography } from 'shared/ui/atoms/Typography';
-import { FilterTabs } from 'shared/ui/molecules/FilterTabs';
-import { SearchInput } from 'shared/ui/molecules/SearchInput';
+import { Button, ButtonVariant, Card, Icon, Typography, FilterTabs, SearchInput, FilterButton } from '@my-forum/ui';
 import { PropertyCard } from 'entities/property';
 import { AnimationCard } from 'entities/animation';
 import { ChangelogCard, ChangeLogHeatmap } from 'entities/changelog';
@@ -12,7 +7,6 @@ import { CategoryCard } from 'entities/category';
 import type { Property, Animation, ChangelogItem, ChangeLogHeatmapData, ServerStatusInfo } from 'shared/lib/types';
 import { ChangeType, ServerStatusState } from 'shared/lib/types';
 import { ServerStatusList } from 'widgets/ServerStatusList';
-import { FilterButton } from 'shared/ui/molecules/FilterButton';
 
 const mockProperties: Property[] = [
     { id: '1', name: 'Дом #1554', price: 9500000, residents: 15, garageSpaces: 15, imageUrl: 'https://picsum.photos/seed/house1/400/300' },

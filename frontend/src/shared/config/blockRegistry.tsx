@@ -1,26 +1,17 @@
 import React from 'react';
 import { z } from 'zod';
-import { Input, Textarea, Select, Button } from 'shared/ui/atoms';
+import { Input, Textarea, Select, Button } from '@my-forum/ui';
 
 // Импорт редакторов блоков
-import { HeadingEditor, ParagraphEditor, ImageEditor, ButtonEditor, SpacerEditor, TabsEditor, AccordionEditor } from 'features/BlockEditors';
+import { HeadingEditor, ParagraphEditor, ImageEditor, ButtonEditor, SpacerEditor, TabsEditor, AccordionEditor, SectionEditor, IconEditor } from 'features/BlockEditors';
 
 // Ленивые импорты рендереров блоков
-// Header экспортируется именованно, маппируем на default для React.lazy
-const Header = React.lazy(() => import('widgets/Header').then((m) => ({ default: m.Header })));
-const CategoriesSection = React.lazy(() => import('widgets/CategoriesSection'));
-const ControlsSection = React.lazy(() => import('widgets/ControlsSection'));
-const PropertiesSection = React.lazy(() => import('widgets/PropertiesSection'));
-const AnimationsSection = React.lazy(() => import('widgets/AnimationsSection'));
-const ChangelogSection = React.lazy(() => import('widgets/ChangelogSection'));
-const ButtonGroup = React.lazy(() => import('widgets/ButtonGroup'));
 const ContainerSection = React.lazy(() => import('blocks/layout/ContainerBlock'));
 const TabsBlock = React.lazy(() => import('widgets/TabsBlock'));
 const AccordionBlock = React.lazy(() => import('widgets/AccordionBlock'));
 
 // Новые композитные блоки
 const CardSection = React.lazy(() => import('widgets/CardSection'));
-const HeroSection = React.lazy(() => import('widgets/HeroSection'));
 
 // Ленивые импорты атомарных блоков
 const LazyHeadingBlock = React.lazy(() => import('widgets/AtomicBlocks/HeadingBlock'));
@@ -28,6 +19,8 @@ const LazyParagraphBlock = React.lazy(() => import('widgets/AtomicBlocks/Paragra
 const LazyImageBlock = React.lazy(() => import('widgets/AtomicBlocks/ImageBlock'));
 const LazyButtonBlock = React.lazy(() => import('blocks/atomic/ButtonBlock'));
 const LazySpacerBlock = React.lazy(() => import('widgets/AtomicBlocks/SpacerBlock'));
+const LazySectionBlock = React.lazy(() => import('widgets/AtomicBlocks/SectionBlock'));
+const LazyIconBlock = React.lazy(() => import('widgets/AtomicBlocks/IconBlock'));
 
 export interface BlockSpec<T = unknown> {
 	/** Уникальный идентификатор, совпадает с block_type в БД */
@@ -69,143 +62,11 @@ const NoConfigEditor: React.FC<{ data: Record<string, unknown>; onChange: (d: Re
 	);
 };
 
-// CategoriesSection
-interface CategoriesSectionData { title: string; description: string }
-const CategoriesSectionSchema = z.object({
-	title: z.string().min(1, 'Заголовок обязателен'),
-	description: z.string().default(''),
-});
-const CategoriesSectionEditor: React.FC<{ data: CategoriesSectionData; onChange: (d: CategoriesSectionData) => void }> = ({ data, onChange }) => {
-	return (
-		<div className="space-y-3">
-			<Input
-				label="Заголовок"
-				value={data.title}
-				onChange={(e) => onChange({ ...data, title: e.target.value })}
-				placeholder="Например: Общие категории"
-			/>
-			<Textarea
-				label="Описание"
-				rows={4}
-				value={data.description}
-				onChange={(e) => onChange({ ...data, description: e.target.value })}
-				placeholder="Краткое описание раздела"
-			/>
-		</div>
-	);
-};
 
-// ControlsSection
-interface ControlsSectionData { title: string }
-const ControlsSectionSchema = z.object({
-	title: z.string().min(1, 'Заголовок обязателен'),
-});
-const ControlsSectionEditor: React.FC<{ data: ControlsSectionData; onChange: (d: ControlsSectionData) => void }> = ({ data, onChange }) => {
-	return (
-		<div className="space-y-3">
-			<Input
-				label="Заголовок"
-				value={data.title}
-				onChange={(e) => onChange({ ...data, title: e.target.value })}
-				placeholder="Например: UI Компоненты"
-			/>
-		</div>
-	);
-};
 
-// Button Group (композитный контент)
-interface ButtonGroupItem {
-	id: string;
-	text: string;
-	link: string;
-	variant: 'primary' | 'secondary' | 'danger' | 'ghost';
-}
 
-interface ButtonGroupData {
-	items: ButtonGroupItem[];
-}
 
-const ButtonGroupItemSchema = z.object({
-	id: z.string().min(1),
-	text: z.string().min(1, 'Текст обязателен'),
-	link: z.string().default(''),
-	variant: z.enum(['primary', 'secondary', 'danger', 'ghost']),
-});
 
-const ButtonGroupSchema = z.object({
-	items: z.array(ButtonGroupItemSchema).min(1, 'Должна быть хотя бы одна кнопка'),
-});
-
-const ButtonGroupEditor: React.FC<{ data: ButtonGroupData; onChange: (d: ButtonGroupData) => void }> = ({ data, onChange }) => {
-	const handleItemChange = (index: number, patch: Partial<ButtonGroupItem>) => {
-		const next = data.items.slice();
-		next[index] = { ...next[index], ...patch } as ButtonGroupItem;
-		onChange({ items: next });
-	};
-
-	const handleAdd = () => {
-		const newItem: ButtonGroupItem = {
-			id: (typeof crypto !== 'undefined' && 'randomUUID' in crypto) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-			text: 'Новая кнопка',
-			link: '',
-			variant: 'primary',
-		};
-		onChange({ items: [...data.items, newItem] });
-	};
-
-	const handleRemove = (index: number) => {
-		const next = data.items.slice();
-		next.splice(index, 1);
-		onChange({ items: next });
-	};
-
-	return (
-		<div className="space-y-4">
-			<div className="space-y-3">
-				{data.items.length === 0 ? (
-					<div className="text-sm text-gray-500 dark:text-gray-400">Пока нет кнопок. Добавьте первую.</div>
-				) : (
-					data.items.map((item, index) => (
-						<div key={item.id} className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 space-y-3">
-							<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-								<Input
-									label="Текст"
-									value={item.text}
-									onChange={(e) => handleItemChange(index, { text: e.target.value })}
-									placeholder="Например: Открыть форум"
-								/>
-								<Input
-									label="Ссылка"
-									value={item.link}
-									onChange={(e) => handleItemChange(index, { link: e.target.value })}
-									placeholder="Например: /forum"
-								/>
-							</div>
-							<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-								<Select
-									label="Вариант"
-									value={item.variant}
-									onChange={(e) => handleItemChange(index, { variant: e.target.value as ButtonGroupItem['variant'] })}
-								>
-									<option value="primary">Primary</option>
-									<option value="secondary">Secondary</option>
-									<option value="danger">Danger</option>
-									<option value="ghost">Ghost</option>
-								</Select>
-								<div className="flex items-end">
-									<Button variant="danger" onClick={() => handleRemove(index)}>Удалить</Button>
-								</div>
-							</div>
-						</div>
-					))
-				)}
-			</div>
-			<div>
-				<Button onClick={handleAdd}>Добавить кнопку</Button>
-			</div>
-		</div>
-	);
-};
 
 // ContainerSection
 interface ContainerSectionData { 
@@ -336,126 +197,30 @@ const SpacerSchema = z.object({
 });
 
 export const blockRegistry: Record<string, BlockSpec<any>> = {
-	header: {
-		type: 'header',
-		name: 'Шапка',
-		defaultData: () => ({}),
-		Editor: NoConfigEditor,
-		Renderer: Header,
-		category: 'Структура',
-		icon: 'header',
-		tags: ['header', 'layout', 'navigation'],
-		description: 'Шапка сайта с навигацией и брендингом.',
-		previewData: () => ({}),
-		schemaVersion: 1,
-		schema: z.object({}),
-	},
-	categories_section: {
-		type: 'categories_section',
-		name: 'Разделы форума',
-		defaultData: () => ({ title: 'Новый раздел', description: '' }),
-		Editor: CategoriesSectionEditor,
-		Renderer: CategoriesSection,
-		category: 'Игровые виджеты',
-		icon: 'categories',
-		tags: ['categories', 'forum', 'grid'],
-		description: 'Секция со списком/сеткой разделов форума.',
-		previewData: () => ({ title: 'Разделы', description: 'Основные категории форума' }),
-		schemaVersion: 1,
-		schema: CategoriesSectionSchema as unknown as z.ZodType<CategoriesSectionData>,
-	},
-	controls_section: {
-		type: 'controls_section',
-		name: 'UI Компоненты',
-		defaultData: () => ({ title: 'UI Компоненты' }),
-		Editor: ControlsSectionEditor,
-		Renderer: ControlsSection,
-		category: 'Игровые виджеты',
-		icon: 'controls',
-		tags: ['controls', 'ui', 'demo'],
-		description: 'Демонстрационная секция UI-контролов.',
-		previewData: () => ({ title: 'UI Компоненты' }),
-		schemaVersion: 1,
-		schema: ControlsSectionSchema as unknown as z.ZodType<ControlsSectionData>,
-	},
-	button_group: {
-		type: 'button_group',
-		name: 'Группа кнопок',
-		defaultData: () => ({
-			items: [
-				{ id: (typeof crypto !== 'undefined' && 'randomUUID' in crypto) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`, text: 'Кнопка', link: '', variant: 'primary' },
-			],
-		}),
-		Editor: ButtonGroupEditor,
-		Renderer: ButtonGroup,
-		category: 'Базовые',
-		icon: 'button-group',
-		tags: ['buttons', 'cta', 'actions'],
-		description: 'Группа кнопок c настраиваемыми вариантами и ссылками.',
-		previewData: () => ({ items: [{ id: 'preview-1', text: 'Подробнее', link: '#', variant: 'primary' }] }),
-		schemaVersion: 1,
-		schema: ButtonGroupSchema as unknown as z.ZodType<ButtonGroupData>,
-	},
-	properties_section: {
-		type: 'properties_section',
-		name: 'Таблица данных',
-		defaultData: () => ({ title: 'Недвижимость', subtitle: 'Таблица недвижимости' }),
-		Editor: NoConfigEditor,
-		Renderer: PropertiesSection,
-		category: 'Игровые виджеты',
-		icon: 'properties',
-		tags: ['properties', 'table', 'data'],
-		description: 'Секция с таблицей объектов недвижимости.',
-		previewData: () => ({ title: 'Недвижимость', subtitle: 'Каталог объектов' }),
-		schemaVersion: 1,
-		schema: z.object({ title: z.string(), subtitle: z.string().default('') }),
-	},
-	animations_section: {
-		type: 'animations_section',
-		name: 'Анимации',
-		defaultData: () => ({ title: 'Анимации', subtitle: 'Таблица анимаций' }),
-		Editor: NoConfigEditor,
-		Renderer: AnimationsSection,
-		category: 'Игровые виджеты',
-		icon: 'animations',
-		tags: ['animations', 'data', 'table'],
-		description: 'Секция со списком анимаций.',
-		previewData: () => ({ title: 'Анимации', subtitle: 'Коллекция эффектов' }),
-		schemaVersion: 1,
-		schema: z.object({ title: z.string(), subtitle: z.string().default('') }),
-	},
-	changelog_section: {
-		type: 'changelog_section',
-		name: 'История изменений',
-		defaultData: () => ({ title: 'История изменений' }),
-		Editor: NoConfigEditor,
-		Renderer: ChangelogSection,
-		category: 'Игровые виджеты',
-		icon: 'changelog',
-		tags: ['changelog', 'history', 'timeline'],
-		description: 'Секция с историей изменений и активностей.',
-		previewData: () => ({ title: 'История изменений' }),
-		schemaVersion: 1,
-		schema: z.object({ title: z.string().min(1) }),
-	},
-	container_section: {
-		type: 'container_section',
+
+
+
+
+
+
+
+	columns: {
+		type: 'columns',
 		name: 'Колонки',
-		defaultData: () => ({ title: 'Контейнер', layout: 'two' }),
+		defaultData: () => ({ layout: 'two' }),
 		Editor: ContainerSectionEditor,
 		Renderer: ContainerSection as unknown as React.LazyExoticComponent<React.ComponentType<any>>,
 		category: 'Структура',
-		icon: 'container',
-		tags: ['container', 'columns', 'layout'],
-		description: 'Контейнерная секция с 2/3 колонками для вложенных блоков.',
-		previewData: () => ({ title: 'Контейнер', layout: 'two' }),
+		icon: 'columns',
+		tags: ['columns', 'layout', 'grid'],
+		description: 'Контейнер с колонками для организации контента.',
+		previewData: () => ({ layout: 'two' }),
 		schemaVersion: 1,
 		schema: z.object({
-			title: z.string().optional(),
 			layout: z.enum(['two', 'three']).default('two'),
 		}),
 		// Поддержка вложенности
-		allowedChildren: ['button_group', 'categories_section', 'controls_section', 'properties_section', 'animations_section', 'changelog_section', 'heading', 'paragraph', 'single_image', 'single_button', 'spacer'],
+		allowedChildren: ['heading', 'paragraph', 'image', 'button', 'spacer', 'section', 'container', 'tabs', 'accordion', 'card', 'icon'],
 		allowedSlots: ['column1', 'column2', 'column3'],
 	},
 	
@@ -466,55 +231,55 @@ export const blockRegistry: Record<string, BlockSpec<any>> = {
 		defaultData: () => ({ text: 'Новый заголовок', level: 2, align: 'left' }),
 		Editor: HeadingEditor,
 		Renderer: LazyHeadingBlock,
-		category: 'Базовые',
+		category: 'Контент',
 		icon: 'heading',
-		tags: ['heading', 'title', 'text'],
+		tags: ['heading', 'title', 'text', 'hierarchy'],
 		description: 'Заголовок любого уровня (H1-H6) с настраиваемым выравниванием.',
 		previewData: () => ({ text: 'Заголовок', level: 2, align: 'left' }),
 		schemaVersion: 1,
 		schema: HeadingSchema as unknown as z.ZodType<HeadingData>,
 	},
 	
-	paragraph: {
-		type: 'paragraph',
+	text: {
+		type: 'text',
 		name: 'Текст',
-		defaultData: () => ({ text: 'Введите текст параграфа...' }),
+		defaultData: () => ({ text: 'Введите текст...' }),
 		Editor: ParagraphEditor,
 		Renderer: LazyParagraphBlock,
-		category: 'Базовые',
-		icon: 'paragraph',
+		category: 'Контент',
+		icon: 'text',
 		tags: ['text', 'paragraph', 'content', 'markdown'],
 		description: 'Текстовый блок с поддержкой базовой Markdown-разметки.',
-		previewData: () => ({ text: 'Это пример текста параграфа с **жирным** и *курсивным* текстом.' }),
+		previewData: () => ({ text: 'Это пример текста с **жирным** и *курсивным* оформлением.' }),
 		schemaVersion: 1,
 		schema: ParagraphSchema as unknown as z.ZodType<ParagraphData>,
 	},
 	
-	single_image: {
-		type: 'single_image',
+	image: {
+		type: 'image',
 		name: 'Изображение',
 		defaultData: () => ({ imageUrl: '', altText: '' }),
 		Editor: ImageEditor,
 		Renderer: LazyImageBlock,
-		category: 'Базовые',
+		category: 'Контент',
 		icon: 'image',
-		tags: ['image', 'picture', 'media'],
-		description: 'Одиночное изображение с альтернативным текстом.',
+		tags: ['image', 'picture', 'media', 'photo'],
+		description: 'Изображение с альтернативным текстом для доступности.',
 		previewData: () => ({ imageUrl: 'https://via.placeholder.com/400x200?text=Изображение', altText: 'Пример изображения' }),
 		schemaVersion: 1,
 		schema: ImageSchema as unknown as z.ZodType<ImageData>,
 	},
 	
-	single_button: {
-		type: 'single_button',
+	button: {
+		type: 'button',
 		name: 'Кнопка',
 		defaultData: () => ({ text: 'Кнопка', link: '', variant: 'primary', size: 'md' }),
 		Editor: ButtonEditor,
 		Renderer: LazyButtonBlock,
-		category: 'Базовые',
+		category: 'Контент',
 		icon: 'button',
-		tags: ['button', 'cta', 'link', 'action'],
-		description: 'Одиночная кнопка с настраиваемым стилем и ссылкой.',
+		tags: ['button', 'cta', 'link', 'action', 'click'],
+		description: 'Интерактивная кнопка с настраиваемым стилем и действием.',
 		previewData: () => ({ text: 'Подробнее', link: '#', variant: 'primary', size: 'md' }),
 		schemaVersion: 1,
 		schema: SingleButtonSchema as unknown as z.ZodType<SingleButtonData>,
@@ -535,9 +300,69 @@ export const blockRegistry: Record<string, BlockSpec<any>> = {
 		schema: SpacerSchema as unknown as z.ZodType<SpacerData>,
 	},
 
+	// Section block
+	section: {
+		type: 'section',
+		name: 'Секция',
+		defaultData: () => ({
+			backgroundColor: '#ffffff',
+			padding: 'medium' as const,
+			maxWidth: '1200px'
+		}),
+		Editor: SectionEditor,
+		Renderer: LazySectionBlock,
+		category: 'Структура',
+		icon: 'section',
+		tags: ['section', 'container', 'layout', 'background'],
+		description: 'Базовая секция с фоновым цветом и отступами для группировки контента.',
+		previewData: () => ({
+			backgroundColor: '#f8f9fa',
+			padding: 'medium',
+			maxWidth: '1200px'
+		}),
+		schemaVersion: 1,
+		schema: z.object({
+			backgroundColor: z.string().optional(),
+			padding: z.enum(['none', 'small', 'medium', 'large']).default('medium'),
+			maxWidth: z.string().default('1200px'),
+		}),
+		allowedChildren: [
+			'heading', 'text', 'image', 'button', 'spacer',
+			'section', 'container', 'columns', 'tabs', 'accordion', 'card', 'icon'
+		],
+	},
+
+	// Icon block
+	icon: {
+		type: 'icon',
+		name: 'Иконка',
+		defaultData: () => ({
+			icon: '🚀',
+			size: 'medium' as const,
+			color: '#000000'
+		}),
+		Editor: IconEditor,
+		Renderer: LazyIconBlock,
+		category: 'Контент',
+		icon: 'icon',
+		tags: ['icon', 'emoji', 'symbol', 'visual'],
+		description: 'Иконка или emoji для визуального оформления контента.',
+		previewData: () => ({
+			icon: '⭐',
+			size: 'medium',
+			color: '#fbbf24'
+		}),
+		schemaVersion: 1,
+		schema: z.object({
+			icon: z.string().min(1, 'Иконка обязательна'),
+			size: z.enum(['small', 'medium', 'large', 'xl']).default('medium'),
+			color: z.string().default('#000000'),
+		}),
+	},
+
 	// Новые контейнерные компоненты
-	tabs_block: {
-		type: 'tabs_block',
+	tabs: {
+		type: 'tabs',
 		name: 'Вкладки',
 		defaultData: () => ({
 			tabs: [
@@ -548,9 +373,9 @@ export const blockRegistry: Record<string, BlockSpec<any>> = {
 		}),
 		Editor: TabsEditor,
 		Renderer: TabsBlock as unknown as React.LazyExoticComponent<React.ComponentType<any>>,
-		category: 'Контейнеры',
+		category: 'Структура',
 		icon: 'tabs',
-		tags: ['tabs', 'container', 'navigation', 'interactive'],
+		tags: ['tabs', 'navigation', 'organization', 'interactive'],
 		description: 'Интерактивный контейнер с вкладками для организации контента.',
 		previewData: () => ({
 			tabs: [
@@ -563,24 +388,14 @@ export const blockRegistry: Record<string, BlockSpec<any>> = {
 		schema: TabsBlockSchema as unknown as z.ZodType<TabsBlockData>,
 		// Поддержка вложенности
 		allowedChildren: [
-			'button_group',
-			'categories_section',
-			'controls_section',
-			'properties_section',
-			'animations_section',
-			'changelog_section',
-			'heading',
-			'paragraph',
-			'single_image',
-			'single_button',
-			'spacer',
-			'container_section'
+			'heading', 'text', 'image', 'button', 'spacer',
+			'section', 'container', 'columns', 'accordion', 'card', 'icon'
 		],
 		// allowedSlots будет генерироваться динамически на основе tabs
 	},
 
-	accordion_block: {
-		type: 'accordion_block',
+	accordion: {
+		type: 'accordion',
 		name: 'Аккордеон',
 		defaultData: () => ({
 			sections: [
@@ -591,9 +406,9 @@ export const blockRegistry: Record<string, BlockSpec<any>> = {
 		}),
 		Editor: AccordionEditor,
 		Renderer: AccordionBlock as unknown as React.LazyExoticComponent<React.ComponentType<any>>,
-		category: 'Контейнеры',
+		category: 'Структура',
 		icon: 'accordion',
-		tags: ['accordion', 'container', 'collapsible', 'expandable'],
+		tags: ['accordion', 'collapsible', 'expandable', 'interactive'],
 		description: 'Раскрывающийся контейнер для компактного отображения контента.',
 		previewData: () => ({
 			sections: [
@@ -606,18 +421,8 @@ export const blockRegistry: Record<string, BlockSpec<any>> = {
 		schema: AccordionBlockSchema as unknown as z.ZodType<AccordionBlockData>,
 		// Поддержка вложенности
 		allowedChildren: [
-			'button_group',
-			'categories_section',
-			'controls_section',
-			'properties_section',
-			'animations_section',
-			'changelog_section',
-			'heading',
-			'paragraph',
-			'single_image',
-			'single_button',
-			'spacer',
-			'container_section'
+			'heading', 'text', 'image', 'button', 'spacer',
+			'section', 'container', 'columns', 'tabs', 'card', 'icon'
 		],
 		// allowedSlots будет генерироваться динамически на основе sections
 	},
@@ -698,14 +503,14 @@ export const blockRegistry: Record<string, BlockSpec<any>> = {
 			</div>
 		),
 		Renderer: ContainerSection,
-		category: 'Контейнеры',
+		category: 'Структура',
 		icon: '📦',
 		tags: ['контейнер', 'группа', 'layout'],
 		description: 'Универсальный контейнер для группировки блоков с различными layout',
+		canHaveChildren: true,
 		allowedChildren: [
-			'heading', 'paragraph', 'single_image', 'single_button', 'spacer',
-			'button_group', 'categories_section', 'controls_section',
-			'card', 'hero', 'container' // Рекурсивная вложенность
+			'heading', 'text', 'image', 'button', 'spacer',
+			'section', 'container', 'columns', 'tabs', 'accordion', 'card', 'icon'
 		],
 		allowedSlots: ['default'],
 	},
@@ -781,119 +586,15 @@ export const blockRegistry: Record<string, BlockSpec<any>> = {
 			</div>
 		),
 		Renderer: CardSection,
-		category: 'Контейнеры',
+		category: 'Композиты',
 		icon: '🃏',
 		tags: ['карточка', 'контейнер', 'группа'],
 		description: 'Карточка с заголовком, контентом и футером для группировки элементов',
 		allowedChildren: [
-			'heading', 'paragraph', 'single_image', 'single_button', 'spacer',
-			'button_group', 'container'
+			'heading', 'text', 'image', 'button', 'spacer', 'icon'
 		],
 		allowedSlots: ['header', 'content', 'footer'],
 	},
 
-	// Hero-секция
-	hero: {
-		type: 'hero',
-		name: 'Hero-секция',
-		defaultData: () => ({
-			title: '',
-			subtitle: '',
-			backgroundImage: '',
-			backgroundColor: '#f8f9fa',
-			textColor: '#212529',
-			height: 'medium' as const,
-			alignment: 'center' as const,
-			overlay: false,
-			overlayOpacity: 0.5,
-		}),
-		Editor: ({ data, onChange }: { data: any; onChange: (data: any) => void }) => (
-			<div className="space-y-4">
-				<Input
-					label="Основной заголовок"
-					value={data.title || ''}
-					onChange={(e) => onChange({ ...data, title: e.target.value })}
-					placeholder="Главный заголовок секции"
-				/>
-				<Input
-					label="Подзаголовок"
-					value={data.subtitle || ''}
-					onChange={(e) => onChange({ ...data, subtitle: e.target.value })}
-					placeholder="Дополнительный текст"
-				/>
-				<Input
-					label="URL фонового изображения"
-					value={data.backgroundImage || ''}
-					onChange={(e) => onChange({ ...data, backgroundImage: e.target.value })}
-					placeholder="https://example.com/image.jpg"
-				/>
-				<div className="grid grid-cols-2 gap-4">
-					<Input
-						label="Цвет фона"
-						type="color"
-						value={data.backgroundColor || '#f8f9fa'}
-						onChange={(e) => onChange({ ...data, backgroundColor: e.target.value })}
-					/>
-					<Input
-						label="Цвет текста"
-						type="color"
-						value={data.textColor || '#212529'}
-						onChange={(e) => onChange({ ...data, textColor: e.target.value })}
-					/>
-				</div>
-				<Select
-					label="Высота секции"
-					value={data.height || 'medium'}
-					onChange={(value) => onChange({ ...data, height: value })}
-					options={[
-						{ value: 'small', label: 'Маленькая' },
-						{ value: 'medium', label: 'Средняя' },
-						{ value: 'large', label: 'Большая' },
-						{ value: 'full', label: 'На весь экран' },
-					]}
-				/>
-				<Select
-					label="Выравнивание текста"
-					value={data.alignment || 'center'}
-					onChange={(value) => onChange({ ...data, alignment: value })}
-					options={[
-						{ value: 'left', label: 'По левому краю' },
-						{ value: 'center', label: 'По центру' },
-						{ value: 'right', label: 'По правому краю' },
-					]}
-				/>
-				<div className="space-y-2">
-					<label className="flex items-center">
-						<input
-							type="checkbox"
-							checked={data.overlay || false}
-							onChange={(e) => onChange({ ...data, overlay: e.target.checked })}
-							className="mr-2"
-						/>
-						Добавить overlay
-					</label>
-					{data.overlay && (
-						<Input
-							label="Прозрачность overlay"
-							type="range"
-							min="0"
-							max="1"
-							step="0.1"
-							value={data.overlayOpacity || 0.5}
-							onChange={(e) => onChange({ ...data, overlayOpacity: parseFloat(e.target.value) })}
-						/>
-					)}
-				</div>
-			</div>
-		),
-		Renderer: HeroSection,
-		category: 'Секции',
-		icon: '🎯',
-		tags: ['hero', 'баннер', 'заголовок', 'секция'],
-		description: 'Hero-секция с фоновым изображением, заголовком и возможностью добавления контента',
-		allowedChildren: [
-			'heading', 'paragraph', 'single_button', 'button_group', 'spacer'
-		],
-		allowedSlots: ['content'],
-	},
+
 };

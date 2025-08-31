@@ -1,7 +1,6 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { Card } from 'shared/ui/atoms/Card';
-import { Icon } from 'shared/ui/atoms/Icon';
+import { Card, Icon } from '@my-forum/ui';
 import type { ReusableBlock } from '../../types/api';
 
 interface BlockCardProps {

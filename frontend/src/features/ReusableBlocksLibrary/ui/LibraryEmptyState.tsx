@@ -1,6 +1,5 @@
 import React from 'react';
-import { Button } from '../../../shared/ui/atoms/Button';
-import { EmptyBlocksLibrary, EmptySearchResults } from '../../../shared/ui/organisms/EmptyState';
+import { Button, EmptyBlocksLibrary, EmptySearchResults } from '@my-forum/ui';
 import type { LibraryEmptyStateProps } from '../types';
 
 /**

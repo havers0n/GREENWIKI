@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Typography, Button, Badge, Progress } from 'shared/ui/integration';
+import { Card, Typography, Button, Badge, Progress } from '@my-forum/ui';
 import { useAppSelector } from 'store/hooks';
 import { useAppTheme } from 'app/providers/ThemeProvider';
 

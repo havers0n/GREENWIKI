@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../shared/contexts';
-import { Card } from '../shared/ui/atoms';
+import { Card } from '@my-forum/ui';
 import { Header } from '../widgets';
 
 const DebugPage: React.FC = () => {

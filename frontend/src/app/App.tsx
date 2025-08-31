@@ -1,5 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { ErrorBoundary } from '@my-forum/ui';
 import HomePage from 'pages/HomePage';
 import LoginPage from 'pages/LoginPage';
 import ForbiddenPage from 'pages/ForbiddenPage';
@@ -14,13 +15,31 @@ import AdminUsersPage from 'pages/AdminUsersPage';
 import DebugPage from 'pages/DebugPage';
 import UIDemoPage from 'pages/UIDemoPage';
 import TreeDemoPage from 'pages/TreeDemoPage';
-import { ProtectedRoute } from 'shared/ui/molecules';
-import { NotificationContainer } from 'shared/ui/organisms/NotificationContainer';
+import PerformanceTestPage from 'pages/PerformanceTestPage';
+import DnDTestPage from 'pages/DnDTestPage';
+import { ProtectedRoute } from 'shared/components/ProtectedRoute';
+import { NotificationContainer } from 'shared/components/NotificationContainer';
 import AdminPagesPage from 'pages/AdminPagesPage';
 
 const App: React.FC = () => {
+  const handleError = (error: Error, errorInfo: React.ErrorInfo) => {
+    // Логируем ошибки для мониторинга
+    console.error('Application Error:', {
+      error: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      timestamp: new Date().toISOString()
+    });
+
+    // В будущем здесь можно добавить отправку ошибок в сервис мониторинга
+    // sendToMonitoringService(error, errorInfo);
+  };
+
   return (
-    <>
+    <ErrorBoundary
+      onError={handleError}
+      showDetails={process.env.NODE_ENV === 'development'}
+    >
       <Routes>
         {/* Публичные роуты */}
         <Route path="/" element={<HomePage />} />
@@ -29,6 +48,8 @@ const App: React.FC = () => {
         <Route path="/debug" element={<DebugPage />} />
         <Route path="/ui-demo" element={<UIDemoPage />} />
         <Route path="/tree-demo" element={<TreeDemoPage />} />
+        <Route path="/performance-test" element={<PerformanceTestPage />} />
+        <Route path="/dnd-test" element={<DnDTestPage />} />
 
         {/* Защищенные роуты админки */}
         <Route
@@ -57,7 +78,7 @@ const App: React.FC = () => {
       </Routes>
       {/* Контейнер для уведомлений */}
       <NotificationContainer />
-    </>
+    </ErrorBoundary>
   );
 };
 

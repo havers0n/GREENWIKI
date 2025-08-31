@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { Button } from '../../../../shared/ui/atoms/Button';
+import { Button } from '@my-forum/ui';
 import { ButtonLink } from './ButtonLink';
 import { useButtonBlockLogic } from '../model/useButtonBlockLogic';
 import { useButtonBlockStyles } from '../model/useButtonBlockStyles';
@@ -20,8 +20,7 @@ const ButtonBlock: React.FC<ButtonBlockProps> = ({
   className,
   style,
   onClick,
-  blockId,
-  ...rest
+  blockId
 }) => {
   // D&D hook
   const {
@@ -63,7 +62,6 @@ const ButtonBlock: React.FC<ButtonBlockProps> = ({
           metadata={metadata}
           onClick={handleClick}
           blockId={blockId}
-          {...rest}
         />
       </div>
     );
@@ -84,7 +82,6 @@ const ButtonBlock: React.FC<ButtonBlockProps> = ({
         onClick={handleClick}
         style={buttonStyles}
         data-block-id={blockId}
-        {...rest}
       >
         {text}
       </Button>

@@ -1,6 +1,5 @@
 import React from 'react';
-import { Select } from '../../../shared/ui/atoms/Select';
-import { Button } from '../../../shared/ui/atoms/Button';
+import { Select, Button } from '@my-forum/ui';
 import type { LibraryFiltersProps } from '../types';
 
 /**

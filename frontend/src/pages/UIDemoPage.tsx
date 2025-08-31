@@ -9,15 +9,15 @@ import {
   Dropdown,
   ThemeToggle,
   useToast
-} from 'shared/ui/integration';
+} from '@my-forum/ui';
 import { useAppTheme } from 'app/providers/ThemeProvider';
 import { useAppSelector } from 'store/hooks';
-import { useNewUI } from 'shared/ui/integration';
+
 
 const UIDemoPage: React.FC = () => {
   const { mode, toggleTheme } = useAppTheme();
   const { addNotification } = useToast();
-  const { isUsingNewComponent, getMigrationReadyComponents } = useNewUI();
+
 
   // Получаем данные из Redux
   const uiState = useAppSelector(state => state.ui);
@@ -40,7 +40,7 @@ const UIDemoPage: React.FC = () => {
     });
   };
 
-  const readyComponents = getMigrationReadyComponents();
+  const readyComponents = ['Button', 'Input', 'Card', 'Typography', 'Badge', 'Progress', 'Dropdown', 'ThemeToggle', 'Notification', 'Toast'];
 
   return (
     <div className="min-h-screen p-8 bg-gray-50 dark:bg-gray-900">

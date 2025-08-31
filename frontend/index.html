@@ -9,8 +9,7 @@
       (function() {
         try {
           var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          var stored = localStorage.getItem('mantine-color-scheme-value');
-          var scheme = stored || (prefersDark ? 'dark' : 'light');
+          var scheme = prefersDark ? 'dark' : 'light';
           if (scheme === 'dark') document.documentElement.classList.add('dark');
         } catch (e) {}
       })();

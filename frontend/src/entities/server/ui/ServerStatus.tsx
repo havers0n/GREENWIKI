@@ -1,7 +1,7 @@
 import React from 'react';
 import type { ServerStatusInfo } from 'shared/lib/types';
 import { ServerStatusState } from 'shared/lib/types';
-import { Typography } from 'shared/ui/atoms';
+import { Typography } from '@my-forum/ui';
 
 interface ServerStatusProps {
     server: ServerStatusInfo;

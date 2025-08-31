@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Animation } from 'shared/lib/types';
-import { Card, Typography, Icon } from 'shared/ui/atoms';
+import { Card, Typography, Icon } from '@my-forum/ui';
 
 interface AnimationCardProps {
   animation: Animation;

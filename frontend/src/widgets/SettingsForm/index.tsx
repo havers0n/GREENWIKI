@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Database } from '@my-forum/db-types';
-import { Typography, Button } from 'shared/ui/atoms';
+import { Typography, Button } from '@my-forum/ui';
 import { blockRegistry } from 'shared/config/blockRegistry';
 
 type LayoutBlock = Database['public']['Tables']['layout_blocks']['Row'];

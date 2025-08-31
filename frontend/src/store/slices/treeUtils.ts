@@ -22,6 +22,36 @@ export function findBlockById(tree: BlockNode[], blockId: string): BlockNode | n
 }
 
 /**
+ * Строит путь от корня до указанного блока
+ * Возвращает массив блоков: [root, parent1, parent2, ..., targetBlock]
+ */
+export function getBlockPath(tree: BlockNode[], blockId: string): BlockNode[] {
+  // Рекурсивная функция для поиска пути
+  function findPath(nodes: BlockNode[], targetId: string, currentPath: BlockNode[] = []): BlockNode[] | null {
+    for (const node of nodes) {
+      // Добавляем текущий узел в путь
+      const newPath = [...currentPath, node];
+
+      // Если нашли целевой блок, возвращаем путь
+      if (node.id === targetId) {
+        return newPath;
+      }
+
+      // Рекурсивно ищем в дочерних узлах
+      if (node.children && node.children.length > 0) {
+        const childPath = findPath(node.children, targetId, newPath);
+        if (childPath) {
+          return childPath;
+        }
+      }
+    }
+    return null;
+  }
+
+  return findPath(tree, blockId) || [];
+}
+
+/**
  * Рекурсивно ищет родительский узел для блока с указанным ID
  */
 export function findBlockParent(tree: BlockNode[], blockId: string): BlockNode | null {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Typography, Button, Spinner } from '../../../shared/ui/atoms';
+import { Typography, Button, Spinner } from '@my-forum/ui';
 import type { BlockActionsProps } from '../types';
 
 /**

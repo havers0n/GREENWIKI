@@ -5,9 +5,10 @@ interface HeadingBlockProps {
   level: 1 | 2 | 3 | 4 | 5 | 6;
   align: 'left' | 'center' | 'right';
   metadata?: Record<string, unknown>;
+  editorMode?: boolean;
 }
 
-const HeadingBlock: React.FC<HeadingBlockProps> = ({ text, level, align, metadata = {} }) => {
+const HeadingBlock: React.FC<HeadingBlockProps> = ({ text, level, align, metadata = {}, editorMode = false }) => {
   const Tag = `h${level}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
   
   const alignClass = {
@@ -52,13 +53,46 @@ const HeadingBlock: React.FC<HeadingBlockProps> = ({ text, level, align, metadat
   };
 
   const headingStyles = generateStyles();
+  const isEmpty = !text || text.trim().length === 0;
+  const displayText = text || 'Новый заголовок';
+
+  // Классы для режима редактора
+  const editorClasses = editorMode ? [
+    'min-h-[1.2em] px-2 py-1 rounded-md transition-all duration-200',
+    isEmpty ? 'border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50' : '',
+    isEmpty ? 'hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20' : ''
+  ].filter(Boolean).join(' ') : '';
+
+  const textClasses = [
+    levelStyles,
+    alignClass,
+    'text-gray-900 dark:text-gray-100',
+    isEmpty && editorMode ? 'text-gray-500 dark:text-gray-400 italic' : '',
+    editorClasses
+  ].filter(Boolean).join(' ');
+
+  if (editorMode && isEmpty) {
+    return (
+      <Tag
+        className={textClasses}
+        style={headingStyles}
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-gray-400">
+            {level === 1 ? '📍' : level === 2 ? '📌' : '📝'}
+          </span>
+          <span>{displayText}</span>
+        </div>
+      </Tag>
+    );
+  }
 
   return (
     <Tag
-      className={`${levelStyles} ${alignClass} text-gray-900 dark:text-gray-100`}
+      className={textClasses}
       style={headingStyles}
     >
-      {text || 'Заголовок'}
+      {displayText}
     </Tag>
   );
 };

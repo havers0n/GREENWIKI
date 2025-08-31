@@ -1,7 +1,7 @@
 import React from 'react';
-import { Grid } from 'react-window';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { BlockCard } from '../BlockCard';
-import { BlockCardVirtual } from '../BlockCardVirtual';
+
 import type { LibraryGridProps } from '../types';
 
 /**
@@ -30,24 +30,57 @@ const LibraryGrid: React.FC<LibraryGridProps> = ({
   }
 
   if (virtualized && gridConfig) {
-    // Виртуализированная сетка для большого количества блоков
+    // Виртуализированная сетка для большого количества блоков с @tanstack/react-virtual
+    const parentRef = React.useRef<HTMLDivElement>(null);
+
+    const virtualizer = useVirtualizer({
+      count: blocks.length,
+      getScrollElement: () => parentRef.current,
+      estimateSize: () => 200 + 16, // CARD_HEIGHT + ROW_GAP
+      overscan: 5,
+    });
+
     return (
       <div className="mb-6">
-        <Grid
-          columnCount={gridConfig.columnCount}
-          columnWidth={320 + 16} // CARD_WIDTH + COLUMN_GAP
-          height={gridConfig.height}
-          rowCount={gridConfig.rowCount}
-          rowHeight={200 + 16} // CARD_HEIGHT + ROW_GAP
-          width={gridConfig.width}
-          itemData={{
-            blocks,
-            columnCount: gridConfig.columnCount,
+        <div
+          ref={parentRef}
+          style={{
+            height: gridConfig.height,
+            width: gridConfig.width,
+            overflow: 'auto',
           }}
           className="mb-6"
         >
-          {BlockCardVirtual}
-        </Grid>
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {virtualizer.getVirtualItems().map((virtualItem) => {
+              const block = blocks[virtualItem.index];
+              if (!block) return null;
+
+              return (
+                <div
+                  key={virtualItem.key}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: `${320 + 16}px`, // CARD_WIDTH + COLUMN_GAP
+                    height: `${200 + 16}px`, // CARD_HEIGHT + ROW_GAP
+                    transform: `translateY(${virtualItem.start}px)`,
+                  }}
+                  className="p-2"
+                >
+                  <BlockCard block={block} />
+                </div>
+              );
+            })}
+          </div>
+        </div>
         <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
           Показано {blocks.length} блоков (виртуализированная сетка)
         </div>

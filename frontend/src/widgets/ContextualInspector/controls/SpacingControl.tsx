@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextInput, Group, Text } from '@mantine/core';
+import { Input as TextInput, Typography as Text } from '@my-forum/ui';
 
 interface SpacingControlProps {
   label?: string;
@@ -39,77 +39,69 @@ export const SpacingControl: React.FC<SpacingControlProps> = ({
 
   return (
     <div>
-      <Text size="sm" fw={500} mb="xs">{label}</Text>
+      <Text variant="body-sm" className="font-medium mb-2">{label}</Text>
 
       {/* Padding */}
-      <Text size="xs" c="dimmed" mb="xs">Внутренние отступы (Padding)</Text>
-      <Group grow mb="md">
+      <Text variant="caption" className="text-gray-600 mb-2">Внутренние отступы (Padding)</Text>
+      <div className="grid grid-cols-2 gap-3 mb-4">
         <TextInput
           label="Верх"
           placeholder="0px"
           value={value.paddingTop || ''}
           onChange={(e) => handleChange('paddingTop', e.target.value)}
-          size="xs"
         />
         <TextInput
           label="Право"
           placeholder="0px"
           value={value.paddingRight || ''}
           onChange={(e) => handleChange('paddingRight', e.target.value)}
-          size="xs"
         />
-      </Group>
-      <Group grow mb="md">
+      </div>
+      <div className="grid grid-cols-2 gap-3 mb-4">
         <TextInput
           label="Низ"
           placeholder="0px"
           value={value.paddingBottom || ''}
           onChange={(e) => handleChange('paddingBottom', e.target.value)}
-          size="xs"
         />
         <TextInput
           label="Лево"
           placeholder="0px"
           value={value.paddingLeft || ''}
           onChange={(e) => handleChange('paddingLeft', e.target.value)}
-          size="xs"
         />
-      </Group>
+      </div>
 
       {/* Margin */}
-      <Text size="xs" c="dimmed" mb="xs">Внешние отступы (Margin)</Text>
-      <Group grow mb="md">
+      <Text variant="caption" className="text-gray-600 mb-2">Внешние отступы (Margin)</Text>
+      <div className="grid grid-cols-2 gap-3 mb-4">
         <TextInput
           label="Верх"
           placeholder="0px"
           value={value.marginTop || ''}
           onChange={(e) => handleChange('marginTop', e.target.value)}
-          size="xs"
         />
         <TextInput
           label="Право"
           placeholder="0px"
           value={value.marginRight || ''}
           onChange={(e) => handleChange('marginRight', e.target.value)}
-          size="xs"
         />
-      </Group>
-      <Group grow>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
         <TextInput
           label="Низ"
           placeholder="0px"
           value={value.marginBottom || ''}
           onChange={(e) => handleChange('marginBottom', e.target.value)}
-          size="xs"
         />
         <TextInput
           label="Лево"
           placeholder="0px"
           value={value.marginLeft || ''}
           onChange={(e) => handleChange('marginLeft', e.target.value)}
-          size="xs"
         />
-      </Group>
+      </div>
     </div>
   );
 };

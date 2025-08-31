@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { Typography, Button, Input, Textarea, Spinner } from 'shared/ui/atoms';
-import { Card } from 'shared/ui/atoms';
+import { Typography, Button, Input, Textarea, Spinner, Card } from '@my-forum/ui';
 import {
   selectBlockWithEffectiveContent,
   selectBlockOriginalContent,

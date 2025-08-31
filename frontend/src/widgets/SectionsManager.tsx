@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Input, Select } from 'shared/ui/atoms';
+import { Button, ButtonSize, Input, Select } from '@my-forum/ui';
 import { fetchCategories } from 'shared/api/categories';
 import { fetchSectionsByCategoryId, fetchAllSections, deleteSection } from 'shared/api/sections';
 import CreateSectionModal from 'features/CreateSectionModal';
@@ -83,7 +83,7 @@ const SectionsManager: React.FC = () => {
           <Select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="min-w-[220px]"
+            containerClassName="min-w-[220px]"
           >
             <option value={ALL_CATEGORIES_VALUE}>Все категории</option>
             {categories.map((c) => (
@@ -96,6 +96,7 @@ const SectionsManager: React.FC = () => {
             placeholder="Поиск по названию"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            hint="Введите название секции для поиска"
           />
           <Button onClick={() => setCreateOpen(true)}>Создать секцию</Button>
         </div>
@@ -107,7 +108,7 @@ const SectionsManager: React.FC = () => {
       {error && (
         <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 flex items-center justify-between">
           <span>{error}</span>
-          <Button size="sm" variant="ghost" onClick={() => loadSections(categoryFilter)}>Повторить</Button>
+          <Button size={ButtonSize.Sm} variant="ghost" onClick={() => loadSections(categoryFilter)}>Повторить</Button>
         </div>
       )}
 
@@ -144,8 +145,8 @@ const SectionsManager: React.FC = () => {
                     </td>
                     <td className="px-4 py-2 text-right">
                       <div className="flex gap-2 justify-end">
-                        <Button size="sm" onClick={() => setEditItem(s)}>Редактировать</Button>
-                        <Button size="sm" variant="danger" onClick={() => onDelete(s.id)}>Удалить</Button>
+                        <Button size={ButtonSize.Sm} onClick={() => setEditItem(s)}>Редактировать</Button>
+                        <Button size={ButtonSize.Sm} variant="danger" onClick={() => onDelete(s.id)}>Удалить</Button>
                       </div>
                     </td>
                   </tr>

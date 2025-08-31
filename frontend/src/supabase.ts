@@ -42,7 +42,19 @@ const createSupabaseMock = () => ({
 // Создаем экземпляр Supabase
 export const supabase = (!supabaseUrl || !supabaseAnonKey)
   ? createSupabaseMock() as any
-  : createClient<Database>(supabaseUrl, supabaseAnonKey)
+  : createClient<Database>(supabaseUrl, supabaseAnonKey, {
+      // Увеличиваем таймаут для решения проблемы "холодного старта" базы данных
+      global: {
+        fetch: (input, init) => {
+          // Устанавливаем таймаут в 60 секунд (60000 миллисекунд)
+          const controller = new AbortController();
+          const signal = controller.signal;
+          const timeout = setTimeout(() => controller.abort(), 60000);
+
+          return fetch(input, { ...init, signal }).finally(() => clearTimeout(timeout));
+        },
+      },
+    })
 
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type CreateProfile = Database['public']['Tables']['profiles']['Insert']

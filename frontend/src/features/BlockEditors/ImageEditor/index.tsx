@@ -1,5 +1,5 @@
 import React from 'react';
-import { Input } from 'shared/ui/atoms';
+import { Input } from '@my-forum/ui';
 
 interface ImageData {
   imageUrl: string;

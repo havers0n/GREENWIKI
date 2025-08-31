@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Typography, Button, Tooltip } from 'shared/ui/atoms';
+import { Card, Typography, Button, Tooltip } from '@my-forum/ui';
 import { useFavorites } from 'shared/hooks/useFavorites';
 import { ComponentIcon, StarIconComponent } from './ComponentIcon';
 import type { BlockSpec } from 'shared/config/blockRegistry';
@@ -50,11 +50,10 @@ const ComponentCard: React.FC<ComponentCardProps> = ({
 		<Tooltip content={tooltipContent} position="top" delay={500}>
 			<Card
 				className={`
-					group relative p-4 transition-all duration-200 ease-out cursor-pointer
-					hover:shadow-lg hover:scale-[1.02] hover:-translate-y-0.5
+					group relative p-4 library-card cursor-pointer
 					${disabled ? 'opacity-50 cursor-not-allowed' : ''}
 					border-2 hover:border-blue-200 dark:hover:border-blue-700
-					${isHovered ? 'ring-2 ring-blue-100 dark:ring-blue-800' : ''}
+					${isHovered ? 'ring-2 ring-blue-100 dark:ring-blue-800 pulse-blue' : ''}
 				`}
 				onMouseEnter={() => setIsHovered(true)}
 				onMouseLeave={() => setIsHovered(false)}
@@ -136,9 +135,43 @@ const ComponentCard: React.FC<ComponentCardProps> = ({
 				</div>
 			</div>
 
+			{/* Превью блока */}
+			<div className={`
+				mt-3 transition-opacity duration-200
+				${isHovered ? 'opacity-100' : 'opacity-70'}
+			`}>
+				{/* Простое превью на основе типа блока */}
+				{spec.type === 'heading' && (
+					<div className="text-sm font-bold text-gray-800 dark:text-gray-200 border-l-2 border-blue-400 pl-2">
+						{spec.name}
+					</div>
+				)}
+				{spec.type === 'text' && (
+					<div className="text-xs text-gray-600 dark:text-gray-400 italic">
+						"Пример текста с <strong>форматированием</strong>"
+					</div>
+				)}
+				{spec.type === 'button' && (
+					<div className="inline-flex items-center px-3 py-1 bg-blue-500 text-white rounded text-xs font-medium">
+						Кнопка
+					</div>
+				)}
+				{spec.type === 'image' && (
+					<div className="w-full h-8 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center text-xs text-gray-500">
+						🖼️
+					</div>
+				)}
+				{spec.type === 'columns' && (
+					<div className="grid grid-cols-2 gap-1">
+						<div className="h-6 bg-gray-200 dark:bg-gray-700 rounded text-xs flex items-center justify-center text-gray-500">Кол1</div>
+						<div className="h-6 bg-gray-200 dark:bg-gray-700 rounded text-xs flex items-center justify-center text-gray-500">Кол2</div>
+					</div>
+				)}
+			</div>
+
 			{/* Кнопка "Добавить" - появляется при наведении */}
 			<div className={`
-				flex justify-end transition-opacity duration-200
+				flex justify-end transition-opacity duration-200 mt-3
 				${isHovered ? 'opacity-100' : 'opacity-0'}
 			`}>
 				<Button
@@ -160,7 +193,7 @@ const ComponentCard: React.FC<ComponentCardProps> = ({
 							console.warn('❌ BUTTON: onAdd function not provided');
 						}
 					}}
-					className="shadow-sm hover:shadow-md transition-shadow duration-200"
+					className="shadow-sm hover:shadow-md btn-primary focus-ring"
 				>
 					{creating ? 'Добавление…' : 'Добавить'}
 				</Button>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { ServerStatus } from 'entities/server';
 import type { ServerStatusInfo } from 'shared/lib/types';
-import { Card } from 'shared/ui/atoms';
+import { Card } from '@my-forum/ui';
 
 interface ServerStatusListProps {
     servers: ServerStatusInfo[];

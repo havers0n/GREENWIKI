@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextInput, Select, Group, Text } from '@mantine/core';
+import { Input as TextInput, Select, Typography as Text } from '@my-forum/ui';
 
 interface BorderControlProps {
   label?: string;
@@ -39,42 +39,37 @@ export const BorderControl: React.FC<BorderControlProps> = ({
 
   return (
     <div>
-      <Text size="sm" fw={500} mb="xs">{label}</Text>
+      <Text variant="body-sm" className="font-medium mb-2">{label}</Text>
 
-      <Group grow mb="md">
+      <div className="grid grid-cols-2 gap-3 mb-4">
         <TextInput
           label="Толщина"
           placeholder="1px"
           value={value.width || ''}
           onChange={(e) => handleChange('width', e.target.value)}
-          size="xs"
         />
         <Select
           label="Стиль"
-          placeholder="Выберите стиль"
           data={borderStyles}
           value={value.style || ''}
           onChange={(newValue) => handleChange('style', newValue || '')}
-          size="xs"
         />
-      </Group>
+      </div>
 
-      <Group grow mb="md">
+      <div className="grid grid-cols-2 gap-3 mb-4">
         <TextInput
           label="Цвет"
           placeholder="#000000"
           value={value.color || ''}
           onChange={(e) => handleChange('color', e.target.value)}
-          size="xs"
         />
         <TextInput
           label="Скругление"
           placeholder="0px"
           value={value.radius || ''}
           onChange={(e) => handleChange('radius', e.target.value)}
-          size="xs"
         />
-      </Group>
+      </div>
     </div>
   );
 };

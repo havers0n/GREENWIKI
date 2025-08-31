@@ -1,5 +1,5 @@
 import React from 'react';
-import { Typography, Button } from '../../../shared/ui/atoms';
+import { Typography, Button } from '@my-forum/ui';
 import { useBlockNavigation } from '../model/useBlockNavigation';
 import type { BlockNavigationProps } from '../types';
 

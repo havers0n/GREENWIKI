@@ -1,10 +1,12 @@
 import React, { useMemo, useCallback } from 'react';
 import type { BlockNode } from '../../../types/api';
 import { blockRegistry } from '../../../shared/config/blockRegistry';
-import { BlockWrapper } from './BlockWrapper';
+import BlockWrapper from './BlockWrapper';
 import DropZone from './DropZone';
+import { BlockErrorBoundary, BlockErrorFallback } from './BlockErrorBoundary';
 import { useAppSelector } from '../../../store/hooks';
 import { selectBlockWithEffectiveContent } from '../../../store/selectors/blockSelectors';
+import { useDraggable } from '@dnd-kit/core';
 
 // Новые чистые блоки
 import { ContainerBlockEditor } from '../../../blocks/layout/ContainerBlock';
@@ -38,6 +40,27 @@ const RenderBlockNode = React.memo<RenderBlockNodeProps>(({
   const effectiveBlock = useMemo(() => blockWithEffectiveContent || block, [blockWithEffectiveContent, block]);
   const effectiveContent = effectiveBlock.content;
 
+  // Drag & Drop configuration
+  const draggableId = `canvas-block:${block.id}`;
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setDraggableRef,
+    transform,
+    isDragging,
+  } = useDraggable({
+    id: draggableId,
+    data: {
+      type: 'block',
+      blockId: block.id,
+      blockType: block.block_type,
+    },
+  });
+
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+  } : undefined;
+
   // Выбор компонента для рендеринга блока
   const Component = useMemo(() => {
     // Новые чистые блоки
@@ -59,11 +82,11 @@ const RenderBlockNode = React.memo<RenderBlockNodeProps>(({
   // Мемоизация CSS классов
   const wrapperClassName = useMemo(() => {
     if (!editorMode) return undefined;
-    return `relative rounded-md transition-all duration-200 ${
+    return `relative rounded-md block-hover ${
       isSelected
-        ? 'ring-2 ring-blue-500 shadow-lg bg-blue-50 dark:bg-blue-900/20 transform scale-105'
+        ? 'ring-2 ring-blue-500 shadow-lg bg-blue-50 dark:bg-blue-900/20 transform scale-105 pulse-blue'
         : 'ring-1 ring-transparent hover:ring-blue-300 hover:bg-blue-50/50 dark:hover:bg-blue-900/10'
-    } cursor-move`;
+    } cursor-move focus-ring`;
   }, [editorMode, isSelected]);
 
   // Мемоизация обработчика клика
@@ -90,14 +113,34 @@ const RenderBlockNode = React.memo<RenderBlockNodeProps>(({
         depth={depth}
         showDragHandle={editorMode}
         blockId={selectedBlockId === block.id ? block.id : undefined}
+        blockType={block.block_type}
+        dragRef={setDraggableRef}
+        dragListeners={listeners}
+        dragAttributes={attributes}
+        dragStyle={style}
+        isDragging={isDragging}
       >
         <div
           className={wrapperClassName}
           onClick={handleClick}
           data-block-id={block.id}
         >
-          <React.Suspense fallback={<div className="flex justify-center items-center h-24">Загрузка...</div>}>
-            {block.block_type === 'container_section' ? (
+          <BlockErrorBoundary
+            blockId={block.id}
+            blockType={block.block_type}
+            fallback={
+              <BlockErrorFallback
+                blockId={block.id}
+                blockType={block.block_type}
+                onRetry={() => {
+                  // При повторной попытке можно сбросить состояние или перезагрузить данные
+                  console.log('Retrying block render:', block.id);
+                }}
+              />
+            }
+          >
+            <React.Suspense fallback={<div className="flex justify-center items-center h-24">Загрузка...</div>}>
+              {block.block_type === 'container_section' ? (
               // Новые контейнеры
               <ContainerBlockEditor
                 layout={effectiveContent?.layout || 'vertical'}
@@ -165,7 +208,8 @@ const RenderBlockNode = React.memo<RenderBlockNodeProps>(({
                 }}
               />
             )}
-          </React.Suspense>
+            </React.Suspense>
+          </BlockErrorBoundary>
         </div>
       </BlockWrapper>
 

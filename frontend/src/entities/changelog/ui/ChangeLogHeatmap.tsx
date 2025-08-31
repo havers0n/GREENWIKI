@@ -1,7 +1,7 @@
 import React from 'react';
 import type { ChangeLogHeatmapData } from 'shared/lib/types';
 import { ChangeType } from 'shared/lib/types';
-import { Card } from 'shared/ui/atoms';
+import { Card } from '@my-forum/ui';
 
 interface ChangeLogHeatmapProps {
   data: ChangeLogHeatmapData[];

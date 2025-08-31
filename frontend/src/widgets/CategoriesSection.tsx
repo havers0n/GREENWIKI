@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Typography } from 'shared/ui/atoms';
+import { Typography, Card } from '@my-forum/ui';
 import { CategoryCard } from 'entities/category';
-import { Card } from 'shared/ui/atoms';
 import { fetchCategories } from 'shared/api/categories';
 import { fetchSectionsByCategoryId } from 'shared/api/sections';
 import type { Database } from '@my-forum/db-types';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Tabs } from '@mantine/core';
+import { Tabs, TabList, Tab, TabPanel } from '@my-forum/ui';
 import { Breadcrumbs } from '../../Breadcrumbs';
 import { OverridesPanel } from '../../OverridesPanel';
 import { InspectorHeader } from './InspectorHeader';
@@ -91,24 +91,24 @@ const ContextualInspectorNew: React.FC<ContextualInspectorProps> = ({
             )}
 
             {/* Вкладки с настройками */}
-            <Tabs defaultValue={isInstance ? "overrides" : "content"} className="w-full">
-              <Tabs.List className="mb-4">
+            <Tabs defaultValue={isInstance ? 0 : 1} className="w-full">
+              <TabList className="mb-4">
                 {isInstance && (
-                  <Tabs.Tab value="overrides" className="text-sm">
+                  <Tab index={0} className="text-sm">
                     🔄 Переопределения
-                  </Tabs.Tab>
+                  </Tab>
                 )}
-                <Tabs.Tab value="content" className="text-sm">
+                <Tab index={isInstance ? 1 : 0} className="text-sm">
                   📝 Настройки блока
-                </Tabs.Tab>
-                <Tabs.Tab value="design" className="text-sm">
+                </Tab>
+                <Tab index={isInstance ? 2 : 1} className="text-sm">
                   🎨 Дизайн
-                </Tabs.Tab>
-              </Tabs.List>
+                </Tab>
+              </TabList>
 
               {/* Вкладка переопределений */}
               {isInstance && blockId && (
-                <Tabs.Panel value="overrides" className="space-y-4">
+                <TabPanel index={0} className="space-y-4">
                   <OverridesPanel
                     blockId={blockId}
                     onSave={() => {
@@ -118,27 +118,27 @@ const ContextualInspectorNew: React.FC<ContextualInspectorProps> = ({
                       console.error('Overrides save error:', error);
                     }}
                   />
-                </Tabs.Panel>
+                </TabPanel>
               )}
 
               {/* Вкладка контента */}
-              <Tabs.Panel value="content" className="space-y-4">
+              <TabPanel index={isInstance ? 1 : 0} className="space-y-4">
                 <BlockContentEditor
                   block={block}
                   spec={spec}
                   data={data}
                   onBlockChange={onBlockChange}
                 />
-              </Tabs.Panel>
+              </TabPanel>
 
               {/* Вкладка дизайна */}
-              <Tabs.Panel value="design" className="space-y-4">
+              <TabPanel index={isInstance ? 2 : 1} className="space-y-4">
                 <BlockDesignEditor
                   block={block}
                   metadata={metadata}
                   onMetadataChange={handleMetadataChange}
                 />
-              </Tabs.Panel>
+              </TabPanel>
             </Tabs>
 
             {/* Панели действий */}

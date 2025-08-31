@@ -1,6 +1,6 @@
 import React from 'react';
 import type { ChangelogItem } from 'shared/lib/types';
-import { Card, Typography, Button, ButtonVariant, Icon } from 'shared/ui/atoms';
+import { Card, Typography, Button, ButtonVariant, Icon } from '@my-forum/ui';
 
 interface ChangelogCardProps {
   item: ChangelogItem;

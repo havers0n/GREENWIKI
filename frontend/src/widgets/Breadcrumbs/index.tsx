@@ -1,9 +1,26 @@
 import React from 'react';
-import { Button } from 'shared/ui/atoms';
+import { Button } from '@my-forum/ui';
 import type { Database } from '@my-forum/db-types';
-import { blockRegistry } from 'shared/config/blockRegistry';
+import { blockRegistry } from '../../shared/config/blockRegistry';
+import { getBlockPath } from '../../store/slices/treeUtils';
 
 type LayoutBlock = Database['public']['Tables']['layout_blocks']['Row'];
+
+// Поддержка типов BlockNode для редактора
+interface BlockNode {
+  id: string;
+  block_type: string;
+  content: Record<string, any> | null;
+  depth: number;
+  instance_id: string | null;
+  metadata: Record<string, any>;
+  page_id: number;
+  position: number | null;
+  slot: string | null;
+  status: string;
+  children: BlockNode[];
+  parent_block_id?: string | null;
+}
 
 interface BreadcrumbItem {
   id: string;
@@ -12,10 +29,10 @@ interface BreadcrumbItem {
 }
 
 interface BreadcrumbsProps {
-  /** Текущий выбранный блок */
-  selectedBlock: LayoutBlock | null;
+  /** Текущий выбранный блок (BlockNode или LayoutBlock) */
+  selectedBlock: BlockNode | LayoutBlock | null;
   /** Все блоки страницы для построения иерархии */
-  allBlocks: LayoutBlock[];
+  allBlocks: (BlockNode | LayoutBlock)[];
   /** Обработчик выбора блока */
   onSelectBlock: (blockId: string | null) => void;
   /** Показывать ли компонент */
@@ -29,11 +46,39 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
   visible = true,
 }) => {
   // Строим цепочку предков для выбранного блока
-  const buildBreadcrumbChain = (block: LayoutBlock | null): BreadcrumbItem[] => {
+  const buildBreadcrumbChain = (block: BlockNode | LayoutBlock | null): BreadcrumbItem[] => {
     if (!block) return [];
 
+    // Если это BlockNode, используем новую утилитарную функцию
+    if ('depth' in block && 'children' in block) {
+      const path = getBlockPath(allBlocks as BlockNode[], block.id);
+      const chain: BreadcrumbItem[] = [];
+
+      // Преобразуем путь в формат BreadcrumbItem
+      path.forEach((pathBlock, index) => {
+        if (index === 0) {
+          // Первый элемент - корень
+          chain.push({
+            id: 'root',
+            name: 'Страница',
+            type: 'root',
+          });
+        } else {
+          const spec = blockRegistry[pathBlock.block_type];
+          chain.push({
+            id: pathBlock.id,
+            name: spec?.name || pathBlock.block_type,
+            type: pathBlock.block_type,
+          });
+        }
+      });
+
+      return chain;
+    }
+
+    // Для LayoutBlock используем старую логику
     const chain: BreadcrumbItem[] = [];
-    let currentBlock: LayoutBlock | undefined = block;
+    let currentBlock: LayoutBlock | undefined = block as LayoutBlock;
 
     // Добавляем текущий блок
     const spec = blockRegistry[currentBlock.block_type];
@@ -55,7 +100,7 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
         type: parentBlock.block_type,
       });
 
-      currentBlock = parentBlock;
+      currentBlock = parentBlock as LayoutBlock;
     }
 
     // Добавляем корень
@@ -92,6 +137,12 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
       case 'single_image': return '🖼️';
       case 'spacer': return '📏';
       case 'button_group': return '🔘';
+      case 'section_block': return '📦';
+      case 'button_block': return '🔘';
+      case 'heading_block': return '📰';
+      case 'paragraph_block': return '📄';
+      case 'image_block': return '🖼️';
+      case 'icon_block': return '⭐';
       default: return '📄';
     }
   };

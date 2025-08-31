@@ -1,6 +1,7 @@
 import React from 'react';
 import { Sun, Moon, Monitor } from 'lucide-react';
 import { Button } from '../atoms/Button';
+import { Icon } from '../atoms/Icon';
 import { Dropdown } from './Dropdown';
 import { useThemeToggle } from '../contexts/ThemeContext';
 import { cn } from '../lib/utils';
@@ -21,13 +22,13 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   const getThemeIcon = () => {
     switch (theme) {
       case 'light':
-        return React.createElement(Sun as any, { className: "h-4 w-4" });
+        return <Icon icon={Sun} className="h-4 w-4" />;
       case 'dark':
-        return React.createElement(Moon as any, { className: "h-4 w-4" });
+        return <Icon icon={Moon} className="h-4 w-4" />;
       case 'system':
-        return React.createElement(Monitor as any, { className: "h-4 w-4" });
+        return <Icon icon={Monitor} className="h-4 w-4" />;
       default:
-        return React.createElement(Sun as any, { className: "h-4 w-4" });
+        return <Icon icon={Sun} className="h-4 w-4" />;
     }
   };
 
@@ -80,17 +81,17 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
           {
             value: 'light',
             label: 'Светлая',
-            icon: React.createElement(Sun as any, { className: "h-4 w-4" })
+            icon: Sun
           },
           {
             value: 'dark',
             label: 'Темная',
-            icon: React.createElement(Moon as any, { className: "h-4 w-4" })
+            icon: Moon
           },
           {
             value: 'system',
             label: 'Системная',
-            icon: React.createElement(Monitor as any, { className: "h-4 w-4" })
+            icon: Monitor
           },
         ]}
         placeholder="Выберите тему"
@@ -125,8 +126,8 @@ export const ThemeSwitcher: React.FC<Omit<ThemeToggleProps, 'variant'>> = (props
       title={`Переключить на ${theme === 'light' ? 'темную' : 'светлую'} тему`}
     >
       {theme === 'light'
-        ? React.createElement(Moon as any, { className: "h-4 w-4" })
-        : React.createElement(Sun as any, { className: "h-4 w-4" })}
+        ? <Icon icon={Moon} className="h-4 w-4" />
+        : <Icon icon={Sun} className="h-4 w-4" />}
       <span className="sr-only">
         Переключить на {theme === 'light' ? 'темную' : 'светлую'} тему
       </span>

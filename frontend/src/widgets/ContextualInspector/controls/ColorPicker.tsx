@@ -1,5 +1,5 @@
 import React from 'react';
-import { ColorInput, Group, Text } from '@mantine/core';
+import { EnhancedColorPicker, Typography as Text } from '@my-forum/ui';
 
 interface ColorPickerProps {
   label?: string;
@@ -16,13 +16,11 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
 }) => {
   return (
     <div>
-      <Text size="sm" fw={500} mb="xs">{label}</Text>
-      <ColorInput
+      <Text variant="body-sm" className="font-medium mb-2">{label}</Text>
+      <EnhancedColorPicker
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        size="sm"
-        format="hex"
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Textarea } from 'shared/ui/atoms';
+import { Textarea } from '@my-forum/ui';
 
 interface ParagraphData {
   text: string;

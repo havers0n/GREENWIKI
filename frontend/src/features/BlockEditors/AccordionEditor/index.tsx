@@ -1,5 +1,5 @@
 import React from 'react';
-import { Input, Button } from 'shared/ui/atoms';
+import { Input, Button } from '@my-forum/ui';
 
 interface AccordionItem {
   id: string;

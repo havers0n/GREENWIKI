@@ -1,5 +1,5 @@
 import React from 'react';
-import { Input, Select } from 'shared/ui/atoms';
+import { Input, Select } from '@my-forum/ui';
 
 interface ButtonData {
   text: string;

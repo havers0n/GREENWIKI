@@ -5,3 +5,5 @@ export { default as ButtonEditor } from './ButtonEditor';
 export { default as SpacerEditor } from './SpacerEditor';
 export { default as TabsEditor } from './TabsEditor';
 export { default as AccordionEditor } from './AccordionEditor';
+export { default as SectionEditor } from './SectionEditor';
+export { default as IconEditor } from './IconEditor';

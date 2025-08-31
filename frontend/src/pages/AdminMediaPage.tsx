@@ -1,6 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Card, Typography, Button, Input, Badge, Spinner } from '../shared/ui/atoms';
-import { Progress } from '../shared/ui/atoms';
+import { Card, Typography, Button, Input, Badge, Spinner, Progress } from '@my-forum/ui';
 
 interface MediaFile {
   id: string;

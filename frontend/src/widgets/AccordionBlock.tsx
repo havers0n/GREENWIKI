@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { Typography } from 'shared/ui/atoms';
+import { Typography } from '@my-forum/ui';
 import BlockRenderer from 'widgets/BlockRenderer';
 import type { Database } from '@my-forum/db-types';
 

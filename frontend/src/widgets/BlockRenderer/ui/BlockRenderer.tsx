@@ -1,9 +1,10 @@
 import * as React from 'react';
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import type { BlockNode } from '../../../types/api';
 import { useDroppable } from '@dnd-kit/core';
 import RenderBlockNode from './RenderBlockNode';
 import DropZone from './DropZone';
+import { blockRegistry } from '../../../shared/config/blockRegistry';
 
 interface BlockRendererProps {
   blockTree: BlockNode[];
@@ -17,7 +18,7 @@ interface BlockRendererProps {
   onUpdateBlock?: (updated: BlockNode) => void;
 }
 
-const BlockRenderer = React.memo<BlockRendererProps>(({
+const BlockRenderer = React.memo<BlockRendererProps>(({ 
   blockTree,
   editorMode = false,
   selectedBlockId,
@@ -30,8 +31,61 @@ const BlockRenderer = React.memo<BlockRendererProps>(({
   }), []);
 
   const { isOver: isCanvasOver } = useDroppable(droppableConfig);
+
+  // Поиск пути к выбранному блоку для хлебных крошек и отображения глубины
+  const findPath = useCallback((nodes: BlockNode[], targetId: string): BlockNode[] | null => {
+    for (const node of nodes) {
+      if (node.id === targetId) return [node];
+      if (node.children && node.children.length > 0) {
+        const childPath = findPath(node.children, targetId);
+        if (childPath) return [node, ...childPath];
+      }
+    }
+    return null;
+  }, []);
+
+  const selectedPath = useMemo(() => {
+    if (!selectedBlockId) return null;
+    return findPath(blockTree, selectedBlockId) || null;
+  }, [blockTree, selectedBlockId]);
+
+  const renderBreadcrumbs = () => {
+    if (!editorMode || !selectedPath || selectedPath.length === 0) return null;
+    return (
+      <div className="sticky top-0 z-10 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 -mx-2 px-2 py-2 mb-2 rounded">
+        <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+          {selectedPath.map((node, index) => {
+            const isLast = index === selectedPath.length - 1;
+            const name = blockRegistry[node.block_type]?.name || node.block_type;
+            return (
+              <React.Fragment key={node.id}>
+                <button
+                  type="button"
+                  className={`hover:underline ${isLast ? 'font-semibold text-gray-900 dark:text-white' : ''}`}
+                  onClick={() => onSelectBlock?.(node.id)}
+                  disabled={isLast}
+                  title={name}
+                >
+                  {name}
+                </button>
+                {!isLast && <span className="text-gray-400">/</span>}
+              </React.Fragment>
+            );
+          })}
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-gray-400">Глубина:</span>
+            <span className="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
+              {Math.max(0, (selectedPath?.length || 1) - 1)}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
+      {renderBreadcrumbs()}
       {blockTree.map((block, index) => (
         <React.Fragment key={block.id}>
           {editorMode && index === 0 && (
@@ -45,7 +99,7 @@ const BlockRenderer = React.memo<BlockRendererProps>(({
             block={block}
             depth={0}
             editorMode={editorMode}
-            selectedBlockId={selectedBlockId}
+            selectedBlockId={selectedBlockId || undefined}
             onSelectBlock={onSelectBlock}
             onUpdateBlock={onUpdateBlock}
           />

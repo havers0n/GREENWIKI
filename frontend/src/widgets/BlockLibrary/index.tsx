@@ -1,11 +1,74 @@
 import React, { useMemo, useState } from 'react';
 import { blockRegistry } from 'shared/config/blockRegistry';
 import type { BlockSpec } from 'shared/config/blockRegistry';
-import { Card, Typography, Input, Accordion } from 'shared/ui/atoms';
+import { Card, Typography, Input, Accordion } from '@my-forum/ui';
 import { ComponentCard } from 'shared/components';
 import { useFavorites } from 'shared/hooks/useFavorites';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
+
+// Компонент для превью блоков
+const BlockPreview: React.FC<{ spec: BlockSpec<any> }> = ({ spec }) => {
+  const previewData = spec.previewData?.();
+
+  // Простое превью для разных типов блоков
+  const renderPreview = () => {
+    switch (spec.type) {
+      case 'heading':
+        return (
+          <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
+            {previewData?.text || 'Заголовок'}
+          </div>
+        );
+
+      case 'text':
+        return (
+          <div className="text-sm text-gray-700 dark:text-gray-300">
+            {previewData?.text || 'Пример текста для превью'}
+          </div>
+        );
+
+      case 'button':
+        return (
+          <div className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-md text-sm font-medium">
+            {previewData?.text || 'Кнопка'}
+          </div>
+        );
+
+      case 'image':
+        return (
+          <div className="w-full h-16 bg-gray-200 dark:bg-gray-700 rounded-md flex items-center justify-center text-xs text-gray-500">
+            🖼️ Изображение
+          </div>
+        );
+
+      case 'columns':
+        const columns = previewData?.layout === 'three' ? 3 : 2;
+        return (
+          <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
+            {Array.from({ length: columns }).map((_, i) => (
+              <div key={i} className="h-8 bg-gray-200 dark:bg-gray-700 rounded text-xs flex items-center justify-center text-gray-500">
+                Колонка {i + 1}
+              </div>
+            ))}
+          </div>
+        );
+
+      default:
+        return (
+          <div className="text-xs text-gray-500 dark:text-gray-400 italic">
+            {spec.name}
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="mt-2 p-2 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800/50">
+      {renderPreview()}
+    </div>
+  );
+};
 
 interface BlockLibraryProps {
 	onAddBlock?: (type: string) => void | Promise<void>;
@@ -59,7 +122,7 @@ const BlockLibrary: React.FC<BlockLibraryProps> = ({ onAddBlock, creating = fals
 	}, [specs, search, favorites]);
 
 	// Определение порядка категорий
-	const categoryOrder = ['Избранное', 'Базовые', 'Структура', 'Контейнеры', 'Игровые виджеты'];
+	const categoryOrder = ['Избранное', 'Структура', 'Контент', 'Композиты'];
 	const sortedCategories = useMemo(() => {
 		const categories = Object.keys(groupedSpecs);
 		return categories.sort((a, b) => {

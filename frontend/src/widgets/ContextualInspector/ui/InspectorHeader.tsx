@@ -1,5 +1,5 @@
 import React from 'react';
-import { Typography, Button } from '../../../shared/ui/atoms';
+import { Typography, Button } from '@my-forum/ui';
 import { useBlockIcon } from '../model/useInspectorLogic';
 import type { InspectorHeaderProps } from '../types';
 

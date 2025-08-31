@@ -1,7 +1,5 @@
 import React from 'react';
-import { Typography, Button, ButtonVariant } from 'shared/ui/atoms';
-import { FilterTabs, SearchInput, FilterButton } from 'shared/ui/molecules';
-import { Card } from 'shared/ui/atoms';
+import { Typography, Button, ButtonVariant, Card, FilterTabs, SearchInput, FilterButton } from '@my-forum/ui';
 
 interface ControlsSectionProps {
   title?: string;

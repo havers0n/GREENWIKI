@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Database } from '@my-forum/db-types';
-import { Button, Card, Typography, Tag, Select, Spinner } from 'shared/ui/atoms';
-import { Modal } from 'shared/ui/molecules';
+import { Button, Card, Typography, Tag, Select, Spinner, Modal } from '@my-forum/ui';
 import {
   fetchAdminLayoutByPage,
   createLayoutBlock,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextInput, Select, Group, Text } from '@mantine/core';
+import { Input as TextInput, Select, Typography as Text } from '@my-forum/ui';
 
 interface BackgroundControlProps {
   label?: string;
@@ -46,7 +46,7 @@ export const BackgroundControl: React.FC<BackgroundControlProps> = ({
 
   return (
     <div>
-      <Text size="sm" fw={500} mb="xs">{label}</Text>
+      <Text variant="body-sm" className="font-medium mb-2">{label}</Text>
 
       <Select
         label="Тип фона"
@@ -68,22 +68,20 @@ export const BackgroundControl: React.FC<BackgroundControlProps> = ({
       )}
 
       {value.type === 'gradient' && (
-        <Group grow>
+        <div className="grid grid-cols-2 gap-3">
           <TextInput
             label="Начальный цвет"
             placeholder="#ffffff"
             value={value.gradientStart || ''}
             onChange={(e) => handleChange('gradientStart', e.target.value)}
-            size="xs"
           />
           <TextInput
             label="Конечный цвет"
             placeholder="#000000"
             value={value.gradientEnd || ''}
             onChange={(e) => handleChange('gradientEnd', e.target.value)}
-            size="xs"
           />
-        </Group>
+        </div>
       )}
 
       {value.type === 'image' && (

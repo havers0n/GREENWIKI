@@ -1,6 +1,5 @@
 import React from 'react';
-import { Typography, Button, Spinner } from 'shared/ui/atoms';
-import { Modal } from 'shared/ui/molecules';
+import { Typography, Button, Spinner, Modal } from '@my-forum/ui';
 
 interface RevisionsModalProps {
 	isOpen: boolean;

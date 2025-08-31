@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Button, Input, Select, Badge, Spinner } from '../shared/ui/atoms';
+import { Card, Typography, Button, Input, Select, Badge, Spinner } from '@my-forum/ui';
 import { useNavigate, useParams } from 'react-router-dom';
 
 interface ContentItem {

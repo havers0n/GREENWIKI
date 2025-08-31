@@ -1,6 +1,5 @@
 import React from 'react';
-import { SearchInput } from '../../../shared/ui/molecules/SearchInput';
-import { Button } from '../../../shared/ui/atoms/Button';
+import { SearchInput, Button } from '@my-forum/ui';
 import type { LibrarySearchProps } from '../types';
 
 /**

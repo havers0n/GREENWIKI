@@ -1,5 +1,5 @@
 import React from 'react';
-import { Typography } from '../../../shared/ui/atoms';
+import { Typography } from '@my-forum/ui';
 import type { BaseLibraryProps } from '../types';
 
 /**

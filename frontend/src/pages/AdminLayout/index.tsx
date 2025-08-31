@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../shared/contexts';
-import { Button } from '../../shared/ui/atoms';
-import { ThemeToggle } from '../../shared/ui/molecules';
-import { Badge } from '../../shared/ui/atoms';
+import { Button, Badge, ThemeToggle } from '@my-forum/ui';
 
 interface AdminLayoutProps {}
 
@@ -48,7 +46,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = () => {
   ];
 
   const handleSignOut = async () => {
-    await signOut();
+    console.log('🚪 AdminLayout: Sign out clicked');
+    try {
+      await signOut();
+      console.log('🚪 AdminLayout: Sign out completed');
+    } catch (error) {
+      console.error('🚪 AdminLayout: Sign out failed:', error);
+    }
   };
 
   return (
@@ -238,7 +242,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
               <span className="flex-1">{item.name}</span>
               {item.badge && (
                 <Badge
-                  variant={item.badge > 0 ? 'success' : 'secondary'}
+                  tone={item.badge > 0 ? 'green' : 'neutral'}
                   className="ml-2 text-xs px-2 py-0.5"
                 >
                   {item.badge}

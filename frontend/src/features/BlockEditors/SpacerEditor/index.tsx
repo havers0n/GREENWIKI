@@ -1,5 +1,5 @@
 import React from 'react';
-import { Select, Input } from 'shared/ui/atoms';
+import { Select, Input } from '@my-forum/ui';
 
 interface SpacerData {
   height: 'sm' | 'md' | 'lg' | 'xl' | 'custom';

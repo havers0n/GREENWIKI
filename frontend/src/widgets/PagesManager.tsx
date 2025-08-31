@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Input } from 'shared/ui/atoms';
+import { Button, ButtonSize, Input } from '@my-forum/ui';
 import { fetchAdminPages, deletePage } from 'shared/api/pages';
 import type { PageRow } from 'shared/api/pages';
 import CreatePageModal from 'features/CreatePageModal';
@@ -60,8 +60,8 @@ const PagesManager: React.FC = () => {
           <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">{p.updated_at ? new Date(p.updated_at).toLocaleString() : '—'}</td>
           <td className="px-4 py-2 text-right">
             <div className="flex gap-2 justify-end">
-              <Button size="sm" onClick={() => setEditItem(p)}>Редактировать</Button>
-              <Button size="sm" variant="danger" onClick={() => onDelete(p.id)}>Удалить</Button>
+              <Button size={ButtonSize.Sm} onClick={() => setEditItem(p)}>Редактировать</Button>
+              <Button size={ButtonSize.Sm} variant="danger" onClick={() => onDelete(p.id)}>Удалить</Button>
             </div>
           </td>
         </tr>
@@ -88,7 +88,7 @@ const PagesManager: React.FC = () => {
       {error && (
         <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 flex items-center justify-between">
           <span>{error}</span>
-          <Button size="sm" variant="ghost" onClick={load}>Повторить</Button>
+          <Button size={ButtonSize.Sm} variant="ghost" onClick={load}>Повторить</Button>
         </div>
       )}
 

@@ -1,5 +1,8 @@
 import React, { forwardRef, useId } from 'react';
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
+// Design tokens types
 export const InputSize = {
   Sm: 'sm',
   Md: 'md',
@@ -16,73 +19,131 @@ export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
   containerClassName?: string;
 }
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(
-  (
-    {
-      label,
-      hint,
-      error,
-      invalid,
-      size = InputSize.Md,
-      className = '',
-      containerClassName = '',
-      id,
-      required,
-      ...props
-    },
-    ref,
-  ) => {
-    const reactGeneratedId = useId();
-    const inputId = id ?? `input-${reactGeneratedId}`;
+// Utility function for merging classes
+const cn = (...classes: (string | undefined | null | false)[]) => {
+  return twMerge(clsx(...classes));
+};
 
-    const isInvalid = Boolean(error) || Boolean(invalid);
-
-    const baseStyles =
-      'block w-full rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ' +
-      'focus:outline-none focus:ring-2 focus:ring-majestic-pink focus:border-majestic-pink ' +
-      'disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed dark:disabled:bg-gray-700 dark:disabled:text-gray-500';
-
-    const sizeStyles: Record<InputSize, string> = {
-      [InputSize.Sm]: 'text-sm px-3 py-1.5',
-      [InputSize.Md]: 'text-sm px-4 py-2',
-      [InputSize.Lg]: 'text-base px-5 py-2.5',
-    };
-
-    const validStyles = 'border-majestic-gray-300 dark:border-gray-700';
-    const invalidStyles = 'border-red-500 text-red-900 dark:text-red-300 placeholder-red-400 focus:ring-red-500 focus:border-red-500';
-
-    const describedById = hint || error ? `${inputId}-desc` : undefined;
-
-    return (
-      <div className={`w-full ${containerClassName}`}>
-        {label && (
-          <label htmlFor={inputId} className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            {label}
-            {required ? <span className="ml-1 text-red-600" aria-hidden>*</span> : null}
-          </label>
-        )}
-        <input
-          id={inputId}
-          ref={ref}
-          className={`${baseStyles} ${sizeStyles[size]} ${isInvalid ? invalidStyles : validStyles} ${className}`}
-          aria-invalid={isInvalid || undefined}
-          aria-describedby={describedById}
-          aria-required={required || undefined}
-          required={required}
-          {...props}
-        />
-        {error ? (
-          <p id={describedById} className="mt-1 text-sm text-red-600 dark:text-red-400">
-            {error}
-          </p>
-        ) : hint ? (
-          <p id={describedById} className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            {hint}
-          </p>
-        ) : null}
-      </div>
-    );
+// Input styles using design tokens
+const inputVariants = {
+  base: cn(
+    'block w-full',
+    'rounded-lg',
+    'border bg-white dark:bg-gray-800',
+    'text-[var(--color-text-primary)]',
+    'placeholder-[var(--color-text-muted)]',
+    'focus:outline-none focus:ring-2 focus:ring-[var(--color-majestic-pink)] focus:border-[var(--color-majestic-pink)]',
+    'disabled:bg-[var(--color-bg-tertiary)] disabled:text-[var(--color-text-muted)] disabled:cursor-not-allowed',
+    'transition-all duration-200'
+  ),
+  states: {
+    default: cn(
+      'border-[var(--color-border-default)]',
+      'hover:border-[var(--color-border-hover)]',
+      'focus:border-[var(--color-majestic-pink)]'
+    ),
+    error: cn(
+      'border-red-500 text-red-900 dark:text-red-300',
+      'placeholder-red-400',
+      'focus:ring-red-500 focus:border-red-500'
+    ),
   },
+  sizes: {
+    [InputSize.Sm]: 'text-sm px-3 py-1.5 min-h-[2rem]',
+    [InputSize.Md]: 'text-sm px-4 py-2 min-h-[2.5rem]',
+    [InputSize.Lg]: 'text-base px-5 py-2.5 min-h-[3rem]',
+  },
+};
+
+export const Input = React.memo<InputProps>(
+  forwardRef<HTMLInputElement, InputProps>(
+    (
+      {
+        label,
+        hint,
+        error,
+        invalid,
+        size = InputSize.Md,
+        className = '',
+        containerClassName = '',
+        id,
+        required,
+        ...props
+      },
+      ref,
+    ) => {
+      const reactGeneratedId = useId();
+      const inputId = id ?? `input-${reactGeneratedId}`;
+
+      const isInvalid = Boolean(error) || Boolean(invalid);
+      const describedById = hint || error ? `${inputId}-desc` : undefined;
+
+      return (
+        <div className={cn('w-full', containerClassName)}>
+          {label && (
+            <label
+              htmlFor={inputId}
+              className={cn(
+                'mb-1 block font-medium',
+                'text-[var(--color-text-secondary)]',
+                inputVariants.sizes[size]?.includes('text-base') ? 'text-base' : 'text-sm'
+              )}
+            >
+              {label}
+              {required ? (
+                <span
+                  className="ml-1 text-red-600 dark:text-red-400"
+                  aria-hidden="true"
+                >
+                  *
+                </span>
+              ) : null}
+            </label>
+          )}
+
+          <input
+            id={inputId}
+            ref={ref}
+            className={cn(
+              inputVariants.base,
+              inputVariants.sizes[size],
+              isInvalid ? inputVariants.states.error : inputVariants.states.default,
+              className
+            )}
+            aria-invalid={isInvalid || undefined}
+            aria-describedby={describedById}
+            aria-required={required || undefined}
+            required={required}
+            {...props}
+          />
+
+          {error ? (
+            <p
+              id={describedById}
+              className={cn(
+                'mt-1 text-sm',
+                'text-red-600 dark:text-red-400'
+              )}
+              role="alert"
+            >
+              {error}
+            </p>
+          ) : hint ? (
+            <p
+              id={describedById}
+              className={cn(
+                'mt-1',
+                'text-[var(--color-text-muted)]',
+                inputVariants.sizes[size]?.includes('text-base') ? 'text-sm' : 'text-xs'
+              )}
+            >
+              {hint}
+            </p>
+          ) : null}
+        </div>
+      );
+    },
+  )
 );
 
 Input.displayName = 'Input';

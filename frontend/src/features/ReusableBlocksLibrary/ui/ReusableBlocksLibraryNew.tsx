@@ -1,7 +1,5 @@
 import React from 'react';
-import { Modal } from '../../../shared/ui/molecules/Modal';
-import { Spinner } from '../../../shared/ui/atoms/Spinner';
-import { Button } from '../../../shared/ui/atoms/Button';
+import { Modal, Spinner, Button } from '@my-forum/ui';
 import { LibraryHeader } from './LibraryHeader';
 import { LibrarySearch } from './LibrarySearch';
 import { LibraryFilters } from './LibraryFilters';

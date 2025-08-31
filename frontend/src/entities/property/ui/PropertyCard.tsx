@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Property } from 'shared/lib/types';
-import { Card, Typography, Icon } from 'shared/ui/atoms';
+import { Card, Typography, Icon } from '@my-forum/ui';
 
 interface PropertyCardProps {
   property: Property;

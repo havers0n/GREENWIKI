@@ -7,9 +7,8 @@ import { ReduxProvider } from 'app/providers/ReduxProvider'
 import { AppThemeProvider } from 'app/providers/ThemeProvider'
 import { NotificationProvider } from 'shared/contexts/NotificationContext'
 import 'app/styles/index.css'
-import { AppMantineProvider } from 'app/providers/MantineProvider'
-import '@mantine/core/styles.css'
-import '@mantine/notifications/styles.css'
+import 'shared/styles/animations.css'
+
 
 createRoot(document.getElementById('root')!).render(
   <BrowserRouter>
@@ -17,9 +16,7 @@ createRoot(document.getElementById('root')!).render(
       <AppThemeProvider>
         <NotificationProvider>
           <AuthProvider>
-            <AppMantineProvider>
-              <App />
-            </AppMantineProvider>
+            <App />
           </AuthProvider>
         </NotificationProvider>
       </AppThemeProvider>

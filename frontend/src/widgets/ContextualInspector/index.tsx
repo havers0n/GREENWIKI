@@ -1,27 +1,28 @@
 import React, { useState } from 'react';
 import type { Database } from '@my-forum/db-types';
-import { Typography, Button, Spinner } from 'shared/ui/atoms';
+import { Typography, Button, Spinner } from '@my-forum/ui';
 import { blockRegistry } from 'shared/config/blockRegistry';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Tabs } from '@mantine/core';
+import { Tabs, TabList, Tab, TabPanel } from '@my-forum/ui';
 import { SpacingControl, ColorPicker, BorderControl, BackgroundControl } from './controls';
 import { Breadcrumbs } from 'widgets/Breadcrumbs';
 import { OverridesPanel } from 'widgets/OverridesPanel';
 import { useAppSelector } from '../../store/hooks';
 import { selectIsBlockInstance } from '../../store/selectors/blockSelectors';
+import type { BlockNode } from '../../types/api';
 
 type LayoutBlock = Database['public']['Tables']['layout_blocks']['Row'];
 
 interface ContextualInspectorProps {
-  block: LayoutBlock | null;
+  block: BlockNode | LayoutBlock | null;
   isOpen: boolean;
   onClose: () => void;
-  onBlockChange: (updatedBlock: LayoutBlock) => void;
+  onBlockChange: (updatedBlock: BlockNode | LayoutBlock) => void;
   onPublishToggle?: (blockId: string) => Promise<void>;
   publishing?: boolean;
   onBlockDelete?: (blockId: string) => Promise<void>;
   // Для хлебных крошек
-  allBlocks?: LayoutBlock[];
+  allBlocks?: (BlockNode | LayoutBlock)[];
   // Для перемещения блоков
   onMoveLeft?: (blockId: string) => void;
   onMoveRight?: (blockId: string) => void;
@@ -233,23 +234,23 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
             )}
 
             {/* Вкладки с настройками */}
-            <Tabs defaultValue={isInstance ? "overrides" : "content"} className="w-full">
-              <Tabs.List className="mb-4">
+            <Tabs defaultValue={isInstance ? 0 : 1} className="w-full">
+              <TabList className="mb-4">
                 {isInstance && (
-                  <Tabs.Tab value="overrides" className="text-sm">
+                  <Tab index={0} className="text-sm">
                     🔄 Переопределения
-                  </Tabs.Tab>
+                  </Tab>
                 )}
-                <Tabs.Tab value="content" className="text-sm">
+                <Tab index={isInstance ? 1 : 0} className="text-sm">
                   📝 Настройки блока
-                </Tabs.Tab>
-                <Tabs.Tab value="design" className="text-sm">
+                </Tab>
+                <Tab index={isInstance ? 2 : 1} className="text-sm">
                   🎨 Дизайн
-                </Tabs.Tab>
-              </Tabs.List>
+                </Tab>
+              </TabList>
 
               {isInstance && blockId && (
-                <Tabs.Panel value="overrides" className="space-y-4">
+                <TabPanel index={0} className="space-y-4">
                   <OverridesPanel
                     blockId={blockId}
                     onSave={() => {
@@ -261,10 +262,10 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
                       console.error('Overrides save error:', error);
                     }}
                   />
-                </Tabs.Panel>
+                </TabPanel>
               )}
 
-              <Tabs.Panel value="content" className="space-y-4">
+              <TabPanel index={isInstance ? 1 : 0} className="space-y-4">
                 <Editor
                   data={data}
                   onChange={(newData) => {
@@ -284,9 +285,9 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
                     }
                   }}
                 />
-              </Tabs.Panel>
+              </TabPanel>
 
-              <Tabs.Panel value="design" className="space-y-4">
+              <TabPanel index={isInstance ? 2 : 1} className="space-y-4">
                 {/* Дизайн контролы в зависимости от типа блока */}
                 {(block.block_type === 'container_section' || block.block_type === 'single_button' || block.block_type === 'heading' || block.block_type === 'tabs' || block.block_type === 'accordion') && (
                   <>
@@ -330,7 +331,7 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
                     <p className="text-sm">Дизайн настройки недоступны для этого типа блока</p>
                   </div>
                 )}
-              </Tabs.Panel>
+              </TabPanel>
             </Tabs>
 
             {/* Панель удаления */}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button } from 'shared/ui/atoms';
+import { Button } from '@my-forum/ui';
 
 interface ButtonItem {
 	id: string;

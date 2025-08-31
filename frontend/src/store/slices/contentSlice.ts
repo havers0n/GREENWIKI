@@ -6,6 +6,7 @@ import {
   updateBlockInTree as updateBlockInTreeUtil,
   removeBlockFromTree as removeBlockFromTreeUtil,
   moveBlockInTree as moveBlockInTreeUtil,
+  findBlockById,
   flattenTree,
   buildTreeFromFlat
 } from './treeUtils';
@@ -160,7 +161,24 @@ const contentSlice = createSlice({
       newPosition: number;
     }>) => {
       const { blockId, newParentId, newPosition } = action.payload;
+
+      console.log('🔄 Redux: moveBlockInTree called', { blockId, newParentId, newPosition });
+      console.log('🔄 Redux: blockTree before:', state.blockTree.map(b => ({
+        id: b.id,
+        parent: b.parent_block_id,
+        position: b.position,
+        children: b.children?.length || 0
+      })));
+
       state.blockTree = moveBlockInTreeUtil(state.blockTree, blockId, newParentId, newPosition);
+
+      console.log('🔄 Redux: blockTree after:', state.blockTree.map(b => ({
+        id: b.id,
+        parent: b.parent_block_id,
+        position: b.position,
+        children: b.children?.length || 0
+      })));
+
       state.hasUnsavedChanges = true;
     },
 

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Typography, Button, Spinner } from 'shared/ui/atoms';
+import { Card, Button } from '@my-forum/ui';
+import { Typography } from '@my-forum/ui';
+import { Modal } from '@my-forum/ui';
 import BlockLibrary from 'widgets/BlockLibrary';
 import RevisionsModal from 'widgets/RevisionsModal';
-import { Modal } from 'shared/ui/molecules';
 import { ReusableBlocksLibrary } from 'features/ReusableBlocksLibrary';
 import { useAppDispatch, useAppSelector } from 'store/hooks';
 import { setLibraryOpen } from 'store/slices/reusableBlocksSlice';
@@ -20,6 +21,12 @@ interface EditorToolbarProps {
   onCancel: () => Promise<void>;
   onAddBlock: (type: string) => Promise<void>;
   adding: boolean;
+
+  // Undo/Redo functionality
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
 
   // Templates
   // Templates removed - will be implemented later
@@ -39,6 +46,10 @@ interface EditorToolbarProps {
   // Pages navigation
   pages: PageRow[];
   pagesLoading: boolean;
+
+  // UnifiedSidebar integration
+  onOpenBlockLibrary?: () => void;
+  onOpenReusableLibrary?: () => void;
 }
 
 const EditorToolbar: React.FC<EditorToolbarProps> = ({
@@ -57,6 +68,12 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onRevertRevision,
   pages,
   pagesLoading,
+  onOpenBlockLibrary,
+  onOpenReusableLibrary,
+  onUndo,
+  onRedo,
+  canUndo = false,
+  canRedo = false,
 }) => {
   console.log('EditorToolbar: Rendering with pageIdentifier:', pageIdentifier);
 
@@ -88,7 +105,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         <div className="flex items-center justify-between">
           {/* Левая часть - основные действия */}
           <div className="flex items-center gap-3">
-            <Typography as="h1" variant="h1" className="text-xl font-bold">
+            <Typography variant="h3" className="text-xl font-bold">
               Редактор страницы
             </Typography>
 
@@ -114,22 +131,57 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
             <div className="flex items-center gap-2">
               <Button
-                variant="primary"
                 onClick={() => {
-                  console.log('📚 LIBRARY: Opening block library');
-                  setShowBlockLibrary(true);
+                  console.log('📚 LIBRARY: Opening block library via sidebar');
+                  if (onOpenBlockLibrary) {
+                    onOpenBlockLibrary();
+                  } else {
+                    // Fallback для обратной совместимости
+                    setShowBlockLibrary(true);
+                  }
                 }}
                 disabled={adding}
+                size="sm"
               >
                 ➕ Добавить блок
               </Button>
 
+              {/* Undo/Redo кнопки */}
+              {onUndo && (
+                <Button
+                  variant="secondary"
+                  onClick={onUndo}
+                  disabled={!canUndo}
+                  size="sm"
+                  title="Отменить последнее действие (Ctrl+Z)"
+                >
+                  ↶ Undo
+                </Button>
+              )}
+              {onRedo && (
+                <Button
+                  variant="secondary"
+                  onClick={onRedo}
+                  disabled={!canRedo}
+                  size="sm"
+                  title="Повторить отмененное действие (Ctrl+Y)"
+                >
+                  ↷ Redo
+                </Button>
+              )}
+
               <Button
                 variant="secondary"
                 onClick={() => {
-                  console.log('🔄 REUSABLE: Opening reusable blocks library');
-                  dispatch(setLibraryOpen(true));
+                  console.log('🔄 REUSABLE: Opening reusable blocks library via sidebar');
+                  if (onOpenReusableLibrary) {
+                    onOpenReusableLibrary();
+                  } else {
+                    // Fallback для обратной совместимости
+                    dispatch(setLibraryOpen(true));
+                  }
                 }}
+                size="sm"
               >
                 📚 Переиспользуемые блоки
               </Button>
@@ -138,6 +190,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                 variant="secondary"
                 onClick={() => setShowTemplatesModal(true)}
                 disabled={templatesLoading}
+                size="sm"
               >
                 📄 Шаблоны
               </Button> */}
@@ -146,6 +199,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                 variant="secondary"
                 onClick={() => setShowRevisionsModal(true)}
                 disabled={revisionsLoading}
+                size="sm"
               >
                 🕒 Ревизии
               </Button>
@@ -161,18 +215,17 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                   Есть несохраненные изменения
                 </span>
                 <div className="flex items-center gap-2">
-                  <Button variant="secondary" disabled={saving} onClick={onCancel}>
+                  <Button variant="secondary" disabled={saving} onClick={onCancel} size="sm">
                     Отменить
                   </Button>
-                  <Button onClick={onSave} disabled={saving}>
-                    {saving ? (
-                      <>
-                        <Spinner className="w-4 h-4 mr-1" />
-                        Сохранение…
-                      </>
-                    ) : (
-                      'Сохранить'
-                    )}
+                  <Button
+                    onClick={onSave}
+                    disabled={saving}
+                    loading={saving}
+                    size="sm"
+                    data-tutorial="save-button"
+                  >
+                    {saving ? 'Сохранение…' : 'Сохранить'}
                   </Button>
                 </div>
               </>

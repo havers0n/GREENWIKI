@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
+import { Icon } from '../atoms/Icon';
 import { cn } from '../lib/utils';
 
 export interface DropdownOption {
   value: string;
   label: string;
   disabled?: boolean;
-  icon?: React.ReactNode;
+  icon?: React.ElementType;
 }
 
 export interface DropdownProps {
@@ -119,12 +120,13 @@ export const Dropdown: React.FC<DropdownProps> = ({
       >
         <span className="block truncate">{getDisplayValue()}</span>
         <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-          {React.createElement(ChevronDown as any, {
-            className: cn(
+          <Icon
+            icon={ChevronDown}
+            className={cn(
               'h-5 w-5 text-gray-400 transition-transform',
               isOpen && 'transform rotate-180'
-            )
-          })}
+            )}
+          />
         </span>
       </button>
 
@@ -164,13 +166,13 @@ export const Dropdown: React.FC<DropdownProps> = ({
                 {multiple && (
                   <div className="mr-3">
                     {selectedValues.includes(option.value) && (
-                      React.createElement(Check as any, { className: "h-4 w-4 text-blue-600" })
+                      <Icon icon={Check} size={16} className="text-blue-600" />
                     )}
                   </div>
                 )}
 
                 {option.icon && (
-                  <span className="mr-3">{option.icon}</span>
+                  <Icon icon={option.icon} size={16} className="mr-3" />
                 )}
 
                 <span className="flex-1">{renderOption ? renderOption(option) : option.label}</span>

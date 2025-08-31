@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../shared/contexts';
 import { supabase } from '../../supabase';
 import { Header } from '../../widgets';
-import { Button } from '../../shared/ui/atoms';
+import { Button } from '@my-forum/ui';
 
 // Удаляем неиспользуемые импорты @supabase/auth-ui-react
 // import { Auth } from '@supabase/auth-ui-react';
@@ -12,6 +12,7 @@ import { Button } from '../../shared/ui/atoms';
 const LoginPage: React.FC = () => {
   const { user, loading, error: authError } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
@@ -25,10 +26,13 @@ const LoginPage: React.FC = () => {
 
   useEffect(() => {
     if (!loading && user) {
-      // Перенаправляем авторизованного пользователя обратно
-      navigate('/');
+      // Перенаправляем авторизованного пользователя обратно на страницу,
+      // куда он изначально хотел попасть, или на главную
+      const from = location.state?.from?.pathname || '/';
+      console.log('🔄 LoginPage redirecting to:', from);
+      navigate(from, { replace: true });
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, location.state]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +53,8 @@ const LoginPage: React.FC = () => {
           password,
         });
         if (error) throw error;
+        // Успешный вход - редирект будет выполнен в useEffect выше
+        console.log('✅ Login successful, waiting for redirect...');
       }
     } catch (error: any) {
       setError(error.message || 'Произошла ошибка при аутентификации');

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { SearchInput, ThemeToggle } from 'shared/ui/molecules';
+import { SearchInput, ThemeToggle } from '@my-forum/ui';
 
 const Header = (): React.ReactNode => {
     return (
