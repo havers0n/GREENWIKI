@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { Card, Icon } from '@my-forum/ui';
+import { Image, Eye } from 'lucide-react';
+import { Card } from '@my-forum/ui';
 import type { ReusableBlock } from '../../types/api';
 
 interface BlockCardProps {
@@ -8,6 +9,7 @@ interface BlockCardProps {
 }
 
 export const BlockCard: React.FC<BlockCardProps> = ({ block }) => {
+  const [imageError, setImageError] = useState(false);
   // Настраиваем draggable с уникальным ID
   const {
     attributes,
@@ -46,30 +48,16 @@ export const BlockCard: React.FC<BlockCardProps> = ({ block }) => {
       <div className="space-y-3">
         {/* Изображение превью */}
         <div className="aspect-video bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
-          {block.preview_image_url ? (
+          {block.preview_image_url && !imageError ? (
             <img
               src={block.preview_image_url}
               alt={block.name}
               className="w-full h-full object-cover"
-              onError={(e) => {
-                // Fallback если изображение не загрузилось
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                const parent = target.parentElement;
-                if (parent) {
-                  parent.innerHTML = `
-                    <div class="w-full h-full flex items-center justify-center text-gray-400">
-                      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                      </svg>
-                    </div>
-                  `;
-                }
-              }}
+              onError={() => setImageError(true)}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-400">
-              <Icon name="image" className="w-8 h-8" />
+              <Image className="w-8 h-8" />
             </div>
           )}
         </div>
@@ -97,7 +85,7 @@ export const BlockCard: React.FC<BlockCardProps> = ({ block }) => {
               )}
             </div>
             <div className="flex items-center space-x-1 text-gray-500 dark:text-gray-400">
-              <Icon name="eye" className="w-3 h-3" />
+              <Eye className="w-3 h-3" />
               <span>{block.usage_count}</span>
             </div>
           </div>

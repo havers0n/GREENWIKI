@@ -192,7 +192,7 @@ const userSlice = createSlice({
     },
 
     // Проверка прав доступа
-    checkPermissions: (state, action: PayloadAction<{ resource: string; action: string }>) => {
+    checkPermissions: (_state, _action: PayloadAction<{ resource: string; action: string }>) => {
       // Логика проверки прав будет реализована в middleware
     },
 

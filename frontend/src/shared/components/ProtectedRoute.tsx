@@ -11,22 +11,24 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requireAdmin = false
 }) => {
-  const { user, isAdmin, isLoading } = useAuth();
+  const { user, isAdmin, isLoading, isInitialized } = useAuth();
   const location = useLocation();
 
   console.log(`🔒 ProtectedRoute for ${location.pathname}:`, {
     isLoading,
+    isInitialized,
     user: user ? 'present' : 'null',
     isAdmin,
     requireAdmin
   });
 
-  // 1. Пока идет загрузка профиля, показываем спиннер
-  if (isLoading) {
-    console.log('--> ⏳ WAITING (loading)');
+  // 1. Ждем завершения инициализации и загрузки профиля
+  if (!isInitialized || isLoading) {
+    console.log('--> ⏳ WAITING (initialization or loading)');
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <div className="ml-3 text-gray-600">Инициализация...</div>
       </div>
     );
   }

@@ -1,13 +1,4 @@
-// Основной экспорт ButtonBlock
-
-// UI компоненты
-export { ButtonBlock } from './ui/ButtonBlock';
-export { ButtonBlockEditor } from './ui/ButtonBlockEditor';
-export { ButtonLink } from './ui/ButtonLink';
-
-// Хуки
-export { useButtonBlockLogic } from './model/useButtonBlockLogic';
-export { useButtonBlockStyles } from './model/useButtonBlockStyles';
+// Полный ре-экспорт всех сущностей ButtonBlock
 
 // Типы
 export type {
@@ -19,8 +10,18 @@ export type {
   LinkConfig,
   LinkType,
   UseButtonBlockLogicResult,
-  UseButtonBlockStylesResult
+  UseButtonBlockStylesResult,
+  BaseButtonBlockProps
 } from './types';
 
-// Переэкспорт для удобства
+// Хуки
+export { useButtonBlockLogic } from './model/useButtonBlockLogic';
+export { useButtonBlockStyles } from './model/useButtonBlockStyles';
+
+// Компоненты
+export { ButtonBlock } from './ui/ButtonBlock';
+export { default as ButtonBlockEditor } from './ui/ButtonBlockEditor';
+export { ButtonLink } from './ui/ButtonLink';
+
+// Default экспорты
 export { ButtonBlock as default } from './ui/ButtonBlock';

@@ -73,7 +73,7 @@ export const EditorContainerExample: React.FC = () => {
       borderRadius="8px"
       title="Редактируемый контейнер"
     >
-      {/* Здесь будут дочерние блоки, рендер которых будет управляться через BlockRenderer */}
+      <></>
     </ContainerBlockEditor>
   );
 };
@@ -107,7 +107,7 @@ export const MigrationExample: React.FC = () => {
       gap="large"
       padding="medium"
     >
-      {/* Дочерние блоки рендерятся здесь */}
+      <></>
     </ContainerBlockEditor>
   );
 

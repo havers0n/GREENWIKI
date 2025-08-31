@@ -1,10 +1,10 @@
 import React from 'react';
 import { useAuth } from '../shared/contexts';
 import { Card } from '@my-forum/ui';
-import { Header } from '../widgets';
+import { DebugHeader } from '../features/DebugTools';
 
 const DebugPage: React.FC = () => {
-  const { user, profile, loading, error, session, forceCompleteLoading, createProfileTable } = useAuth();
+  const { user, profile, loading, error, forceCompleteLoading, createProfileTable } = useAuth();
 
   const debugInfo = {
     timestamp: new Date().toISOString(),
@@ -21,12 +21,7 @@ const DebugPage: React.FC = () => {
       role: profile.role,
       username: profile.username,
     } : null,
-    session: session ? {
-      access_token: session.access_token ? 'present' : 'missing',
-      refresh_token: session.refresh_token ? 'present' : 'missing',
-      expires_at: session.expires_at,
-      user: session.user ? 'present' : 'missing',
-    } : null,
+
     env: {
       VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL ? 'present' : 'missing',
       VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY ? 'present' : 'missing',
@@ -35,7 +30,7 @@ const DebugPage: React.FC = () => {
 
   return (
     <>
-      <Header />
+      <DebugHeader />
       <div className="max-w-4xl mx-auto py-8 px-4">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Отладка аутентификации</h1>
@@ -176,7 +171,7 @@ CREATE POLICY "Users can update own profile" ON profiles
           </Card>
 
           {/* Сессия */}
-          <Card className="p-6">
+          {/* <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Сессия</h2>
             {session ? (
               <pre className="bg-gray-50 p-3 rounded text-sm overflow-auto">
@@ -185,7 +180,7 @@ CREATE POLICY "Users can update own profile" ON profiles
             ) : (
               <div className="text-gray-500">Сессия отсутствует</div>
             )}
-          </Card>
+          </Card> */}
 
           {/* Действия */}
           <Card className="p-6">

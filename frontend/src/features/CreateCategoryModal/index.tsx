@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Button, ButtonSize, Input } from '@my-forum/ui';
+import { Modal, Button, Input } from '@my-forum/ui';
 import { createCategory } from 'shared/api/categories';
 import type { TablesInsert } from '@my-forum/db-types';
 
@@ -39,7 +39,7 @@ const CreateCategoryModal: React.FC<Props> = ({ onClose, onCreated }) => {
           delete newErrors.slug;
         }
         break;
-      case 'position':
+      case 'position': {
         const numValue = Number(value);
         if (value && (isNaN(numValue) || numValue < 0)) {
           newErrors.position = 'Позиция должна быть положительным числом';
@@ -47,6 +47,7 @@ const CreateCategoryModal: React.FC<Props> = ({ onClose, onCreated }) => {
           delete newErrors.position;
         }
         break;
+      }
     }
 
     setErrors(newErrors);
@@ -95,16 +96,17 @@ const CreateCategoryModal: React.FC<Props> = ({ onClose, onCreated }) => {
       await createCategory(payload);
       onCreated();
       onClose();
-    } catch (e: any) {
+    } catch (e: unknown) {
       // Общая ошибка формы
-      setErrors({ submit: e?.message || 'Не удалось создать категорию' });
+      const errorMessage = e instanceof Error ? e.message : 'Не удалось создать категорию';
+      setErrors({ submit: errorMessage });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Modal title="Создать категорию" onClose={onClose}>
+    <Modal isOpen={true} title="Создать категорию" onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-6">
         {errors.submit && (
           <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">

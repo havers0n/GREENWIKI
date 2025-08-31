@@ -39,10 +39,10 @@ export const SpacingControl: React.FC<SpacingControlProps> = ({
 
   return (
     <div>
-      <Text variant="body-sm" className="font-medium mb-2">{label}</Text>
+      <Text variant="small" className="font-medium mb-2">{label}</Text>
 
       {/* Padding */}
-      <Text variant="caption" className="text-gray-600 mb-2">Внутренние отступы (Padding)</Text>
+      <Text variant="small" className="text-gray-600 mb-2">Внутренние отступы (Padding)</Text>
       <div className="grid grid-cols-2 gap-3 mb-4">
         <TextInput
           label="Верх"
@@ -73,7 +73,7 @@ export const SpacingControl: React.FC<SpacingControlProps> = ({
       </div>
 
       {/* Margin */}
-      <Text variant="caption" className="text-gray-600 mb-2">Внешние отступы (Margin)</Text>
+      <Text variant="small" className="text-gray-600 mb-2">Внешние отступы (Margin)</Text>
       <div className="grid grid-cols-2 gap-3 mb-4">
         <TextInput
           label="Верх"

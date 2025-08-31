@@ -4,7 +4,7 @@ import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { Spinner } from './Spinner';
 import { Icon } from './Icon';
-import type { LucideProps } from 'lucide-react';
+import type { LucideProps, LucideIcon } from 'lucide-react';
 
 // Design tokens types
 export const ButtonVariant = {
@@ -30,9 +30,9 @@ export interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonE
   fullWidth?: boolean;
   loading?: boolean;
   /** Компонент иконки для левой стороны (из lucide-react) */
-  leftIcon?: React.ElementType;
+  leftIcon?: LucideIcon;
   /** Компонент иконки для правой стороны (из lucide-react) */
-  rightIcon?: React.ElementType;
+  rightIcon?: LucideIcon;
   className?: string;
 }
 

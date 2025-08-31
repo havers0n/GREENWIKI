@@ -3,8 +3,8 @@ import type {
   UseLibraryVirtualizationResult,
   GridConfig,
   VirtualizationConfig,
-  ReusableBlock
 } from '../types';
+import type { ReusableBlock } from '../../../types/api';
 
 /**
  * Хук для управления виртуализацией сетки блоков

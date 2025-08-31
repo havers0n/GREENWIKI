@@ -1,25 +1,33 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ErrorBoundary } from '@my-forum/ui';
-import HomePage from 'pages/HomePage';
-import LoginPage from 'pages/LoginPage';
-import ForbiddenPage from 'pages/ForbiddenPage';
-import AdminLayout from 'pages/AdminLayout';
-import AdminCategoriesPage from 'pages/AdminCategoriesPage';
-import AdminSectionsPage from 'pages/AdminSectionsPage';
-import AdminEditorPage from 'pages/AdminEditorPage';
-import AdminAnalyticsPage from 'pages/AdminAnalyticsPage';
-import AdminContentPage from 'pages/AdminContentPage';
-import AdminMediaPage from 'pages/AdminMediaPage';
-import AdminUsersPage from 'pages/AdminUsersPage';
-import DebugPage from 'pages/DebugPage';
-import UIDemoPage from 'pages/UIDemoPage';
-import TreeDemoPage from 'pages/TreeDemoPage';
-import PerformanceTestPage from 'pages/PerformanceTestPage';
-import DnDTestPage from 'pages/DnDTestPage';
+
+// Ленивая загрузка публичных страниц (быстрая загрузка)
+const HomePage = lazy(() => import('pages/HomePage'));
+const LoginPage = lazy(() => import('pages/LoginPage'));
+const ForbiddenPage = lazy(() => import('pages/ForbiddenPage'));
+
+// Ленивая загрузка админ-страниц (тяжелые, загружаются по требованию)
+const AdminLayout = lazy(() => import('pages/AdminLayout'));
+const AdminCategoriesPage = lazy(() => import('pages/AdminCategoriesPage'));
+const AdminSectionsPage = lazy(() => import('pages/AdminSectionsPage'));
+const AdminEditorPage = lazy(() => import('pages/AdminEditorPage'));
+const AdminAnalyticsPage = lazy(() => import('pages/AdminAnalyticsPage'));
+const AdminContentPage = lazy(() => import('pages/AdminContentPage'));
+const AdminMediaPage = lazy(() => import('pages/AdminMediaPage'));
+const AdminUsersPage = lazy(() => import('pages/AdminUsersPage'));
+const AdminPagesPage = lazy(() => import('pages/AdminPagesPage'));
+
+// Ленивая загрузка демо и debug страниц
+const DebugPage = lazy(() => import('pages/DebugPage'));
+const UIDemoPage = lazy(() => import('pages/UIDemoPage'));
+const TreeDemoPage = lazy(() => import('pages/TreeDemoPage'));
+const PerformanceTestPage = lazy(() => import('pages/PerformanceTestPage'));
+const DnDTestPage = lazy(() => import('pages/DnDTestPage'));
+
+// Синхронная загрузка критических компонентов
 import { ProtectedRoute } from 'shared/components/ProtectedRoute';
 import { NotificationContainer } from 'shared/components/NotificationContainer';
-import AdminPagesPage from 'pages/AdminPagesPage';
 
 const App: React.FC = () => {
   const handleError = (error: Error, errorInfo: React.ErrorInfo) => {
@@ -40,7 +48,15 @@ const App: React.FC = () => {
       onError={handleError}
       showDetails={process.env.NODE_ENV === 'development'}
     >
-      <Routes>
+      <Suspense fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Загрузка...</p>
+          </div>
+        </div>
+      }>
+        <Routes>
         {/* Публичные роуты */}
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -75,7 +91,8 @@ const App: React.FC = () => {
           <Route path="sections" element={<AdminSectionsPage />} />
           <Route path="pages" element={<AdminPagesPage />} />
         </Route>
-      </Routes>
+        </Routes>
+      </Suspense>
       {/* Контейнер для уведомлений */}
       <NotificationContainer />
     </ErrorBoundary>

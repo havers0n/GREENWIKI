@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Modal, Button, ButtonSize, Input, Select, Textarea, RadioGroup, RadioGroupItem } from '@my-forum/ui';
+import { Modal, Button, Input, Select, Textarea, RadioGroup, RadioGroupItem } from '@my-forum/ui';
 import { fetchCategories } from 'shared/api/categories';
 import { updateSection } from 'shared/api/sections';
 import type { Database, TablesUpdate } from '@my-forum/db-types';
@@ -34,7 +34,7 @@ const EditSectionModal: React.FC<Props> = ({ section, onClose, onUpdated }) => {
       try {
         setCategories(await fetchCategories());
       } catch (e: any) {
-        setError(e?.message || 'Ошибка загрузки категорий');
+        setErrors({ general: e?.message || 'Ошибка загрузки категорий' });
       }
     };
     loadCats();
@@ -46,7 +46,7 @@ const EditSectionModal: React.FC<Props> = ({ section, onClose, onUpdated }) => {
         const data = await fetchAdminPages();
         setPages(data);
       } catch (e: any) {
-        setError(e?.message || 'Ошибка загрузки страниц');
+        setErrors({ general: e?.message || 'Ошибка загрузки страниц' });
       }
     };
     loadPages();
@@ -82,7 +82,7 @@ const EditSectionModal: React.FC<Props> = ({ section, onClose, onUpdated }) => {
         }
         break;
 
-      case 'position':
+      case 'position': {
         const numValue = Number(value);
         if (value && (isNaN(numValue) || numValue < 0 || numValue > 999)) {
           newErrors.position = 'Позиция должна быть числом от 0 до 999';
@@ -90,6 +90,7 @@ const EditSectionModal: React.FC<Props> = ({ section, onClose, onUpdated }) => {
           delete newErrors.position;
         }
         break;
+      }
 
       case 'categoryId':
         if (!value || value === '') {
@@ -124,9 +125,9 @@ const EditSectionModal: React.FC<Props> = ({ section, onClose, onUpdated }) => {
     }
 
     // XOR validation for link types
-    if (linkType === 'internal' && pageId && pageId !== '' && externalUrl.trim()) {
+    if (linkType === 'internal' && pageId && Number(pageId) > 0 && externalUrl.trim()) {
       newErrors.linkXor = 'Нельзя указывать одновременно внутреннюю страницу и внешний URL';
-    } else if (linkType === 'external' && externalUrl.trim() && pageId && pageId !== '') {
+    } else if (linkType === 'external' && externalUrl.trim() && pageId && Number(pageId) > 0) {
       newErrors.linkXor = 'Нельзя указывать одновременно внешний URL и внутреннюю страницу';
     } else {
       delete newErrors.linkXor;
@@ -170,7 +171,7 @@ const EditSectionModal: React.FC<Props> = ({ section, onClose, onUpdated }) => {
            name.trim().length >= 2 &&
            categoryId !== '' &&
            categoryId !== null &&
-           ((linkType === 'internal' && pageId !== '' && pageId !== null) ||
+           ((linkType === 'internal' && Number(pageId) > 0 && pageId !== null) ||
             (linkType === 'external' && externalUrl.trim().length > 0));
   }, [errors, name, categoryId, linkType, pageId, externalUrl]);
 
@@ -214,7 +215,7 @@ const EditSectionModal: React.FC<Props> = ({ section, onClose, onUpdated }) => {
   };
 
   return (
-    <Modal title="Редактировать секцию" onClose={onClose}>
+    <Modal isOpen={true} title="Редактировать секцию" onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-6">
         {errors.submit && (
           <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">

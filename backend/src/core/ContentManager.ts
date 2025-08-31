@@ -12,7 +12,7 @@ export interface Content {
   authorId: string;
   createdAt: Date;
   updatedAt: Date;
-  publishedAt?: Date;
+  publishedAt?: Date | null;
   metadata?: Record<string, any>;
 }
 
@@ -23,7 +23,7 @@ export interface ContentVersion {
   data: any;
   authorId: string;
   createdAt: Date;
-  comment?: string;
+  comment?: string | null;
 }
 
 export interface CreateContentInput {
@@ -93,7 +93,7 @@ export class ContentManager {
         authorId: input.authorId,
         createdAt: new Date(),
         updatedAt: new Date(),
-        publishedAt: input.status === 'published' ? new Date() : undefined,
+        publishedAt: input.status === 'published' ? new Date() : null,
         metadata: input.metadata || {}
       };
 
@@ -118,7 +118,7 @@ export class ContentManager {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'content:create',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         input
       });
       throw error;
@@ -147,7 +147,7 @@ export class ContentManager {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'content:getById',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         id
       });
       throw error;
@@ -176,7 +176,7 @@ export class ContentManager {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'content:getBySlug',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         slug
       });
       throw error;
@@ -204,7 +204,7 @@ export class ContentManager {
         updatedAt: new Date(),
         publishedAt: input.status === 'published' && !existingContent.publishedAt
           ? new Date()
-          : existingContent.publishedAt
+          : existingContent.publishedAt || null
       };
 
       // Create version before update
@@ -227,7 +227,7 @@ export class ContentManager {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'content:update',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         id,
         input
       });
@@ -261,7 +261,7 @@ export class ContentManager {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'content:delete',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         id
       });
       throw error;
@@ -303,7 +303,7 @@ export class ContentManager {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'content:search',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         query
       });
       throw error;
@@ -331,7 +331,7 @@ export class ContentManager {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'content:filter',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         criteria
       });
       throw error;
@@ -347,7 +347,7 @@ export class ContentManager {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'content:getVersions',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         contentId
       });
       throw error;
@@ -396,7 +396,7 @@ export class ContentManager {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'content:revertToVersion',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         contentId,
         versionId
       });
@@ -427,7 +427,7 @@ export class ContentManager {
         },
         authorId,
         createdAt: new Date(),
-        comment
+        comment: comment || null
       };
 
       await this.database.saveContentVersion(version);

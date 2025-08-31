@@ -107,7 +107,7 @@ export const updateLayoutPositions = async (
     // Предпочтительно — один bulk-запрос
     await api.put(`/layout/positions`, updates, { headers });
     return;
-  } catch (bulkError) {
+  } catch (_bulkError) {
     // Фолбэк — поштучные обновления (как раньше)
     const results = await Promise.allSettled(
       updates.map(({ id, position }) => api.put(`/layout/${id}`, { position }, { headers }))
@@ -139,4 +139,12 @@ export const fetchLayoutRevisions = async (pageIdentifier: string) => {
 export const revertToLayoutRevision = async (pageIdentifier: string, revisionId: string): Promise<void> => {
   const headers = await getAuthHeader();
   await api.post(`/layout/${pageIdentifier}/revisions/${revisionId}/revert`, {}, { headers });
+};
+
+// Debug endpoint для проверки информации о пользователе
+export const debugUserInfo = async (): Promise<any> => {
+  const headers = await getAuthHeader();
+  const res = await api.get('/layout/debug', { headers });
+  if (res.data.error) throw new Error(res.data.error);
+  return res.data;
 };

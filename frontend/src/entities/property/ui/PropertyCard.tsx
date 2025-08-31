@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Property } from 'shared/lib/types';
+import { Users, Car, MapPin } from 'lucide-react';
 import { Card, Typography, Icon } from '@my-forum/ui';
 
 interface PropertyCardProps {
@@ -17,18 +18,18 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
         </Typography>
         <div className="flex justify-between text-majestic-gray-400 text-sm mt-4">
           <div className="flex items-center gap-2">
-            <Icon name="users" className="w-4 h-4" />
+            <Icon icon={Users} className="w-4 h-4" />
             <span>{property.residents} жильцов</span>
           </div>
           <div className="flex items-center gap-2">
-            <Icon name="garage" className="w-4 h-4" />
+            <Icon icon={Car} className="w-4 h-4" />
             <span>{property.garageSpaces} гаражных мест</span>
           </div>
         </div>
       </div>
        <div className="p-4 border-t border-majestic-gray-200 flex justify-end">
           <button className="text-majestic-gray-400 hover:text-majestic-pink transition-colors">
-            <Icon name="mapPin" />
+            <Icon icon={MapPin} />
           </button>
         </div>
     </Card>

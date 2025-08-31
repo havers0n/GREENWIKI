@@ -1,7 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { setupListeners } from '@reduxjs/toolkit/query';
 import { useDispatch, useSelector } from 'react-redux';
-import type { TypedUseSelectorHook } from 'react-redux';
+
 import { baseApi } from '../api/baseApi';
 
 // Импорт reducers
@@ -45,3 +45,7 @@ setupListeners(store.dispatch);
 // Типы для TypeScript
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
+
+// Типизированные хуки для использования в компонентах
+export const useAppDispatch = () => useDispatch<AppDispatch>();
+export const useAppSelector = useSelector as any;

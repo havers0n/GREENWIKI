@@ -1,8 +1,9 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useMemo } from 'react';
 import { cn } from '../lib/utils';
 import { Input } from '../atoms/Input';
 import { InspectorField } from './InspectorField';
 import { Move, MoveHorizontal, MoveVertical } from 'lucide-react';
+import { Icon } from '../atoms/Icon';
 
 export interface DimensionValue {
   width?: string;
@@ -68,7 +69,7 @@ export const DimensionControl = React.memo(
         {/* Основные размеры */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-            <Move className="w-4 h-4" />
+            <Icon icon={Move} className="w-4 h-4" />
             Основные размеры
           </div>
 
@@ -83,7 +84,7 @@ export const DimensionControl = React.memo(
                   aria-label={DIMENSION_LABELS.width}
                   className="pr-8"
                 />
-                <MoveHorizontal className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Icon icon={MoveHorizontal} className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               </div>
             </InspectorField>
 
@@ -97,7 +98,7 @@ export const DimensionControl = React.memo(
                   aria-label={DIMENSION_LABELS.height}
                   className="pr-8"
                 />
-                <MoveVertical className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Icon icon={MoveVertical} className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               </div>
             </InspectorField>
           </div>
@@ -107,7 +108,7 @@ export const DimensionControl = React.memo(
         {showConstraints && (
           <div className="space-y-3 border-t border-gray-200 dark:border-gray-600 pt-4">
             <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-              <Move className="w-4 h-4" />
+              <Icon icon={Move} className="w-4 h-4" />
               Ограничения
             </div>
 

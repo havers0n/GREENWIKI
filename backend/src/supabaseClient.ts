@@ -50,3 +50,32 @@ export const supabaseAdmin: SupabaseClient<Database> = createClient<Database>(
     },
   }
 )
+
+export const createSupabaseClientForUser = (jwt: string) => {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error('Supabase URL or Anon Key is not set for user client')
+  }
+
+  // Создаем клиент, который будет действовать от имени пользователя
+  const supabase = createClient<Database>(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
+    {
+      auth: { persistSession: false },
+      global: {
+        headers: {
+          Authorization: `Bearer ${jwt}`, // Привязываем токен к каждому запросу
+        },
+        fetch: (input, init) => {
+          const controller = new AbortController();
+          const signal = controller.signal;
+          const timeout = setTimeout(() => controller.abort(), 60000);
+
+          return fetch(input, { ...init, signal }).finally(() => clearTimeout(timeout));
+        },
+      },
+    }
+  );
+
+  return supabase;
+};

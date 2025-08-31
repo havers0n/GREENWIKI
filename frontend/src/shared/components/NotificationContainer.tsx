@@ -1,6 +1,7 @@
 import React from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Notification } from './Notification';
+import type { NotificationType } from './Notification';
 import { useNotifications } from '../contexts/NotificationContext';
 import { cn } from '../lib/utils';
 
@@ -54,7 +55,7 @@ export const NotificationContainer: React.FC<NotificationContainerProps> = ({
             <Notification
               key={notification.id}
               id={notification.id}
-              type={notification.type}
+              type={notification.type as NotificationType}
               title={notification.title}
               message={notification.message}
               onClose={hideNotification}

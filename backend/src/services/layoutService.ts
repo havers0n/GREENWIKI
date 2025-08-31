@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../supabaseClient'
+import { supabaseAdmin, supabasePublic } from '../supabaseClient'
 import type { Tables, Json } from '@my-forum/db-types'
 
 // Тип для узла дерева блоков
@@ -9,30 +9,60 @@ export interface BlockNode extends Omit<Tables<'layout_blocks'>, 'parent_block_i
 // Сервис для работы с иерархической структурой блоков
 export class LayoutService {
   /**
-   * Получает дерево блоков для страницы используя RPC функцию get_page_blocks_tree_admin
+   * Получает дерево блоков для страницы используя прямой SQL запрос (админ версия - обходит RLS)
    * @param pageId - ID страницы
    * @returns Promise<BlockNode[] | null> - дерево блоков или null если ошибка
    */
   static async getBlockTreeForPage(pageId: number): Promise<BlockNode[] | null> {
     try {
-      const { data, error } = await supabaseAdmin.rpc('get_page_blocks_tree_admin', {
-        p_page_id: pageId
-      })
+      // Используем supabaseAdmin - обходит RLS для админских операций
+      const { data: blocks, error: blocksError } = await supabaseAdmin
+        .from('layout_blocks')
+        .select('id, page_id, instance_id, block_type, content, metadata, position, status, parent_block_id, slot')
+        .eq('page_id', pageId)
+        .order('position', { ascending: true })
 
-      if (error) {
-        console.error('Error fetching block tree:', error)
+      if (blocksError) {
+        console.error('Error fetching blocks:', blocksError)
         return null
       }
 
-      // Функция get_page_blocks_tree_admin возвращает Json, но мы ожидаем массив BlockNode
-      // Если функция возвращает уже готовое дерево, просто возвращаем его
-      // Если возвращает плоский массив, нужно будет преобразовать в дерево
-      if (data && Array.isArray(data)) {
-        return data as BlockNode[]
+      if (!blocks || blocks.length === 0) {
+        return []
       }
 
-      console.warn('Unexpected data format from get_page_blocks_tree_admin:', data)
-      return null
+      // Строим дерево из плоского массива
+      const blockMap = new Map<string, BlockNode>()
+      const rootBlocks: BlockNode[] = []
+
+      // Сначала создаем все узлы
+      for (const block of blocks) {
+        const node: BlockNode = {
+          ...block,
+          children: [],
+          instance_id: block.instance_id || null,
+          depth: 0 // будет рассчитано позже при построении дерева
+        }
+        blockMap.set(block.id, node)
+      }
+
+      // Затем строим дерево
+      for (const block of blocks) {
+        const node = blockMap.get(block.id)!
+        if (block.parent_block_id) {
+          const parent = blockMap.get(block.parent_block_id)
+          if (parent) {
+            if (!parent.children) {
+              parent.children = []
+            }
+            parent.children.push(node)
+          }
+        } else {
+          rootBlocks.push(node)
+        }
+      }
+
+      return rootBlocks
     } catch (err) {
       console.error('Unexpected error in getBlockTreeForPage:', err)
       return null
@@ -230,5 +260,79 @@ export class LayoutService {
     }
 
     return allChildren
+  }
+
+  /**
+   * Получает дерево опубликованных блоков для страницы (публичный доступ)
+   * @param pageId - ID страницы
+   * @returns Promise<BlockNode[] | null> - дерево опубликованных блоков или null если ошибка
+   */
+  static async getPublicBlockTreeForPage(pageId: number): Promise<BlockNode[] | null> {
+    try {
+      // Используем supabasePublic для получения опубликованных данных без RLS
+      // (предполагается, что политика позволяет читать опубликованные блоки)
+      const { data: blocks, error: blocksError } = await supabasePublic
+        .from('layout_blocks')
+        .select('id, page_id, instance_id, block_type, content, metadata, position, status, parent_block_id, slot')
+        .eq('page_id', pageId)
+        .eq('status', 'published') // Только опубликованные блоки
+        .order('position', { ascending: true })
+
+      if (blocksError) {
+        console.error('Error fetching public blocks:', blocksError)
+        return null
+      }
+
+      if (!blocks || blocks.length === 0) {
+        return []
+      }
+
+      // Строим дерево из плоского массива
+      const blockMap = new Map<string, BlockNode>()
+      const rootBlocks: BlockNode[] = []
+
+      // Сначала создаем все узлы
+      for (const block of blocks) {
+        const node: BlockNode = {
+          ...block,
+          children: [],
+          instance_id: block.instance_id || null,
+          depth: 0 // будет рассчитано позже при построении дерева
+        }
+        blockMap.set(block.id, node)
+      }
+
+      // Затем строим дерево
+      for (const block of blocks) {
+        const node = blockMap.get(block.id)!
+        if (block.parent_block_id) {
+          const parent = blockMap.get(block.parent_block_id)
+          if (parent) {
+            parent.children!.push(node)
+          }
+        } else {
+          rootBlocks.push(node)
+        }
+      }
+
+      // Рассчитываем глубину для каждого узла
+      const calculateDepth = (node: BlockNode, depth: number = 0): void => {
+        node.depth = depth
+        if (node.children) {
+          for (const child of node.children) {
+            calculateDepth(child, depth + 1)
+          }
+        }
+      }
+
+      for (const rootBlock of rootBlocks) {
+        calculateDepth(rootBlock)
+      }
+
+      return rootBlocks
+    } catch (err) {
+      console.error('Unexpected error in getPublicBlockTreeForPage:', err)
+      return null
+    }
   }
 }

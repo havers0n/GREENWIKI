@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Server, Map, History, User, Users, Car, Folder } from 'lucide-react';
 import { Typography, Card } from '@my-forum/ui';
 import { CategoryCard } from 'entities/category';
 import { fetchCategories } from 'shared/api/categories';
@@ -72,17 +73,17 @@ const CategoriesSection: React.FC<CategoriesSectionProps> = ({
     loadCategories();
   }, []);
 
-  const getIconName = (iconSvg: string | null): string => {
-    if (!iconSvg) return 'folder';
-    // Простое преобразование SVG в имя иконки
+  const getIconComponent = (iconSvg: string | null): React.ComponentType<any> => {
+    if (!iconSvg) return Folder;
+    // Простое преобразование SVG в компонент иконки
     // В реальном проекте здесь может быть более сложная логика
-    if (iconSvg.includes('server')) return 'server';
-    if (iconSvg.includes('map')) return 'map';
-    if (iconSvg.includes('history')) return 'history';
-    if (iconSvg.includes('male')) return 'male';
-    if (iconSvg.includes('female')) return 'female';
-    if (iconSvg.includes('garage')) return 'garage';
-    return 'folder';
+    if (iconSvg.includes('server')) return Server;
+    if (iconSvg.includes('map')) return Map;
+    if (iconSvg.includes('history')) return History;
+    if (iconSvg.includes('male')) return User;
+    if (iconSvg.includes('female')) return Users;
+    if (iconSvg.includes('garage')) return Car;
+    return Folder;
   };
 
   if (loadingState === LoadingState.Loading) {
@@ -109,7 +110,7 @@ const CategoriesSection: React.FC<CategoriesSectionProps> = ({
         {categories.map((category) => (
           <CategoryCard
             key={category.id}
-            icon={getIconName(category.icon_svg)}
+            icon={getIconComponent(category.icon_svg)}
             title={category.name}
             description={`Категория: ${category.name}`}
           />

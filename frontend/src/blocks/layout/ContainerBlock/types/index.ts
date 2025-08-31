@@ -45,8 +45,6 @@ export interface ContainerEditorProps extends ContainerProps {
   allBlocks?: BlockNode[];
   selectedBlockId?: string | null;
   onSelectBlock?: (id: string | null) => void;
-  onUpdateBlock?: (block: BlockNode) => void;
-  onUpdateContent?: (content: unknown) => void;
 }
 
 // Используем BlockNode из глобальных типов вместо локального ChildBlock

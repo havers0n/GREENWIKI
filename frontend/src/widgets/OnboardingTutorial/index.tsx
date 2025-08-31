@@ -77,7 +77,6 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
   onSkip,
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
 
   const step = tutorialSteps[currentStep];
   const isLastStep = currentStep === tutorialSteps.length - 1;
@@ -103,19 +102,11 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
       return;
     }
 
-    setIsAnimating(true);
-    setTimeout(() => {
-      setCurrentStep(prev => prev + 1);
-      setIsAnimating(false);
-    }, 300);
+    setCurrentStep(prev => prev + 1);
   };
 
   const handlePrev = () => {
-    setIsAnimating(true);
-    setTimeout(() => {
-      setCurrentStep(prev => prev - 1);
-      setIsAnimating(false);
-    }, 300);
+    setCurrentStep(prev => prev - 1);
   };
 
   const handleSkip = () => {
@@ -232,7 +223,7 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
           {/* Navigation */}
           <div className="flex items-center justify-between">
             <Button
-              variant="outline"
+              variant="secondary"
               onClick={handlePrev}
               disabled={currentStep === 0}
               className="flex items-center gap-2"
@@ -262,7 +253,7 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
       </div>
 
       {/* Tutorial-specific styles */}
-      <style jsx global>{`
+      <style>{`
         .tutorial-highlight {
           position: relative;
           z-index: 50;

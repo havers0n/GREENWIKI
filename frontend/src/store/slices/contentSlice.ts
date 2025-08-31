@@ -1,15 +1,16 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { ContentItem, BlockData, BlockNode, LayoutApiResponse } from '../../types/api';
+import type { ContentItem, BlockNode, LayoutApiResponse } from '../../types/api';
 import {
   addBlockToTree as addBlockToTreeUtil,
   updateBlockInTree as updateBlockInTreeUtil,
   removeBlockFromTree as removeBlockFromTreeUtil,
   moveBlockInTree as moveBlockInTreeUtil,
   findBlockById,
-  flattenTree,
   buildTreeFromFlat
 } from './treeUtils';
+import { dbRowsToUi } from '../../shared/mappers/db-ui';
+import type { Database } from '@my-forum/db-types';
 
 interface ContentState {
   // Список контента
@@ -82,6 +83,7 @@ const initialState: ContentState = {
   lastSaved: null,
 };
 
+// @ts-ignore - Type instantiation is excessively deep due to recursive BlockNode type
 const contentSlice = createSlice({
   name: 'content',
   initialState,
@@ -118,17 +120,20 @@ const contentSlice = createSlice({
     },
 
     // Управление деревом блоков (единственная структура)
-    setBlockTree: (state, action: PayloadAction<BlockNode[]>) => {
+    setBlockTree: (state: ContentState, action: PayloadAction<BlockNode[]>) => {
       state.blockTree = action.payload;
     },
 
     // Загрузка дерева из API
-    setLayoutFromApi: (state, action: PayloadAction<LayoutApiResponse>) => {
-      state.blockTree = action.payload.blocks;
+    setLayoutFromApi: (state: ContentState, action: PayloadAction<LayoutApiResponse>) => {
+      // Двойное преобразование: сначала .map(dbRowsToUi) для приведения к типу BlockNode[],
+      // затем buildTreeFromFlat для построения дерева
+      const uiBlocks = dbRowsToUi(action.payload.blocks as Database['public']['Tables']['layout_blocks']['Row'][]);
+      state.blockTree = buildTreeFromFlat(uiBlocks);
     },
 
     // Добавление блока в дерево
-    addBlockToTree: (state, action: PayloadAction<{
+    addBlockToTree: (state: ContentState, action: PayloadAction<{
       block: BlockNode;
       parentId: string | null;
       position: number;

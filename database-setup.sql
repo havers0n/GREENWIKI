@@ -112,50 +112,58 @@ CREATE POLICY "Public can read published blocks" ON public.layout_blocks FOR SEL
 -- Политики для администраторов (полный доступ)
 CREATE POLICY "Admins can manage pages" ON public.pages FOR ALL USING (
     EXISTS (
-        SELECT 1 FROM public.profiles 
-        WHERE profiles.id = auth.uid() 
+        SELECT 1 FROM public.profiles
+        WHERE profiles.id = auth.uid()
         AND profiles.role = 'admin'
     )
+    OR auth.role() = 'service_role'
 );
 
 CREATE POLICY "Admins can manage categories" ON public.categories FOR ALL USING (
     EXISTS (
-        SELECT 1 FROM public.profiles 
-        WHERE profiles.id = auth.uid() 
+        SELECT 1 FROM public.profiles
+        WHERE profiles.id = auth.uid()
         AND profiles.role = 'admin'
     )
+    OR auth.role() = 'service_role'
 );
 
 CREATE POLICY "Admins can manage sections" ON public.sections FOR ALL USING (
     EXISTS (
-        SELECT 1 FROM public.profiles 
-        WHERE profiles.id = auth.uid() 
+        SELECT 1 FROM public.profiles
+        WHERE profiles.id = auth.uid()
         AND profiles.role = 'admin'
     )
+    OR auth.role() = 'service_role'
 );
 
 CREATE POLICY "Admins can manage layout blocks" ON public.layout_blocks FOR ALL USING (
-    EXISTS (
-        SELECT 1 FROM public.profiles 
-        WHERE profiles.id = auth.uid() 
-        AND profiles.role = 'admin'
-    )
+  -- Разрешаем для пользователей с ролью admin
+  EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'admin'
+  )
+  -- ИЛИ разрешаем для service role (обход RLS для админских операций)
+  OR auth.role() = 'service_role'
 );
 
 CREATE POLICY "Admins can manage revisions" ON public.layout_revisions FOR ALL USING (
-    EXISTS (
-        SELECT 1 FROM public.profiles 
-        WHERE profiles.id = auth.uid() 
-        AND profiles.role = 'admin'
-    )
+  EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'admin'
+  )
+  OR auth.role() = 'service_role'
 );
 
 CREATE POLICY "Admins can manage templates" ON public.page_templates FOR ALL USING (
-    EXISTS (
-        SELECT 1 FROM public.profiles 
-        WHERE profiles.id = auth.uid() 
-        AND profiles.role = 'admin'
-    )
+  EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role = 'admin'
+  )
+  OR auth.role() = 'service_role'
 );
 
 -- Вставка тестовых данных

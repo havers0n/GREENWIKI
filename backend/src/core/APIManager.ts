@@ -141,7 +141,7 @@ export class APIManager {
       await this.events.emit(CMS_EVENTS.API_ERROR, {
         method: request.method,
         url: request.url,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         duration: Date.now() - startTime,
         userId: request.userId
       });

@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Modal, Button, ButtonSize, Input, Select, Textarea } from '@my-forum/ui';
+import React, { useState } from 'react';
+import { Modal, Button, Input, Select, Textarea } from '@my-forum/ui';
 import type { TablesInsert } from '@my-forum/db-types';
 import { createPage } from 'shared/api/pages';
 
@@ -66,11 +66,7 @@ const CreatePageModal: React.FC<CreatePageModalProps> = ({ onClose, onCreated })
     validateField(fieldName, value);
   };
 
-  const canSubmit = useMemo(() => {
-    return title.trim().length > 0 &&
-           slug.trim().length > 0 &&
-           Object.keys(errors).length === 0;
-  }, [title, slug, errors]);
+
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,16 +91,17 @@ const CreatePageModal: React.FC<CreatePageModalProps> = ({ onClose, onCreated })
       await createPage(payload);
       onCreated();
       onClose();
-    } catch (e: any) {
+    } catch (e: unknown) {
       // Общая ошибка формы
-      setErrors({ submit: e?.message || 'Не удалось создать страницу' });
+      const errorMessage = e instanceof Error ? e.message : 'Не удалось создать страницу';
+      setErrors({ submit: errorMessage });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Modal title="Создать страницу" onClose={onClose}>
+    <Modal isOpen={true} title="Создать страницу" onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-6">
         {errors.submit && (
           <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">

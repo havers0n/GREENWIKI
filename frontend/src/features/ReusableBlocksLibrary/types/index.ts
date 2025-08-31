@@ -1,17 +1,7 @@
 // Типы для ReusableBlocksLibrary
+import type { ReusableBlock } from '../../../types/api';
 
 // Типы из Redux store
-export interface ReusableBlock {
-  id: string;
-  name: string;
-  description?: string;
-  category?: string;
-  content: any;
-  metadata?: Record<string, any>;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface LibraryFilters {
   search?: string;
   category?: string;
@@ -119,6 +109,7 @@ export interface UseLibraryLogicResult {
   handleClearFilters: () => void;
   handlePageChange: (page: number) => void;
   handleClose: () => void;
+  handleRetryLoad: () => void;
 }
 
 export interface UseLibraryFiltersResult {
@@ -126,8 +117,9 @@ export interface UseLibraryFiltersResult {
   setSearchValue: (value: string) => void;
   categoryValue: string;
   setCategoryValue: (value: string) => void;
-  handleSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleCategoryChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  handleSearchChange: (value: string) => void;
+  handleCategoryChange: (value: string) => void;
+  handleSearchSubmit: () => void;
 }
 
 export interface UseLibraryVirtualizationResult {

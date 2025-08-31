@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express'
 import { supabaseAdmin } from '../supabaseClient'
-import { isAdmin } from '../middleware/authMiddleware'
+import { isAdmin } from '../middleware/isAdminMiddleware'
 
 const router = Router()
 

@@ -1,14 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import type { Database, TablesInsert } from '@my-forum/db-types';
 import { Card, Spinner } from '@my-forum/ui';
-import BlockRenderer from '../BlockRenderer';
+
 import { VirtualizedCanvas } from '../VirtualizedCanvas';
 import EditorToolbar from '../EditorToolbar';
 import { UnifiedSidebar, type SidebarView } from '../UnifiedSidebar';
 import { fetchAdminLayoutByPage, createLayoutBlock, updateLayoutBlock, deleteLayoutBlock, updateLayoutPositions, fetchLayoutRevisions, createLayoutRevision, revertToLayoutRevision } from '../../shared/api/layout';
 import { blockRegistry } from '../../shared/config/blockRegistry';
-import { DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, useDroppable, DragOverlay, type DragEndEvent, type DragStartEvent, pointerWithin, closestCenter } from '@dnd-kit/core';
-import { rectSortingStrategy } from '@dnd-kit/sortable';
+import { DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, useDroppable, DragOverlay, type DragEndEvent, type DragStartEvent, pointerWithin } from '@dnd-kit/core';
 import { useParams } from 'react-router-dom';
 import { fetchAdminPages } from '../../shared/api/pages';
 import OnboardingTutorial from '../OnboardingTutorial';
@@ -23,23 +22,8 @@ import {
   moveBlockInTree
 } from 'store/slices/contentSlice';
 import { instantiateReusableBlock } from 'store/slices/reusableBlocksSlice';
-// import type { BlockNode } from '../../../types/api';
+import type { BlockNode, LayoutBlock, BlockContent } from '../../types/api';
 
-interface BlockNode {
-  id: string;
-  block_type: string;
-  content: Record<string, any> | null;
-  depth: number;
-  instance_id: string | null;
-  metadata: Record<string, any>;
-  page_id: number;
-  position: number | null;
-  slot: string | null;
-  status: string;
-  children: BlockNode[];
-}
-
-type LayoutBlock = Database['public']['Tables']['layout_blocks']['Row'];
 type PageRow = Database['public']['Tables']['pages']['Row'];
 
 interface LiveEditorProps {
@@ -200,12 +184,11 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
       },
     }),
     useSensor(KeyboardSensor, {
-      coordinateGetter: (event, args) => {
+      coordinateGetter: () => {
         // Для клавиатурной навигации в виртуализированном списке
-        const { currentCoordinates } = args;
         return {
-          x: currentCoordinates.x,
-          y: currentCoordinates.y,
+          x: 0,
+          y: 0,
         };
       },
     })
@@ -259,14 +242,16 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
         const data = await fetchAdminLayoutByPage(currentPageSlug);
 
         // Преобразуем плоский массив в древовидную структуру
-        const treeData = buildTreeFromBlocks(data);
+        const treeData = buildTreeFromBlocks(data as unknown as LayoutBlock[]);
+        // TODO: Add runtime validation
+        // TODO: Fix buildTreeFromBlocks to include parent_block_id
 
         if (!isMounted) return;
 
         // Сохраняем в Redux
         dispatch(setLayoutFromApi({
           pageId: 1, // TODO: получить реальный pageId
-          blocks: treeData
+          blocks: treeData as BlockNode[]
         }));
 
         setSelectedBlockId((prev) => (treeData.some((b) => b.id === prev) ? prev : null));
@@ -292,11 +277,12 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
       const node: BlockNode = {
         id: block.id,
         block_type: block.block_type,
-        content: (block.content as Record<string, any>) || null,
+        content: (block.content as unknown as BlockContent | null) || null,
         depth: 0,
         instance_id: block.instance_id,
-        metadata: (block.metadata as Record<string, any>) || {},
+        metadata: block.metadata || {},
         page_id: block.page_id,
+        parent_block_id: block.parent_block_id,
         position: block.position,
         slot: block.slot,
         status: block.status,
@@ -415,11 +401,12 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
         setActiveBlock({
           id: 'temp-block',
           block_type: type,
-          content: {},
+          content: null,
           depth: 0,
           instance_id: null,
           metadata: {},
           page_id: 1,
+          parent_block_id: null,
           position: 0,
           slot: null,
           status: 'draft',
@@ -527,8 +514,8 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
     dispatch(updateBlockInTree({
       blockId: updatedBlock.id,
       updates: {
-        content: (updatedBlock.content as Record<string, any>) || {},
-        metadata: (updatedBlock.metadata as Record<string, any>) || {}
+        content: (updatedBlock.content as BlockContent | null) || null,
+        metadata: updatedBlock.metadata || {}
       }
     }));
 
@@ -572,14 +559,19 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
       console.log('🏗️ EDITOR: Using page ID:', pageId, 'for page slug:', currentPageSlug);
 
       // Создаем блок в базе данных
-      const newBlockData = await createLayoutBlock({
-        block_type: type,
-        content: spec.defaultData ? spec.defaultData() : {},
-        metadata: {},
+      const payload: TablesInsert<'layout_blocks'> = {
         page_id: pageId,
+        block_type: type,
+        content: spec.defaultData ? spec.defaultData() : {}, // Убеждаемся, что это объект
+        metadata: {}, // Всегда объект
         position: blockTree.length,
-        status: 'draft'
-      });
+        status: 'draft', // Всегда создаем как черновик
+        depth: 0, // Корневой уровень
+        parent_block_id: null, // Корневой блок
+        slot: null // Без слота для корневого блока
+      };
+
+      const newBlockData = await createLayoutBlock(payload);
 
       console.log('✅ EDITOR: Block created in database with ID:', newBlockData.id);
 
@@ -587,11 +579,12 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
       const newBlockNode: BlockNode = {
         id: newBlockData.id, // Используем реальный ID из базы данных
         block_type: type,
-        content: (newBlockData.content as Record<string, any>) || {},
+        content: (newBlockData.content as BlockContent | null) || null,
         depth: 0,
         instance_id: newBlockData.instance_id,
-        metadata: (newBlockData.metadata as Record<string, any>) || {},
+        metadata: newBlockData.metadata || {},
         page_id: newBlockData.page_id,
+        parent_block_id: newBlockData.parent_block_id,
         position: newBlockData.position,
         slot: newBlockData.slot,
         status: newBlockData.status,
@@ -682,11 +675,12 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
       const treeData = data.map(block => ({
         id: block.id,
         block_type: block.block_type,
-        content: (block.content as Record<string, any>) || {},
+        content: (block.content as unknown as BlockContent | null) || null,
         depth: 0,
         instance_id: block.instance_id,
-        metadata: (block.metadata as Record<string, any>) || {},
+        metadata: block.metadata || {},
         page_id: block.page_id,
+        parent_block_id: block.parent_block_id,
         position: block.position,
         slot: block.slot,
         status: block.status,
@@ -730,11 +724,12 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
       const treeData = data.map(block => ({
         id: block.id,
         block_type: block.block_type,
-        content: (block.content as Record<string, any>) || {},
+        content: (block.content as unknown as BlockContent | null) || null,
         depth: 0,
         instance_id: block.instance_id,
-        metadata: (block.metadata as Record<string, any>) || {},
+        metadata: block.metadata || {},
         page_id: block.page_id,
+        parent_block_id: block.parent_block_id,
         position: block.position,
         slot: block.slot,
         status: block.status,
@@ -844,6 +839,7 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
         metadata: {},
         page_id: 1,
         position: blockTree.length + 1,
+        depth: 0, // Корневой уровень
         parent_block_id: null,
         slot: null,
         status: 'draft'
@@ -979,6 +975,13 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
       // Снимок для undo
       pushHistoryBeforeChange();
 
+      // Рассчитываем глубину нового блока
+      let depth = 0;
+      if (parentId) {
+        const parentBlock = blockTree.find(b => b.id === parentId);
+        depth = parentBlock ? parentBlock.depth + 1 : 0;
+      }
+
       // Создаем новый блок
       const payload: TablesInsert<'layout_blocks'> = {
         block_type: blockType,
@@ -986,6 +989,7 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
         metadata: {},
         page_id: 1, // TODO: получить реальный pageId
         position: position + 1,
+        depth: depth,
         parent_block_id: parentId,
         slot: slotName,
         status: 'published'
@@ -997,11 +1001,12 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
       const newBlockNode: BlockNode = {
         id: created.id,
         block_type: created.block_type,
-        content: (created.content as Record<string, any>) || null,
+        content: (created.content as unknown as BlockContent | null) || null,
         depth: 0,
         instance_id: created.instance_id,
-        metadata: (created.metadata as Record<string, any>) || {},
+        metadata: created.metadata || {},
         page_id: created.page_id,
+        parent_block_id: created.parent_block_id,
         position: created.position,
         slot: created.slot,
         status: created.status,
@@ -1293,7 +1298,7 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
                         const layoutBlock: LayoutBlock = {
                           id: updated.id,
                           block_type: updated.block_type,
-                          content: updated.content || {},
+                          content: (updated.content as BlockContent | null) || null,
                           metadata: updated.metadata,
                           page_id: updated.page_id,
                           position: updated.position,
@@ -1307,7 +1312,6 @@ const LiveEditor = ({ pageSlug }: LiveEditorProps) => {
                         setChanged((prev) => ({ ...prev, [updated.id]: layoutBlock }));
                         setIsDirty(true);
                       }}
-                      isCanvasOver={isCanvasOver}
                     />
                   )}
                 </div>

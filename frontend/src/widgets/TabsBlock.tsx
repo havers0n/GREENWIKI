@@ -1,9 +1,6 @@
 import React from 'react';
-import { useDroppable } from '@dnd-kit/core';
-import BlockRenderer from 'widgets/BlockRenderer';
-import type { Database } from '@my-forum/db-types';
-
-type LayoutBlock = Database['public']['Tables']['layout_blocks']['Row'];
+import RenderBlockNode from 'widgets/BlockRenderer/ui/RenderBlockNode';
+import type { BlockNode } from '../types/api';
 
 interface TabItem {
   id: string;
@@ -19,26 +16,27 @@ interface TabsBlockProps extends TabsBlockData {
   // Новые props для работы с вложенными блоками
   editorMode?: boolean;
   blockId?: string;
-  allBlocks?: LayoutBlock[];
+  allBlocks?: BlockNode[];
   selectedBlockId?: string;
   onSelectBlock?: (id: string | null) => void;
-  onUpdateBlock?: (updated: LayoutBlock) => void;
+  onUpdateBlock?: (updated: BlockNode) => void;
   onUpdateContent?: (next: TabsBlockData) => void;
   // Metadata для стилизации
   metadata?: Record<string, unknown>;
+  // Дочерние блоки для рендеринга
+  blockTree?: BlockNode[];
 }
 
 const TabsBlock: React.FC<TabsBlockProps> = ({
   tabs = [],
   activeTab,
   editorMode = false,
-  blockId,
-  allBlocks = [],
   selectedBlockId,
   onSelectBlock,
   onUpdateBlock,
   onUpdateContent,
-  metadata = {}
+  metadata = {},
+  blockTree = []
 }) => {
   // Если нет активной вкладки, выбираем первую
   const currentActiveTab = activeTab || (tabs.length > 0 ? tabs[0].id : '');
@@ -97,6 +95,11 @@ const TabsBlock: React.FC<TabsBlockProps> = ({
 
   const containerStyles = generateStyles();
 
+  // Находим блоки для текущей активной вкладки
+  const activeTabBlocks = blockTree.filter(block =>
+    (block.metadata as any)?.tabId === currentActiveTab
+  );
+
   return (
     <section className="space-y-4" style={containerStyles}>
       {/* Вкладки */}
@@ -106,11 +109,13 @@ const TabsBlock: React.FC<TabsBlockProps> = ({
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
-              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-                currentActiveTab === tab.id
-                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-b-2 border-blue-500'
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-              }`}
+              className={`
+                px-3 py-2 text-sm font-medium rounded-t-lg transition-colors
+                ${tab.id === currentActiveTab
+                  ? 'bg-blue-100 text-blue-700 border-b-2 border-blue-500 dark:bg-blue-900 dark:text-blue-300'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800'
+                }
+              `}
             >
               {tab.title}
             </button>
@@ -118,65 +123,42 @@ const TabsBlock: React.FC<TabsBlockProps> = ({
         </nav>
       </div>
 
-      {/* Контент активной вкладки */}
+      {/* Контент вкладки */}
       <div className="min-h-[200px]">
-        {tabs.map((tab) => (
-          <div
-            key={tab.id}
-            className={currentActiveTab === tab.id ? 'block' : 'hidden'}
-          >
-            {editorMode && (
-              <SlotDropZone
-                blockId={blockId}
-                slotName={tab.id}
-                position={0}
-              />
-            )}
-
-            <div className="min-h-[100px] rounded-lg border border-dashed border-gray-200 dark:border-gray-700 p-4">
-              <BlockRenderer
-                blockTree={allBlocks || []}
+        {editorMode ? (
+          // Режим редактора - показываем droppable зону
+          <div className="p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+            <p className="text-gray-500 dark:text-gray-400 text-center mb-4">
+              Перетащите блоки сюда для вкладки "{tabs.find(t => t.id === currentActiveTab)?.title || 'Без названия'}"
+            </p>
+            {activeTabBlocks.map((block) => (
+              <RenderBlockNode
+                key={block.id}
+                block={block}
+                depth={0}
                 editorMode={editorMode}
                 selectedBlockId={selectedBlockId}
                 onSelectBlock={onSelectBlock}
                 onUpdateBlock={onUpdateBlock}
-                slot={tab.id}
               />
-            </div>
-
-            {editorMode && (
-              <SlotDropZone
-                blockId={blockId}
-                slotName={tab.id}
-                position={-1}
-              />
-            )}
+            ))}
           </div>
-        ))}
+        ) : (
+          // Режим просмотра - рендерим блоки
+          <div className="space-y-4">
+            {activeTabBlocks.map((block) => (
+              <RenderBlockNode
+                key={block.id}
+                block={block}
+                depth={0}
+                editorMode={false}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
 };
 
 export default TabsBlock;
-
-const SlotDropZone: React.FC<{
-  blockId?: string;
-  slotName: string;
-  position: number;
-}> = ({ blockId, slotName, position }) => {
-  const slotId = `slot:${blockId}:${slotName}:${position}`;
-  const { setNodeRef, isOver } = useDroppable({ id: slotId });
-
-  const cls = isOver
-    ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20'
-    : 'border-gray-300 dark:border-gray-600';
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={`h-2 border border-dashed rounded ${cls} transition-colors`}
-      aria-label={`Дроп-зона для вкладки ${slotName}`}
-    />
-  );
-};

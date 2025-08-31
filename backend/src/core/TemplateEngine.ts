@@ -5,7 +5,7 @@ import { CacheService } from './cache/CacheService';
 export interface Template {
   id: string;
   name: string;
-  description?: string;
+  description?: string | null;
   type: 'page' | 'component' | 'layout' | 'email';
   content: string;
   variables: TemplateVariable[];
@@ -68,7 +68,7 @@ export class TemplateEngine {
       const template: Template = {
         id: this.generateId(),
         name: input.name,
-        description: input.description,
+        description: input.description || null,
         type: input.type,
         content: input.content,
         variables: input.variables || [],
@@ -95,7 +95,7 @@ export class TemplateEngine {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'template:create',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         input
       });
       throw error;
@@ -124,7 +124,7 @@ export class TemplateEngine {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'template:getById',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         id
       });
       throw error;
@@ -140,7 +140,7 @@ export class TemplateEngine {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'template:getByName',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         name
       });
       throw error;
@@ -182,7 +182,7 @@ export class TemplateEngine {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'template:update',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         id,
         input
       });
@@ -214,7 +214,7 @@ export class TemplateEngine {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'template:delete',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         id
       });
       throw error;
@@ -252,7 +252,7 @@ export class TemplateEngine {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'template:render',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         templateId,
         context
       });
@@ -274,7 +274,7 @@ export class TemplateEngine {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'template:renderByName',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         templateName,
         context
       });
@@ -308,7 +308,7 @@ export class TemplateEngine {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'template:list',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         options
       });
       throw error;
@@ -334,8 +334,8 @@ export class TemplateEngine {
 
     // Replace {{variable}} patterns
     content = content.replace(/\{\{(\w+)\}\}/g, (match, key) => {
-      if (variables[key] !== undefined) {
-        return String(variables[key]);
+      if (key in variables && variables[key as keyof typeof variables] !== undefined) {
+        return String(variables[key as keyof typeof variables]);
       }
       return match; // Keep original if variable not found
     });

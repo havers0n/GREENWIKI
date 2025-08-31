@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronUp, ChevronDown, Search, MoreHorizontal } from 'lucide-react';
+import { ChevronUp, ChevronDown, Search, MoreHorizontal, LucideIcon } from 'lucide-react';
 import { Button } from '../atoms/Button';
 import { Input } from '../atoms/Input';
 import { Dropdown } from '../molecules/Dropdown';
 import { Pagination } from '../molecules/Pagination';
 import { Spinner } from '../atoms/Spinner';
+import { Icon } from '../atoms/Icon';
 import { cn } from '../lib/utils';
 
 export type SortDirection = 'asc' | 'desc' | null;
@@ -36,7 +37,7 @@ export interface DataTableProps<T = any> {
   actions?: {
     label: string;
     onClick: (rows: T[]) => void;
-    icon?: React.ReactNode;
+    icon?: LucideIcon | string; // Поддерживаем как компонент, так и строку для обратной совместимости
     variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   }[];
   emptyMessage?: string;
@@ -178,7 +179,14 @@ export function DataTable<T extends Record<string, any>>({
                   size="sm"
                   onClick={() => action.onClick(Array.from(selectedRows).map(i => sortedData[i]))}
                 >
-                  {action.icon}
+                  {action.icon && (
+                    <Icon
+                      name={typeof action.icon === 'string' ? action.icon : undefined}
+                      icon={typeof action.icon === 'function' ? action.icon : undefined}
+                      size={16}
+                      className="mr-2"
+                    />
+                  )}
                   {action.label}
                 </Button>
               ))}

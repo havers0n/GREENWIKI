@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Modal, Button, ButtonSize, Input, Select, Textarea } from '@my-forum/ui';
+import React, { useState } from 'react';
+import { Modal, Button, Input, Select, Textarea } from '@my-forum/ui';
 import { updatePage } from 'shared/api/pages';
 import type { PageRow } from 'shared/api/pages';
 import type { TablesUpdate } from '@my-forum/db-types';
@@ -68,11 +68,7 @@ const EditPageModal: React.FC<EditPageModalProps> = ({ page, onClose, onUpdated 
     validateField(fieldName, value);
   };
 
-  const canSubmit = useMemo(() => {
-    return title.trim().length > 0 &&
-           slug.trim().length > 0 &&
-           Object.keys(errors).length === 0;
-  }, [title, slug, errors]);
+
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,7 +102,7 @@ const EditPageModal: React.FC<EditPageModalProps> = ({ page, onClose, onUpdated 
   };
 
   return (
-    <Modal title="Редактировать страницу" onClose={onClose}>
+    <Modal isOpen={true} title="Редактировать страницу" onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-6">
         {errors.submit && (
           <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">

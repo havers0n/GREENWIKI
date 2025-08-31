@@ -124,7 +124,7 @@ const BlockLibrarySidebar: React.FC<BlockLibrarySidebarProps> = ({
           <Accordion
             items={accordionItems}
             defaultExpanded={groupedSpecs['Избранное'] ? ['Избранное', 'Структура'] : ['Структура']}
-            allowMultiple={true}
+            multiple={true}
           />
         )}
       </div>

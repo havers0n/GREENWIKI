@@ -1,9 +1,11 @@
 import * as React from 'react';
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, Suspense, lazy } from 'react';
 import type { BlockNode } from '../../../types/api';
-import { useDroppable } from '@dnd-kit/core';
-import RenderBlockNode from './RenderBlockNode';
-import DropZone from './DropZone';
+
+// Ленивая загрузка тяжелых компонентов
+const RenderBlockNode = lazy(() => import('./RenderBlockNode'));
+const DropZone = lazy(() => import('./DropZone'));
+const VirtualizedCanvas = lazy(() => import('../../VirtualizedCanvas').then(module => ({ default: module.VirtualizedCanvas })));
 import { blockRegistry } from '../../../shared/config/blockRegistry';
 
 interface BlockRendererProps {
@@ -25,12 +27,9 @@ const BlockRenderer = React.memo<BlockRendererProps>(({
   onSelectBlock,
   onUpdateBlock
 }) => {
-  // Мемоизация droppable конфигурации
-  const droppableConfig = useMemo(() => ({
-    id: 'canvas-dropzone',
-  }), []);
 
-  const { isOver: isCanvasOver } = useDroppable(droppableConfig);
+
+
 
   // Поиск пути к выбранному блоку для хлебных крошек и отображения глубины
   const findPath = useCallback((nodes: BlockNode[], targetId: string): BlockNode[] | null => {
@@ -48,6 +47,16 @@ const BlockRenderer = React.memo<BlockRendererProps>(({
     if (!selectedBlockId) return null;
     return findPath(blockTree, selectedBlockId) || null;
   }, [blockTree, selectedBlockId]);
+
+  // Определяем, использовать ли виртуализацию (для списков > 20 блоков)
+  const useVirtualization = useMemo(() => {
+    const totalBlocks = blockTree.reduce((count, block) => {
+      const countChildren = (b: BlockNode): number =>
+        1 + (b.children ? b.children.reduce((sum, child) => sum + countChildren(child), 0) : 0);
+      return count + countChildren(block);
+    }, 0);
+    return totalBlocks > 20;
+  }, [blockTree]);
 
   const renderBreadcrumbs = () => {
     if (!editorMode || !selectedPath || selectedPath.length === 0) return null;
@@ -83,45 +92,66 @@ const BlockRenderer = React.memo<BlockRendererProps>(({
     );
   };
 
+  // Рендерим breadcrumbs вне Suspense для лучшей производительности
+  const breadcrumbsElement = renderBreadcrumbs();
+
   return (
     <div className="space-y-4">
-      {renderBreadcrumbs()}
-      {blockTree.map((block, index) => (
-        <React.Fragment key={block.id}>
-          {editorMode && index === 0 && (
-            <DropZone
-              parentId={null}
-              position={0}
-              className="mb-4"
-            />
-          )}
-          <RenderBlockNode
-            block={block}
-            depth={0}
+      {breadcrumbsElement}
+      <Suspense fallback={<div className="flex items-center justify-center p-8">Загрузка редактора...</div>}>
+        {useVirtualization ? (
+          // Используем виртуализацию для больших списков
+          <VirtualizedCanvas
+            blockTree={blockTree}
             editorMode={editorMode}
-            selectedBlockId={selectedBlockId || undefined}
+            selectedBlockId={selectedBlockId}
             onSelectBlock={onSelectBlock}
             onUpdateBlock={onUpdateBlock}
           />
-          {editorMode && index < blockTree.length - 1 && (
-            <DropZone
-              parentId={null}
-              position={index + 1}
-              className="my-4"
-            />
-          )}
-        </React.Fragment>
-      ))}
-      {editorMode && blockTree.length === 0 && (
-        <DropZone
-          parentId={null}
-          position={0}
-          isEmpty={true}
-          className="min-h-[200px]"
-        />
-      )}
+        ) : (
+          // Обычный рендер для небольших списков
+          <>
+            {blockTree.map((block, index) => (
+              <React.Fragment key={block.id}>
+                {editorMode && index === 0 && (
+                  <DropZone
+                    parentId={null}
+                    position={0}
+                    className="mb-4"
+                  />
+                )}
+                <RenderBlockNode
+                  block={block}
+                  depth={0}
+                  editorMode={editorMode}
+                  selectedBlockId={selectedBlockId || undefined}
+                  onSelectBlock={onSelectBlock}
+                  onUpdateBlock={onUpdateBlock}
+                />
+                {editorMode && index < blockTree.length - 1 && (
+                  <DropZone
+                    parentId={null}
+                    position={index + 1}
+                    className="my-4"
+                  />
+                )}
+              </React.Fragment>
+            ))}
+            {editorMode && blockTree.length === 0 && (
+              <DropZone
+                parentId={null}
+                position={0}
+                isEmpty={true}
+                className="min-h-[200px]"
+              />
+            )}
+          </>
+        )}
+      </Suspense>
     </div>
   );
 });
+
+BlockRenderer.displayName = 'BlockRenderer';
 
 export default BlockRenderer;

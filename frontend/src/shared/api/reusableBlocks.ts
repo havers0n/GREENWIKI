@@ -1,5 +1,5 @@
 import { api } from './index';
-import type { ReusableBlock, InstantiateReusableBlockRequest, InstantiateReusableBlockResponse } from '../../types/api';
+import type { ReusableBlock, InstantiateReusableBlockRequest } from '../../types/api';
 
 // Типы ответов API
 interface ReusableBlocksListResponse {
@@ -25,6 +25,8 @@ interface ReusableBlocksListResponse {
 interface ReusableBlockResponse {
   success: boolean;
   data: ReusableBlock;
+  message?: string;
+  error?: string;
 }
 
 interface InstantiateResponse {
@@ -63,7 +65,7 @@ export const fetchReusableBlock = async (id: string): Promise<ReusableBlock> => 
   const response = await api.get<ReusableBlockResponse>(`/reusable-blocks/${id}`);
 
   if (!response.data.success) {
-    throw new Error(response.data.message || 'Failed to fetch reusable block');
+    throw new Error(response.data.error || 'Failed to fetch reusable block');
   }
 
   return response.data.data;
@@ -97,7 +99,7 @@ export const createReusableBlock = async (params: {
   const response = await api.post<ReusableBlockResponse>('/reusable-blocks', params);
 
   if (!response.data.success) {
-    throw new Error(response.data.message || 'Failed to create reusable block');
+    throw new Error(response.data.error || 'Failed to create reusable block');
   }
 
   return response.data.data;
@@ -116,7 +118,7 @@ export const updateReusableBlock = async (
   const response = await api.put<ReusableBlockResponse>(`/reusable-blocks/${id}`, params);
 
   if (!response.data.success) {
-    throw new Error(response.data.message || 'Failed to update reusable block');
+    throw new Error(response.data.error || 'Failed to update reusable block');
   }
 
   return response.data.data;

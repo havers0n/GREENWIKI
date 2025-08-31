@@ -63,7 +63,7 @@ const PerformanceTestPage: React.FC = () => {
         className="p-4 mb-2"
         style={{ borderLeft: `4px solid ${block.color}` }}
       >
-        <Typography variant="body2" className="text-gray-700">
+        <Typography variant="body" className="text-gray-700">
           {block.content}
         </Typography>
       </Card>
@@ -78,7 +78,7 @@ const PerformanceTestPage: React.FC = () => {
           Тест Производительности - 200 Блоков
         </Typography>
 
-        <Typography variant="body1" className="text-gray-600 mb-6">
+        <Typography variant="body" className="text-gray-600 mb-6">
           Эта страница создана для измерения базовой производительности рендеринга 200 блоков.
           Используйте инструменты разработчика браузера для профилирования производительности.
         </Typography>
@@ -158,7 +158,7 @@ const PerformanceTestPage: React.FC = () => {
       </div>
 
       <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <Typography variant="body2" className="text-yellow-800">
+        <Typography variant="body" className="text-yellow-800">
           <strong>Примечание:</strong> Эта страница используется только для измерения базовой производительности.
           После внедрения виртуализации эти метрики будут сравнены с новыми для оценки улучшений.
         </Typography>

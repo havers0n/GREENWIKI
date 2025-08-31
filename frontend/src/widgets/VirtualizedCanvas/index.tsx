@@ -1,5 +1,5 @@
-import React, { useRef, useMemo, useCallback, useState } from 'react';
-import type { BlockNode } from '../../../types/api';
+import React, { useMemo, useCallback } from 'react';
+import type { BlockNode } from '../../types/api';
 import { useDroppable } from '@dnd-kit/core';
 import RenderBlockNode from '../BlockRenderer/ui/RenderBlockNode';
 import DropZone from '../BlockRenderer/ui/DropZone';
@@ -16,8 +16,6 @@ interface VirtualizedCanvasProps {
   onSelectBlock?: (id: string | null) => void;
   /** Колбэк обновления контента блока */
   onUpdateBlock?: (updated: BlockNode) => void;
-  /** Флаг перетаскивания над канвасом */
-  isCanvasOver?: boolean;
 }
 
 /**
@@ -29,8 +27,7 @@ export const VirtualizedCanvas: React.FC<VirtualizedCanvasProps> = ({
   editorMode = false,
   selectedBlockId,
   onSelectBlock,
-  onUpdateBlock,
-  isCanvasOver = false
+  onUpdateBlock
 }) => {
   // Создаем плоский массив всех блоков для виртуализации
   const flattenedBlocks = useMemo(() => {
@@ -51,7 +48,7 @@ export const VirtualizedCanvas: React.FC<VirtualizedCanvasProps> = ({
   }, [blockTree, editorMode]);
 
   // Обработчик изменения размера блока
-  const handleSizeChange = useCallback((blockId: string, height: number) => {
+  const handleSizeChange = useCallback(() => {
     // Зарезервировано под динамическое измерение элементов
     // (в текущей версии только уведомляем внешний колбэк, если потребуется)
   }, []);
@@ -141,13 +138,7 @@ export const VirtualizedCanvas: React.FC<VirtualizedCanvasProps> = ({
     return (
       <div
         ref={setNodeRef}
-        className={`
-          min-h-full p-4 transition-colors duration-200
-          ${isCanvasOver
-            ? 'bg-blue-50 dark:bg-blue-900/20 border-2 border-dashed border-blue-400 rounded-lg'
-            : 'border-2 border-transparent'
-          }
-        `}
+        className="min-h-full p-4 border-2 border-transparent"
       >
         <div className="flex items-center justify-center h-64 text-center text-gray-500 dark:text-gray-400">
           <div>
@@ -166,13 +157,7 @@ export const VirtualizedCanvas: React.FC<VirtualizedCanvasProps> = ({
 
       <div
         ref={setScrollAndDroppableRef}
-        className={`
-          min-h-full p-4 transition-colors duration-200 overflow-y-auto
-          ${isCanvasOver
-            ? 'bg-blue-50 dark:bg-blue-900/20 border-2 border-dashed border-blue-400 rounded-lg'
-            : 'border-2 border-transparent'
-          }
-        `}
+        className="min-h-full p-4 transition-colors duration-200 overflow-y-auto border-2 border-transparent"
         style={{ height: '100%' }}
       >
         {/* Контейнер общей высоты для виртуалізації */}
@@ -191,7 +176,7 @@ export const VirtualizedCanvas: React.FC<VirtualizedCanvasProps> = ({
             return (
               <div
                 key={block.id}
-                ref={(el) => registerElement(el as HTMLElement | null, block.id, vi.index)}
+                ref={(el) => registerElement(el as HTMLElement | null, block.id)}
                 data-index={vi.index}
                 style={{
                   position: 'absolute',
@@ -214,7 +199,7 @@ export const VirtualizedCanvas: React.FC<VirtualizedCanvasProps> = ({
                   block={block}
                   depth={depth}
                   editorMode={editorMode}
-                  selectedBlockId={selectedBlockId}
+                  selectedBlockId={selectedBlockId || undefined}
                   onSelectBlock={onSelectBlock}
                   onUpdateBlock={onUpdateBlock}
                 />

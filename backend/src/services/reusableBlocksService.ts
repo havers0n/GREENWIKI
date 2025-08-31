@@ -4,7 +4,7 @@ import { cacheService } from './cacheService'
 
 // Расширенные типы для работы с переиспользуемыми блоками
 export interface ReusableBlockWithContent extends Tables<'reusable_blocks'> {
-  content?: Tables<'reusable_block_content'>
+  content?: Tables<'reusable_block_content'> | null
   usage_count?: number
 }
 
@@ -58,7 +58,7 @@ export class ReusableBlocksService {
         throw new Error('sourceBlockIds cannot be empty')
       }
 
-      // Получаем дерево блоков для создания snapshot
+      // Получаем дерево блоков для создания snapshot используя supabaseAdmin
       const blockTree = await this.getBlockTreeByIds(sourceBlockIds, rootBlockId)
       if (!blockTree) {
         throw new Error('Failed to build block tree from source blocks')
@@ -69,7 +69,7 @@ export class ReusableBlocksService {
         .from('reusable_blocks')
         .insert({
           name,
-          description,
+          description: description ?? null,
           category,
           tags,
           created_by: createdBy || null,
@@ -88,18 +88,18 @@ export class ReusableBlocksService {
         rootBlockId,
         blocks: blockTree,
         createdAt: new Date().toISOString()
-      }
+      } as unknown as Json
 
       const { data: content, error: contentError } = await supabaseAdmin
         .from('reusable_block_content')
         .insert({
           reusable_block_id: reusableBlock.id,
           version: 1,
-          root_block_id: rootBlockId,
           content_snapshot: contentSnapshot,
-          created_by: createdBy || null
+          created_by: createdBy || null,
+          comment: null
         })
-        .select()
+        .select('*')
         .single()
 
       if (contentError || !content) {
@@ -132,6 +132,9 @@ export class ReusableBlocksService {
     sortBy?: string
     sortOrder?: 'asc' | 'desc'
   } = {}): Promise<{ items: ReusableBlockWithContent[], total: number }> {
+    console.log('[PERF] Starting getReusableBlocks...');
+    const totalStart = performance.now();
+
     try {
       const {
         category,
@@ -143,7 +146,8 @@ export class ReusableBlocksService {
         sortOrder = 'desc'
       } = params
 
-      // Создаем ключ кеша на основе параметров
+      // --- Замер №1: Создание ключа кеша ---
+      const cacheKeyStart = performance.now();
       const cacheKey = `reusable_blocks:${JSON.stringify({
         category,
         search,
@@ -153,24 +157,40 @@ export class ReusableBlocksService {
         sortBy,
         sortOrder
       })}`;
+      const cacheKeyEnd = performance.now();
+      console.log(`[PERF] Cache key creation took: ${(cacheKeyEnd - cacheKeyStart).toFixed(2)}ms`);
 
-      // Проверяем кеш для запросов без поиска (они чаще повторяются)
+      // --- Замер №2: Проверка кеша ---
+      const cacheCheckStart = performance.now();
+      let cachedResult: { items: ReusableBlockWithContent[], total: number } | null = null;
+
       if (!search && offset === 0) {
-        const cached = await cacheService.get<{ items: ReusableBlockWithContent[], total: number }>(cacheKey, {
+        cachedResult = await cacheService.get<{ items: ReusableBlockWithContent[], total: number }>(cacheKey, {
           ttl: 600, // 10 минут для списков
           keyPrefix: 'reusable_blocks:',
         });
 
-        if (cached) {
-          return cached;
+        if (cachedResult) {
+          const cacheCheckEnd = performance.now();
+          console.log(`[PERF] Cache hit! Returning cached data. Cache check took: ${(cacheCheckEnd - cacheCheckStart).toFixed(2)}ms`);
+          console.log(`[PERF] Finished getReusableBlocks (cache hit). Total time: ${(cacheCheckEnd - totalStart).toFixed(2)}ms`);
+          return cachedResult;
         }
       }
+
+      const cacheCheckEnd = performance.now();
+      console.log(`[PERF] Cache check took: ${(cacheCheckEnd - cacheCheckStart).toFixed(2)}ms`);
+
+      // --- Замер №3: Построение запроса ---
+      console.log('[PERF] Building Supabase query...');
+      const queryBuildStart = performance.now();
 
       let query = supabaseAdmin
         .from('reusable_blocks')
         .select(`
-          *,
-          content:reusable_block_content!inner(*)
+          id, name, description, category, tags, preview_image_url, version, created_at, created_by, updated_at,
+          content:reusable_block_content!inner(id, reusable_block_id, version, content_snapshot, created_at, created_by, comment),
+          block_instances!left(count)
         `, { count: 'exact' })
 
       // Применяем фильтры
@@ -193,40 +213,60 @@ export class ReusableBlocksService {
       // Пагинация
       query = query.range(offset, offset + limit - 1)
 
-      const { data, error, count } = await query
+      const queryBuildEnd = performance.now();
+      console.log(`[PERF] Query building took: ${(queryBuildEnd - queryBuildStart).toFixed(2)}ms`);
+
+      // --- Замер №4: Выполнение запроса к Supabase ---
+      console.log('[PERF] Executing Supabase query...');
+      const dbQueryStart = performance.now();
+      const { data, error, count } = await query;
+      const dbQueryEnd = performance.now();
+      console.log(`[PERF] Supabase query took: ${(dbQueryEnd - dbQueryStart).toFixed(2)}ms`);
 
       if (error) {
-        console.error('Error fetching reusable blocks:', error)
+        console.error('[ERROR] Supabase query failed:', error);
+        const errorEnd = performance.now();
+        console.log(`[PERF] Finished getReusableBlocks (error). Total time: ${(errorEnd - totalStart).toFixed(2)}ms`);
         return { items: [], total: 0 }
       }
 
-      // Получаем статистику использования для каждого блока
-      const itemsWithUsage = await Promise.all(
-        (data || []).map(async (item) => {
-          const usageCount = await this.getUsageCount(item.id)
-          return {
-            ...item,
-            usage_count: usageCount
-          } as ReusableBlockWithContent
-        })
-      )
+      // --- Замер №5: Форматирование данных ---
+      console.log('[PERF] Formatting data...');
+      const formatStart = performance.now();
+      const formattedData = (data || []).map(block => ({
+        ...block,
+        content: block.content?.[0] || null, // Извлекаем контент из массива
+        usage_count: block.block_instances?.[0]?.count || 0, // Извлекаем счетчик из массива
+        block_instances: undefined, // Удаляем служебное поле
+      }));
+      const formatEnd = performance.now();
+      console.log(`[PERF] Data formatting took: ${(formatEnd - formatStart).toFixed(2)}ms`);
 
       const result = {
-        items: itemsWithUsage,
+        items: formattedData,
         total: count || 0
       };
 
-      // Кешируем результат для часто используемых запросов
+      // --- Замер №6: Кеширование результата ---
+      const cacheSetStart = performance.now();
       if (!search && offset === 0) {
+        console.log('[PERF] Caching result...');
         await cacheService.set(cacheKey, result, {
           ttl: 600, // 10 минут
           keyPrefix: 'reusable_blocks:',
         });
       }
+      const cacheSetEnd = performance.now();
+      console.log(`[PERF] Cache set took: ${(cacheSetEnd - cacheSetStart).toFixed(2)}ms`);
+
+      const totalEnd = performance.now();
+      console.log(`[PERF] Finished getReusableBlocks. Total time: ${(totalEnd - totalStart).toFixed(2)}ms`);
 
       return result;
     } catch (error) {
-      console.error('Error in getReusableBlocks:', error)
+      console.error('[ERROR] Exception in getReusableBlocks:', error);
+      const exceptionEnd = performance.now();
+      console.log(`[PERF] Finished getReusableBlocks (exception). Total time: ${(exceptionEnd - totalStart).toFixed(2)}ms`);
       return { items: [], total: 0 }
     }
   }
@@ -258,10 +298,10 @@ export class ReusableBlocksService {
         .insert({
           reusable_block_id: reusableBlockId,
           page_id: pageId,
-          parent_block_id: parentBlockId,
-          slot,
-          position,
-          overrides
+          parent_block_id: parentBlockId ?? null,
+          slot: slot ?? null,
+          position: position ?? null,
+          overrides: overrides ?? null
         })
         .select()
         .single()
@@ -276,9 +316,9 @@ export class ReusableBlocksService {
         content.content_snapshot as any,
         pageId,
         instance.id,
-        parentBlockId,
+        parentBlockId ?? null,
         position,
-        slot
+        slot ?? null
       )
 
       if (!clonedBlocks) {
@@ -327,11 +367,11 @@ export class ReusableBlocksService {
   }
 
   /**
-   * Удаляет переиспользуемый блок и все связанные данные
+   * Удаляет переиспользуемый блок и все связанные данные (использует supabaseAdmin)
    */
   static async deleteReusableBlock(reusableBlockId: string): Promise<boolean> {
     try {
-      // Каскадное удаление через foreign key constraints
+      // Каскадное удаление через foreign key constraints используя supabaseAdmin
       const { error } = await supabaseAdmin
         .from('reusable_blocks')
         .delete()
@@ -352,11 +392,11 @@ export class ReusableBlocksService {
   // Вспомогательные методы
 
   /**
-   * Получает дерево блоков по их ID
+   * Получает дерево блоков по их ID (использует supabaseAdmin)
    */
   private static async getBlockTreeByIds(blockIds: string[], rootBlockId: string): Promise<BlockTreeNode[] | null> {
     try {
-      // Получаем все блоки из списка
+      // Получаем все блоки из списка используя supabaseAdmin (обходит RLS)
       const { data: blocks, error } = await supabaseAdmin
         .from('layout_blocks')
         .select('*')
@@ -436,11 +476,11 @@ export class ReusableBlocksService {
             id: newId,
             page_id: pageId,
             block_type: block.block_type,
-            content: block.content,
+            content: block.content ?? null,
             metadata: block.metadata,
-            position: block.id === rootBlockId ? position : block.position,
-            parent_block_id: block.id === rootBlockId ? parentBlockId : newParentId,
-            slot: block.id === rootBlockId ? slot : block.slot,
+            position: block.id === rootBlockId ? (position ?? null) : (block.position ?? null),
+            parent_block_id: block.id === rootBlockId ? (parentBlockId ?? null) : (newParentId ?? null),
+            slot: block.id === rootBlockId ? (slot ?? null) : (block.slot ?? null),
             status: 'published',
             instance_id: instanceId,
             depth: 0 // Будет пересчитан позже
@@ -516,48 +556,21 @@ export class ReusableBlocksService {
     }
   }
 
-  /**
-   * Получает количество использований переиспользуемого блока
-   */
-  private static async getUsageCount(reusableBlockId: string): Promise<number> {
-    try {
-      const { count, error } = await supabaseAdmin
-        .from('block_instances')
-        .select('*', { count: 'exact', head: true })
-        .eq('reusable_block_id', reusableBlockId)
 
-      if (error) {
-        console.error('Error getting usage count:', error)
-        return 0
-      }
-
-      return count || 0
-    } catch (error) {
-      console.error('Error in getUsageCount:', error)
-      return 0
-    }
-  }
 
   /**
    * Увеличивает счетчик использования
+   * TODO: Добавить колонку usage_count в таблицу reusable_blocks
    */
   private static async incrementUsageCount(reusableBlockId: string): Promise<void> {
     try {
-      const { data: currentBlock } = await supabaseAdmin
-        .from('reusable_blocks')
-        .select('usage_count')
-        .eq('id', reusableBlockId)
-        .single()
-
-      if (currentBlock) {
-        await supabaseAdmin
-          .from('reusable_blocks')
-          .update({
-            usage_count: (currentBlock.usage_count || 0) + 1,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', reusableBlockId)
-      }
+      // Временно отключаем логику счетчика использования
+      // await supabaseAdmin
+      //   .from('reusable_blocks')
+      //   .update({
+      //     updated_at: new Date().toISOString()
+      //   })
+      //   .eq('id', reusableBlockId)
     } catch (error) {
       console.error('Error incrementing usage count:', error)
     }

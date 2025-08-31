@@ -1,5 +1,6 @@
 import React from 'react';
 import { BlockRenderer } from 'widgets/BlockRenderer';
+import type { BlockNode } from '../../types/api';
 
 interface HeroSectionProps {
   title?: string;
@@ -10,16 +11,14 @@ interface HeroSectionProps {
   height?: 'small' | 'medium' | 'large' | 'full';
   alignment?: 'left' | 'center' | 'right';
   overlay?: boolean;
-  overlayOpacity?: number;
 
   // Props для редактора
   editorMode?: boolean;
   blockId?: string;
-  allBlocks?: any[];
+  allBlocks?: BlockNode[];
   selectedBlockId?: string | null;
   onSelectBlock?: (id: string | null) => void;
-  onUpdateBlock?: (block: any) => void;
-  onUpdateContent?: (content: any) => void;
+  onUpdateBlock?: (block: BlockNode) => void;
 }
 
 /**
@@ -35,7 +34,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({
   height = 'medium',
   alignment = 'center',
   overlay = false,
-  overlayOpacity = 0.5,
 
   // Editor props
   editorMode = false,
@@ -44,7 +42,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({
   selectedBlockId,
   onSelectBlock,
   onUpdateBlock,
-  onUpdateContent,
 }) => {
   // Получаем дочерние блоки
   const childBlocks = allBlocks.filter(block =>
@@ -133,8 +130,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({
               selectedBlockId={selectedBlockId}
               onSelectBlock={onSelectBlock}
               onUpdateBlock={onUpdateBlock}
-              parentBlockId={blockId}
-              slot="content"
             />
           </>
         ) : (

@@ -105,13 +105,13 @@ const AdminUsersPage: React.FC = () => {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'admin':
-        return <Badge variant="error">Администратор</Badge>;
+        return <Badge tone="red">Администратор</Badge>;
       case 'editor':
-        return <Badge variant="warning">Редактор</Badge>;
+        return <Badge tone="blue">Редактор</Badge>;
       case 'author':
-        return <Badge variant="success">Автор</Badge>;
+        return <Badge tone="green">Автор</Badge>;
       case 'viewer':
-        return <Badge variant="secondary">Читатель</Badge>;
+        return <Badge tone="neutral">Читатель</Badge>;
       default:
         return <Badge>Неизвестно</Badge>;
     }
@@ -119,7 +119,7 @@ const AdminUsersPage: React.FC = () => {
 
   const getStatusBadge = (isActive: boolean, lastLoginAt?: string) => {
     if (!isActive) {
-      return <Badge variant="secondary">Неактивен</Badge>;
+      return <Badge tone="neutral">Неактивен</Badge>;
     }
 
     if (lastLoginAt) {
@@ -128,13 +128,13 @@ const AdminUsersPage: React.FC = () => {
       const daysSinceLogin = Math.floor((now.getTime() - lastLogin.getTime()) / (1000 * 60 * 60 * 24));
 
       if (daysSinceLogin <= 1) {
-        return <Badge variant="success">Онлайн</Badge>;
+        return <Badge tone="green">Онлайн</Badge>;
       } else if (daysSinceLogin <= 7) {
-        return <Badge variant="warning">Недавно</Badge>;
+        return <Badge tone="blue">Недавно</Badge>;
       }
     }
 
-    return <Badge variant="secondary">Активен</Badge>;
+    return <Badge tone="neutral">Активен</Badge>;
   };
 
   const handleToggleUserStatus = async (userId: string, currentStatus: boolean) => {
@@ -202,7 +202,7 @@ const AdminUsersPage: React.FC = () => {
           <Typography variant="h1" className="text-2xl font-bold">
             Управление пользователями
           </Typography>
-          <Typography variant="body2" className="text-gray-600 dark:text-gray-400 mt-1">
+          <Typography variant="body" className="text-gray-600 dark:text-gray-400 mt-1">
             Управляйте пользователями, их ролями и доступом к системе
           </Typography>
         </div>
@@ -220,7 +220,7 @@ const AdminUsersPage: React.FC = () => {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <Typography variant="body2" className="text-gray-600 dark:text-gray-400">
+              <Typography variant="body" className="text-gray-600 dark:text-gray-400">
                 Всего пользователей
               </Typography>
               <Typography variant="h2" className="text-2xl font-bold">
@@ -236,7 +236,7 @@ const AdminUsersPage: React.FC = () => {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <Typography variant="body2" className="text-gray-600 dark:text-gray-400">
+              <Typography variant="body" className="text-gray-600 dark:text-gray-400">
                 Активных
               </Typography>
               <Typography variant="h2" className="text-2xl font-bold">
@@ -252,7 +252,7 @@ const AdminUsersPage: React.FC = () => {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <Typography variant="body2" className="text-gray-600 dark:text-gray-400">
+              <Typography variant="body" className="text-gray-600 dark:text-gray-400">
                 Администраторов
               </Typography>
               <Typography variant="h2" className="text-2xl font-bold">
@@ -268,7 +268,7 @@ const AdminUsersPage: React.FC = () => {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <Typography variant="body2" className="text-gray-600 dark:text-gray-400">
+              <Typography variant="body" className="text-gray-600 dark:text-gray-400">
                 Новых за неделю
               </Typography>
               <Typography variant="h2" className="text-2xl font-bold">
@@ -295,8 +295,7 @@ const AdminUsersPage: React.FC = () => {
 
             <Select
               value={filter.role}
-              onChange={(value) => setFilter(prev => ({ ...prev, role: value }))}
-              placeholder="Все роли"
+              onChange={(e) => setFilter(prev => ({ ...prev, role: e.target.value }))}
             >
               <option value="">Все роли</option>
               <option value="admin">Администраторы</option>
@@ -307,8 +306,7 @@ const AdminUsersPage: React.FC = () => {
 
             <Select
               value={filter.status}
-              onChange={(value) => setFilter(prev => ({ ...prev, status: value }))}
-              placeholder="Все статусы"
+              onChange={(e) => setFilter(prev => ({ ...prev, status: e.target.value }))}
             >
               <option value="">Все статусы</option>
               <option value="active">Активные</option>
@@ -319,7 +317,7 @@ const AdminUsersPage: React.FC = () => {
           <div className="flex items-center gap-2">
             {selectedUsers.length > 0 && (
               <div className="flex items-center gap-2 mr-4">
-                <Typography variant="body2" className="text-gray-600 dark:text-gray-400">
+                <Typography variant="body" className="text-gray-600 dark:text-gray-400">
                   Выбрано: {selectedUsers.length}
                 </Typography>
                 <Button variant="ghost" size="sm" onClick={deselectAll}>
@@ -395,13 +393,13 @@ const AdminUsersPage: React.FC = () => {
                           {(user.firstName?.[0] || user.email[0]).toUpperCase()}
                         </div>
                         <div>
-                          <Typography variant="body1" className="font-medium">
+                          <Typography variant="body" className="font-medium">
                             {user.firstName && user.lastName
                               ? `${user.firstName} ${user.lastName}`
                               : user.email
                             }
                           </Typography>
-                          <Typography variant="body2" className="text-gray-500 dark:text-gray-400">
+                          <Typography variant="body" className="text-gray-500 dark:text-gray-400">
                             {user.username ? `@${user.username}` : user.email}
                           </Typography>
                         </div>
@@ -423,7 +421,7 @@ const AdminUsersPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      <Typography variant="body2" className="text-gray-900 dark:text-gray-100">
+                      <Typography variant="body" className="text-gray-900 dark:text-gray-100">
                         {user.lastLoginAt
                           ? new Date(user.lastLoginAt).toLocaleString('ru-RU')
                           : 'Никогда'
@@ -431,7 +429,7 @@ const AdminUsersPage: React.FC = () => {
                       </Typography>
                     </td>
                     <td className="px-4 py-4">
-                      <Typography variant="body2" className="text-gray-900 dark:text-gray-100">
+                      <Typography variant="body" className="text-gray-900 dark:text-gray-100">
                         {new Date(user.createdAt).toLocaleDateString('ru-RU')}
                       </Typography>
                     </td>
@@ -467,7 +465,7 @@ const AdminUsersPage: React.FC = () => {
                 <Typography variant="h3" className="text-gray-500 dark:text-gray-400 mb-2">
                   Пользователи не найдены
                 </Typography>
-                <Typography variant="body2" className="text-gray-400 dark:text-gray-500">
+                <Typography variant="body" className="text-gray-400 dark:text-gray-500">
                   Попробуйте изменить фильтры или добавьте новых пользователей
                 </Typography>
               </div>

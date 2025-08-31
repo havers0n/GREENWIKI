@@ -1,4 +1,5 @@
 import React from 'react';
+import { ArrowRight, Server, Map, History, User, Users, Car, Search, Filter } from 'lucide-react';
 import { Button, ButtonVariant, Card, Icon, Typography, FilterTabs, SearchInput, FilterButton } from '@my-forum/ui';
 import { PropertyCard } from 'entities/property';
 import { AnimationCard } from 'entities/animation';
@@ -85,7 +86,7 @@ const ComponentShowcase = (): React.ReactNode => {
                                 <Button>Primary</Button>
                                 <Button variant={ButtonVariant.Secondary}>Secondary</Button>
                                 <Button variant={ButtonVariant.Ghost}>Ghost</Button>
-                                <Button>With Icon <Icon name="arrowRight" className="ml-2" /></Button>
+                                <Button>With Icon <Icon icon={ArrowRight} className="ml-2" /></Button>
                             </div>
                         </div>
                     </Card>
@@ -95,8 +96,8 @@ const ComponentShowcase = (): React.ReactNode => {
                             <SearchInput placeholder="Поиск недвижимости..." />
                              <FilterTabs options={['Все', 'Дома', 'Квартиры', 'Офисы', 'Склады']} active="Все" onSelect={() => {}} />
                             <div className="flex gap-2">
-                                <FilterButton iconName="search">$ Все</FilterButton>
-                                <FilterButton iconName="filter">По убыванию даты</FilterButton>
+                                <FilterButton icon={Search}>$ Все</FilterButton>
+                                <FilterButton icon={Filter}>По убыванию даты</FilterButton>
                             </div>
                         </div>
                     </Card>
@@ -107,12 +108,12 @@ const ComponentShowcase = (): React.ReactNode => {
             <div>
                 <Typography as="h2" variant="h2" className="mb-4 pb-2 border-b">Category Cards</Typography>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    <CategoryCard icon="server" title="Серверы" description="Список всех серверов Majestic RP" />
-                    <CategoryCard icon="map" title="Карта" description="Карта сервера со всеми локациями" />
-                    <CategoryCard icon="history" title="История изменений" description="История изменений на проекте" />
-                    <CategoryCard icon="male" title="Мужская одежда" description="Поиск мод для мужчин" />
-                    <CategoryCard icon="female" title="Женская одежда" description="Поиск мод для женщин" />
-                    <CategoryCard icon="garage" title="Недвижимость" description="Данные по всем домам и квартирам" />
+                    <CategoryCard icon={Server} title="Серверы" description="Список всех серверов Majestic RP" />
+                    <CategoryCard icon={Map} title="Карта" description="Карта сервера со всеми локациями" />
+                    <CategoryCard icon={History} title="История изменений" description="История изменений на проекте" />
+                    <CategoryCard icon={User} title="Мужская одежда" description="Поиск мод для мужчин" />
+                    <CategoryCard icon={Users} title="Женская одежда" description="Поиск мод для женщин" />
+                    <CategoryCard icon={Car} title="Недвижимость" description="Данные по всем домам и квартирам" />
                 </div>
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                     {Object.entries(mockCategoryLinks).map(([title, links]) => (

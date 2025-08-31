@@ -1,11 +1,4 @@
-// Основной экспорт ContainerBlock
-
-// UI компоненты
-export { ContainerBlock } from './ui/ContainerBlock';
-export { ContainerBlockEditor } from './ui/ContainerBlockEditor';
-
-// Логика
-export { useContainerLogic, useContainerStyles, useContainerDroppable } from './model/useContainerLogic';
+// Полный ре-экспорт всех сущностей ContainerBlock
 
 // Типы
 export type {
@@ -16,10 +9,24 @@ export type {
   ContainerPadding,
   ChildBlock,
   ContainerStyles,
-  BaseContainerProps
+  BaseContainerProps,
+  GapValue,
+  PaddingValue,
+  ContainerEditorProps as ContainerBlockEditorProps
 } from './types';
 
-// Переэкспорт для удобства
+// Хуки
+export {
+  useContainerLogic,
+  useContainerStyles,
+  useContainerDroppable
+} from './model/useContainerLogic';
+
+// Компоненты
+export { ContainerBlock } from './ui/ContainerBlock';
+export { ContainerBlockEditor } from './ui/ContainerBlockEditor';
+
+// Default экспорты
 export { ContainerBlock as default } from './ui/ContainerBlock';
 
 // Алиасы для обратной совместимости

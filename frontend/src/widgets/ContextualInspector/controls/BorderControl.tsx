@@ -39,7 +39,7 @@ export const BorderControl: React.FC<BorderControlProps> = ({
 
   return (
     <div>
-      <Text variant="body-sm" className="font-medium mb-2">{label}</Text>
+      <Text variant="small" className="font-medium mb-2">{label}</Text>
 
       <div className="grid grid-cols-2 gap-3 mb-4">
         <TextInput
@@ -50,10 +50,15 @@ export const BorderControl: React.FC<BorderControlProps> = ({
         />
         <Select
           label="Стиль"
-          data={borderStyles}
           value={value.style || ''}
-          onChange={(newValue) => handleChange('style', newValue || '')}
-        />
+          onChange={(e) => handleChange('style', e.target.value)}
+        >
+          {borderStyles.map((style) => (
+            <option key={style.value} value={style.value}>
+              {style.label}
+            </option>
+          ))}
+        </Select>
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-4">

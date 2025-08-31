@@ -1,4 +1,4 @@
-import { BaseCacheService, CacheOptions, CacheService } from './CacheService';
+import { BaseCacheService, CacheOptions, CacheService, CacheStats } from './CacheService';
 
 interface MemoryCacheEntry {
   value: any;
@@ -51,8 +51,8 @@ export class MemoryCacheService extends BaseCacheService implements CacheService
 
     const entry: MemoryCacheEntry = {
       value,
-      tags: options.tags,
-      expiresAt: options.ttl ? Date.now() + (options.ttl * 1000) : undefined,
+      ...(options.tags && { tags: options.tags }),
+      ...(options.ttl && { expiresAt: Date.now() + (options.ttl * 1000) }),
       createdAt: Date.now()
     };
 
@@ -116,7 +116,7 @@ export class MemoryCacheService extends BaseCacheService implements CacheService
     return true;
   }
 
-  async getStats() {
+  async getStats(): Promise<CacheStats> {
     const baseStats = await super.getStats();
 
     // Calculate memory usage (rough estimate)

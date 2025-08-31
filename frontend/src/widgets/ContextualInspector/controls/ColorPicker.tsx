@@ -16,7 +16,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
 }) => {
   return (
     <div>
-      <Text variant="body-sm" className="font-medium mb-2">{label}</Text>
+      <Text variant="small" className="font-medium mb-2">{label}</Text>
       <EnhancedColorPicker
         value={value}
         onChange={onChange}

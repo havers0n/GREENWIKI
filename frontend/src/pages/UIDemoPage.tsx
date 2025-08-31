@@ -10,13 +10,13 @@ import {
   ThemeToggle,
   useToast
 } from '@my-forum/ui';
-import { useAppTheme } from 'app/providers/ThemeProvider';
+import { useAppTheme } from '../app/providers';
 import { useAppSelector } from 'store/hooks';
 
 
 const UIDemoPage: React.FC = () => {
   const { mode, toggleTheme } = useAppTheme();
-  const { addNotification } = useToast();
+  const { addToast } = useToast();
 
 
   // Получаем данные из Redux
@@ -24,7 +24,7 @@ const UIDemoPage: React.FC = () => {
   const userState = useAppSelector(state => state.user);
 
   const handleButtonClick = () => {
-    addNotification({
+    addToast({
       type: 'success',
       title: 'Успех!',
       message: 'Компонент работает корректно',
@@ -33,7 +33,7 @@ const UIDemoPage: React.FC = () => {
 
   const handleThemeToggle = () => {
     toggleTheme();
-    addNotification({
+    addToast({
       type: 'info',
       title: 'Тема изменена',
       message: `Переключено на ${mode === 'light' ? 'темную' : 'светлую'} тему`,
@@ -51,13 +51,13 @@ const UIDemoPage: React.FC = () => {
             <Typography variant="h1" className="text-3xl font-bold mb-2">
               🎨 Демонстрация UI компонентов
             </Typography>
-            <Typography variant="body1" className="text-gray-600 dark:text-gray-400">
+            <Typography variant="body" className="text-gray-600 dark:text-gray-400">
               Интеграция новой UI библиотеки @my-forum/ui
             </Typography>
           </div>
 
           <div className="flex items-center gap-4">
-            <Badge variant="secondary">
+            <Badge tone="primary">
               Тема: {mode}
             </Badge>
             <ThemeToggle />
@@ -74,7 +74,7 @@ const UIDemoPage: React.FC = () => {
             {readyComponents.map(component => (
               <div key={component} className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <Typography variant="body2">
+                <Typography variant="body">
                   {component}: Новая версия
                 </Typography>
               </div>
@@ -82,7 +82,7 @@ const UIDemoPage: React.FC = () => {
           </div>
 
           <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <Typography variant="body2">
+            <Typography variant="body">
               ✅ {readyComponents.length} компонентов мигрировано на новую UI библиотеку
             </Typography>
           </div>
@@ -148,7 +148,7 @@ const UIDemoPage: React.FC = () => {
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2">
                   <input type="checkbox" className="rounded" defaultChecked />
-                  <Typography variant="body2">Запомнить меня</Typography>
+                  <Typography variant="body">Запомнить меня</Typography>
                 </label>
               </div>
             </div>
@@ -162,16 +162,16 @@ const UIDemoPage: React.FC = () => {
 
             <div className="space-y-4">
               <div>
-                <Typography variant="body2" className="mb-2">Прогресс загрузки:</Typography>
+                <Typography variant="body" className="mb-2">Прогресс загрузки:</Typography>
                 <Progress value={75} className="w-full" />
               </div>
 
               <div className="flex flex-wrap gap-2">
                 <Badge>По умолчанию</Badge>
-                <Badge variant="secondary">Вторичный</Badge>
-                <Badge variant="success">Успех</Badge>
-                <Badge variant="warning">Предупреждение</Badge>
-                <Badge variant="error">Ошибка</Badge>
+                <Badge tone="primary">Основной</Badge>
+                <Badge tone="green">Успех</Badge>
+                <Badge tone="blue">Информация</Badge>
+                <Badge tone="red">Ошибка</Badge>
               </div>
             </div>
           </Card>
@@ -203,20 +203,20 @@ const UIDemoPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
               <Typography variant="h4" className="font-semibold mb-2">UI State</Typography>
-              <Typography variant="body2">Тема: {uiState.theme}</Typography>
-              <Typography variant="body2">Sidebar: {uiState.sidebar.open ? 'Открыт' : 'Закрыт'}</Typography>
+              <Typography variant="body">Тема: {uiState.theme}</Typography>
+              <Typography variant="body">Sidebar: {uiState.sidebar.open ? 'Открыт' : 'Закрыт'}</Typography>
             </div>
 
             <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
               <Typography variant="h4" className="font-semibold mb-2">User State</Typography>
-              <Typography variant="body2">Аутентифицирован: {userState.isAuthenticated ? 'Да' : 'Нет'}</Typography>
-              <Typography variant="body2">Пользователь: {userState.currentUser?.username || 'Не авторизован'}</Typography>
+              <Typography variant="body">Аутентифицирован: {userState.isAuthenticated ? 'Да' : 'Нет'}</Typography>
+              <Typography variant="body">Пользователь: {userState.currentUser?.username || 'Не авторизован'}</Typography>
             </div>
 
             <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
               <Typography variant="h4" className="font-semibold mb-2">Notifications</Typography>
-              <Typography variant="body2">Активных: {uiState.notifications.length}</Typography>
-              <Typography variant="body2">Глобальная загрузка: {uiState.loading.global ? 'Да' : 'Нет'}</Typography>
+              <Typography variant="body">Активных: {uiState.notifications.length}</Typography>
+              <Typography variant="body">Глобальная загрузка: {uiState.loading.global ? 'Да' : 'Нет'}</Typography>
             </div>
           </div>
         </Card>

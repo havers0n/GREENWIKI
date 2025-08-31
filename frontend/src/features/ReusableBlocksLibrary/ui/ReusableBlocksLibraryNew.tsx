@@ -1,6 +1,5 @@
 import React from 'react';
 import { Modal, Spinner, Button } from '@my-forum/ui';
-import { LibraryHeader } from './LibraryHeader';
 import { LibrarySearch } from './LibrarySearch';
 import { LibraryFilters } from './LibraryFilters';
 import { LibraryGrid } from './LibraryGrid';
@@ -32,7 +31,6 @@ const ReusableBlocksLibraryNew: React.FC<ReusableBlocksLibraryProps> = ({
     handleClearFilters,
     handlePageChange,
     handleClose,
-    handleRetryLoad,
   } = useLibraryLogic(isOpen, onClose);
 
   // Логика фильтров
@@ -62,7 +60,7 @@ const ReusableBlocksLibraryNew: React.FC<ReusableBlocksLibraryProps> = ({
 
   return (
     <Modal
-      title={<LibraryHeader />}
+      title="Библиотека блоков"
       isOpen={isOpen}
       onClose={handleClose}
       className={`max-w-4xl ${className || ''}`}
@@ -109,7 +107,10 @@ const ReusableBlocksLibraryNew: React.FC<ReusableBlocksLibraryProps> = ({
                   {errors.fetch}
                 </p>
                 <Button
-                  onClick={handleRetryLoad}
+                  onClick={() => {
+                    // Повторная попытка загрузки
+                    window.location.reload();
+                  }}
                   size="sm"
                 >
                   Попробовать снова

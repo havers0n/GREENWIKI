@@ -1,5 +1,6 @@
 import React from 'react';
 import type { ChangelogItem } from 'shared/lib/types';
+import { ArrowRight } from 'lucide-react';
 import { Card, Typography, Button, ButtonVariant, Icon } from '@my-forum/ui';
 
 interface ChangelogCardProps {
@@ -22,7 +23,7 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({ item }) => {
               <Typography as="p" variant="small" className="text-majestic-pink">Исправлена проблема в утреннем обновлении</Typography>
             </div>
             <Button variant={ButtonVariant.Ghost} className="text-majestic-gray-400 hover:text-majestic-dark !font-medium">
-              Читать больше <Icon name="arrowRight" className="ml-2 w-4 h-4" />
+              Читать больше <Icon icon={ArrowRight} className="ml-2 w-4 h-4" />
             </Button>
           </div>
           <ul className="space-y-2 list-disc list-inside text-majestic-gray-400 text-sm">

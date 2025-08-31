@@ -2,6 +2,7 @@ import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { Tooltip, TooltipPosition } from '../atoms/Tooltip';
 import { Button } from '../atoms/Button';
+import { Select } from '../atoms/Select';
 import { ThemeProvider } from '../contexts/ThemeContext';
 
 const meta: Meta<typeof Tooltip> = {
@@ -240,11 +241,11 @@ export const FormElements: Story = {
 
         <div>
           <Tooltip content="Выберите ваш уровень доступа">
-            <select className="w-full px-3 py-2 border border-[var(--color-border-default)] rounded-lg focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:border-transparent">
+            <Select className="w-full">
               <option>Пользователь</option>
               <option>Администратор</option>
               <option>Модератор</option>
-            </select>
+            </Select>
           </Tooltip>
         </div>
       </div>

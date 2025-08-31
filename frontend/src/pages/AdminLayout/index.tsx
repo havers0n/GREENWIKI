@@ -240,14 +240,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
                 {item.icon}
               </span>
               <span className="flex-1">{item.name}</span>
-              {item.badge && (
-                <Badge
-                  tone={item.badge > 0 ? 'green' : 'neutral'}
-                  className="ml-2 text-xs px-2 py-0.5"
-                >
-                  {item.badge}
-                </Badge>
-              )}
+
             </Link>
           );
         })}

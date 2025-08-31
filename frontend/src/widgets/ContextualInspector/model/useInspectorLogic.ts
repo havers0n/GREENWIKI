@@ -22,8 +22,11 @@ export const useInspectorLogic = (
     return blockRegistry[block.block_type];
   }, [block?.block_type]);
 
-  // Проверяем, является ли блок экземпляром переиспользуемого блока
-  const isInstance = blockId ? useAppSelector(state => selectIsBlockInstance(state, blockId)) : false;
+  // Всегда вызываем хук, но используем результат только при наличии blockId
+  const isBlockInstance = useAppSelector(state =>
+    blockId ? selectIsBlockInstance(state, blockId) : false
+  );
+  const isInstance = blockId ? isBlockInstance : false;
 
   // Получаем компонент редактора
   const Editor = useMemo(() => {

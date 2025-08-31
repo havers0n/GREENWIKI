@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { CacheService } from '../services/cache/CacheService';
+import { CacheService, CacheStats } from '../services/cache/CacheService';
 import { cacheService } from '../services/cache/CacheFactory';
 
 export interface CacheOptions {
@@ -189,7 +189,7 @@ export const cacheHelpers = {
   },
 
   // Get cache statistics
-  async getStats() {
+  async getStats(): Promise<CacheStats | null> {
     try {
       return await cacheService.getStats();
     } catch (error) {
@@ -201,10 +201,10 @@ export const cacheHelpers = {
 
 // Entity-specific cache tags
 export const cacheTags = {
-  pages: (id?: string) => ['pages', id ? `page:${id}` : null].filter(Boolean),
-  categories: (id?: string) => ['categories', id ? `category:${id}` : null].filter(Boolean),
-  sections: (id?: string) => ['sections', id ? `section:${id}` : null].filter(Boolean),
-  layouts: (id?: string) => ['layouts', id ? `layout:${id}` : null].filter(Boolean),
-  templates: (id?: string) => ['templates', id ? `template:${id}` : null].filter(Boolean),
-  users: (id?: string) => ['users', id ? `user:${id}` : null].filter(Boolean),
+  pages: (id?: string) => ['pages', ...(id ? [`page:${id}`] : [])] as string[],
+  categories: (id?: string) => ['categories', ...(id ? [`category:${id}`] : [])] as string[],
+  sections: (id?: string) => ['sections', ...(id ? [`section:${id}`] : [])] as string[],
+  layouts: (id?: string) => ['layouts', ...(id ? [`layout:${id}`] : [])] as string[],
+  templates: (id?: string) => ['templates', ...(id ? [`template:${id}`] : [])] as string[],
+  users: (id?: string) => ['users', ...(id ? [`user:${id}`] : [])] as string[],
 } as const;

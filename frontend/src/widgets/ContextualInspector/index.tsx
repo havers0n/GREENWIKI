@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import type { Database } from '@my-forum/db-types';
 import { Typography, Button, Spinner } from '@my-forum/ui';
 import { blockRegistry } from 'shared/config/blockRegistry';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Tabs, TabList, Tab, TabPanel } from '@my-forum/ui';
+import { Tabs, TabList, Tab } from '@my-forum/ui';
 import { SpacingControl, ColorPicker, BorderControl, BackgroundControl } from './controls';
 import { Breadcrumbs } from 'widgets/Breadcrumbs';
 import { OverridesPanel } from 'widgets/OverridesPanel';
 import { useAppSelector } from '../../store/hooks';
 import { selectIsBlockInstance } from '../../store/selectors/blockSelectors';
 import type { BlockNode } from '../../types/api';
+import { BlockType } from '../../shared/consts/blockTypes';
 
 type LayoutBlock = Database['public']['Tables']['layout_blocks']['Row'];
 
@@ -30,7 +31,7 @@ interface ContextualInspectorProps {
   blockId?: string; // ID блока в новой системе
 }
 
-const ContextualInspector: React.FC<ContextualInspectorProps> = ({
+const ContextualInspector: React.FC<ContextualInspectorProps> = React.memo(({
   block,
   isOpen,
   onClose,
@@ -43,22 +44,29 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
   onMoveRight,
   blockId,
 }) => {
-  // console.log('ContextualInspector: Rendered with block:', block?.id, 'isOpen:', isOpen);
+  // Всегда вызываем хуки на верхнем уровне компонента
+  const isInstance = useAppSelector(state => blockId ? selectIsBlockInstance(state, blockId) : false);
+
+  // Мемоизируем вычисление типа блока
+  const blockType = useMemo(() => {
+    if (!block) return null;
+    return 'block_type' in block ? block.block_type : (block as any).type;
+  }, [block]);
+
+
+  const [activeTab, setActiveTab] = useState<number>(isInstance ? 0 : 1);
 
   if (!block) return null;
 
-  const spec = blockRegistry[block.block_type];
+  const spec = blockRegistry[blockType || ''];
   if (!spec) return null;
-
-  // Проверяем, является ли блок экземпляром переиспользуемого блока
-  const isInstance = blockId ? useAppSelector(state => selectIsBlockInstance(state, blockId)) : false;
 
   const Editor = spec.Editor as React.FC<{ data: unknown; onChange: (d: unknown) => void }>;
   const data = (block.content ?? spec.defaultData()) as unknown;
   const metadata = (block.metadata ?? {}) as Record<string, unknown>;
 
-  // Получаем иконку блока
-  const getBlockIcon = (blockType: string) => {
+  // Мемоизированные функции
+  const getBlockIcon = useCallback((blockType: string) => {
     switch (blockType) {
       case 'header': return '🏠';
       case 'container_section': return '📦';
@@ -75,9 +83,9 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
       case 'spacer': return '📏';
       default: return '📄';
     }
-  };
+  }, []);
 
-  const getStatusInfo = (status: string) => {
+  const getStatusInfo = useCallback((status: string) => {
     switch (status) {
       case 'published':
         return { text: 'Опубликован', color: 'text-green-600 dark:text-green-400', icon: '✓' };
@@ -86,9 +94,10 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
       default:
         return { text: status, color: 'text-gray-500 dark:text-gray-400', icon: '○' };
     }
-  };
+  }, []);
 
-  const statusInfo = getStatusInfo(block.status);
+  // Мемоизированные вычисления
+  const statusInfo = useMemo(() => getStatusInfo(block.status), [block.status, getStatusInfo]);
 
   // Функции для проверки возможности перемещения
   const canMoveLeft = (block: LayoutBlock): boolean => {
@@ -196,7 +205,7 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
                 <div className="flex items-center justify-between gap-2">
                   <Button
                     onClick={() => onMoveLeft?.(block.id)}
-                    disabled={!canMoveLeft(block)}
+                    disabled={!canMoveLeft(block as any)}
                     variant="secondary"
                     size="sm"
                     className="flex-1"
@@ -206,7 +215,7 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
 
                   <Button
                     onClick={() => onMoveRight?.(block.id)}
-                    disabled={!canMoveRight(block)}
+                    disabled={!canMoveRight(block as any)}
                     variant="secondary"
                     size="sm"
                     className="flex-1"
@@ -234,7 +243,7 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
             )}
 
             {/* Вкладки с настройками */}
-            <Tabs defaultValue={isInstance ? 0 : 1} className="w-full">
+            <Tabs value={activeTab} onChange={setActiveTab} className="w-full">
               <TabList className="mb-4">
                 {isInstance && (
                   <Tab index={0} className="text-sm">
@@ -249,8 +258,9 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
                 </Tab>
               </TabList>
 
-              {isInstance && blockId && (
-                <TabPanel index={0} className="space-y-4">
+              {/* Контент вкладок */}
+              {activeTab === 0 && isInstance && blockId && (
+                <div className="space-y-4">
                   <OverridesPanel
                     blockId={blockId}
                     onSave={() => {
@@ -262,34 +272,37 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
                       console.error('Overrides save error:', error);
                     }}
                   />
-                </TabPanel>
+                </div>
               )}
 
-              <TabPanel index={isInstance ? 1 : 0} className="space-y-4">
-                <Editor
-                  data={data}
-                  onChange={(newData) => {
-                    try {
-                      if (spec.schema) {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        const result = (spec.schema as any).safeParse(newData);
-                        if (!result.success) {
-                          console.warn('Validation error:', result.error?.errors?.[0]?.message);
-                          return;
+              {activeTab === (isInstance ? 1 : 0) && (
+                <div className="space-y-4">
+                  <Editor
+                    data={data}
+                    onChange={(newData) => {
+                      try {
+                        if (spec.schema) {
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          const result = (spec.schema as any).safeParse(newData);
+                          if (!result.success) {
+                            console.warn('Validation error:', result.error?.errors?.[0]?.message);
+                            return;
+                          }
                         }
+                        const updated: LayoutBlock = { ...block, content: newData as object } as LayoutBlock;
+                        onBlockChange(updated);
+                      } catch (error) {
+                        console.warn('Error updating block:', error);
                       }
-                      const updated: LayoutBlock = { ...block, content: newData as object } as LayoutBlock;
-                      onBlockChange(updated);
-                    } catch (error) {
-                      console.warn('Error updating block:', error);
-                    }
-                  }}
-                />
-              </TabPanel>
+                    }}
+                  />
+                </div>
+              )}
 
-              <TabPanel index={isInstance ? 2 : 1} className="space-y-4">
+              {activeTab === (isInstance ? 2 : 1) && (
+                <div className="space-y-4">
                 {/* Дизайн контролы в зависимости от типа блока */}
-                {(block.block_type === 'container_section' || block.block_type === 'single_button' || block.block_type === 'heading' || block.block_type === 'tabs' || block.block_type === 'accordion') && (
+                {(block.block_type === BlockType.CONTAINER_SECTION || block.block_type === BlockType.SINGLE_BUTTON || block.block_type === BlockType.HEADING || block.block_type === BlockType.TABS || block.block_type === BlockType.ACCORDION) && (
                   <>
                     {/* Spacing Control */}
                     <SpacingControl
@@ -298,7 +311,7 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
                     />
 
                     {/* Border Control для контейнера и кнопки */}
-                    {(block.block_type === 'container_section' || block.block_type === 'single_button') && (
+                    {(block.block_type === BlockType.CONTAINER_SECTION || block.block_type === BlockType.SINGLE_BUTTON) && (
                       <BorderControl
                         value={metadata.border as any}
                         onChange={(border) => handleMetadataChange({ ...metadata, border })}
@@ -306,7 +319,7 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
                     )}
 
                     {/* Background Control для контейнера */}
-                    {block.block_type === 'container_section' && (
+                    {block.block_type === BlockType.CONTAINER_SECTION && (
                       <BackgroundControl
                         value={metadata.background as any}
                         onChange={(background) => handleMetadataChange({ ...metadata, background })}
@@ -314,7 +327,7 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
                     )}
 
                     {/* Color Picker для текста */}
-                    {(block.block_type === 'single_button' || block.block_type === 'heading') && (
+                    {(block.block_type === BlockType.SINGLE_BUTTON || block.block_type === BlockType.HEADING) && (
                       <ColorPicker
                         label="Цвет текста"
                         value={metadata.textColor as string}
@@ -325,13 +338,14 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
                 )}
 
                 {/* Если блок не поддерживает дизайн настройки */}
-                {!(block.block_type === 'container_section' || block.block_type === 'single_button' || block.block_type === 'heading' || block.block_type === 'tabs' || block.block_type === 'accordion') && (
+                {!(block.block_type === BlockType.CONTAINER_SECTION || block.block_type === BlockType.SINGLE_BUTTON || block.block_type === BlockType.HEADING || block.block_type === BlockType.TABS || block.block_type === BlockType.ACCORDION) && (
                   <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                     <div className="text-2xl mb-2">🎨</div>
                     <p className="text-sm">Дизайн настройки недоступны для этого типа блока</p>
                   </div>
                 )}
-              </TabPanel>
+                </div>
+              )}
             </Tabs>
 
             {/* Панель удаления */}
@@ -382,6 +396,8 @@ const ContextualInspector: React.FC<ContextualInspectorProps> = ({
       )}
     </AnimatePresence>
   );
-};
+});
+
+ContextualInspector.displayName = 'ContextualInspector';
 
 export default ContextualInspector;

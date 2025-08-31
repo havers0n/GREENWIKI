@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import type { NotificationType } from '../ui/atoms/Notification';
+import React, { createContext, useContext, useState, useCallback } from 'react';
+import type { ReactNode } from 'react';
+// import type { NotificationType } from '../ui/atoms/Notification';
 
 export interface NotificationItem {
   id: string;
-  type: NotificationType;
+  type: string; // NotificationType;
   title: string;
   message?: string;
   duration?: number;

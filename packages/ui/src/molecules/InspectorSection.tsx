@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { cn } from '../lib/utils';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, LucideIcon } from 'lucide-react';
 import { Icon } from '../atoms/Icon';
 
 export interface InspectorSectionProps {
@@ -8,7 +8,7 @@ export interface InspectorSectionProps {
   children: React.ReactNode;
   defaultExpanded?: boolean;
   collapsible?: boolean;
-  icon?: React.ElementType;
+  icon?: LucideIcon | string; // Поддерживаем как компонент, так и строку для обратной совместимости
   className?: string;
 }
 
@@ -75,7 +75,8 @@ export const InspectorSection = React.memo<InspectorSectionProps>(({
 
         {icon && (
           <Icon
-            icon={icon}
+            name={typeof icon === 'string' ? icon : undefined}
+            icon={typeof icon === 'function' ? icon : undefined}
             size={16}
             className="flex-shrink-0 text-gray-600 dark:text-gray-300"
           />

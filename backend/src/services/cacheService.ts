@@ -26,16 +26,20 @@ export class CacheService {
     }
 
     // Инициализация Redis клиента только в production
-    this.redis = new Redis({
+    const redisConfig: any = {
       host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-      password: process.env.REDIS_PASSWORD,
-      db: parseInt(process.env.REDIS_DB || '0'),
-      retryDelayOnFailover: 100,
+      port: parseInt(process.env.REDIS_PORT || '6379', 10),
+      db: parseInt(process.env.REDIS_DB || '0', 10),
       enableReadyCheck: false,
       maxRetriesPerRequest: 3,
       lazyConnect: true,
-    });
+    };
+
+    if (process.env.REDIS_PASSWORD) {
+      redisConfig.password = process.env.REDIS_PASSWORD;
+    }
+
+    this.redis = new Redis(redisConfig);
 
     // Обработка ошибок подключения
     this.redis.on('error', (error) => {

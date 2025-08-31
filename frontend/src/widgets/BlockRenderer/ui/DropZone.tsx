@@ -68,7 +68,7 @@ const DropZone: React.FC<DropZoneProps> = ({
   const hoverStyles = getHoverStyles();
   const isDraggingBlock = active?.data?.current?.type === 'block';
   const blockType = active?.data?.current?.blockType;
-  const sourceType = active?.data?.current?.type;
+
 
   // Функция для получения иконки и описания на основе типа блока
   const getBlockInfo = () => {

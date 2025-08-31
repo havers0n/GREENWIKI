@@ -1,7 +1,8 @@
 import { Router, Request, Response } from 'express'
-import { supabaseAdmin } from '../supabaseClient'
+import { supabaseAdmin, createSupabaseClientForUser } from '../supabaseClient'
 import type { Json } from '@my-forum/db-types'
-import { isAdmin } from '../middleware/authMiddleware'
+import { authMiddleware } from '../middleware/authMiddleware'
+import { isAdmin } from '../middleware/isAdminMiddleware'
 import { ReusableBlocksService } from '../services/reusableBlocksService'
 
 const router = Router()
@@ -29,8 +30,13 @@ interface UpdateOverridesRequest {
 }
 
 // POST /api/reusable-blocks - Создание нового переиспользуемого блока
-router.post('/', isAdmin, async (req: Request<{}, any, CreateReusableBlockRequest>, res: Response) => {
+router.post('/', authMiddleware, isAdmin, async (req: Request<{}, any, CreateReusableBlockRequest>, res: Response) => {
   try {
+    // Проверяем наличие токена
+    if (!req.token) {
+      return res.status(401).json({ error: 'Authentication token is missing' })
+    }
+
     const { name, description, category, tags, sourceBlockIds, rootBlockId } = req.body
 
     // Валидация обязательных полей
@@ -50,15 +56,18 @@ router.post('/', isAdmin, async (req: Request<{}, any, CreateReusableBlockReques
     }
 
     // Создаем переиспользуемый блок
-    const result = await ReusableBlocksService.createReusableBlock({
+    const createParams: any = {
       name,
-      description,
-      category,
-      tags,
       sourceBlockIds,
-      rootBlockId,
-      createdBy: req.user?.id // Предполагаем, что middleware устанавливает req.user
-    })
+      rootBlockId
+    };
+
+    if (description) createParams.description = description;
+    if (category) createParams.category = category;
+    if (tags) createParams.tags = tags;
+    if (req.user?.id) createParams.createdBy = req.user.id;
+
+    const result = await ReusableBlocksService.createReusableBlock(createParams)
 
     if (!result) {
       return res.status(500).json({
@@ -94,16 +103,16 @@ router.get('/', async (req: Request, res: Response) => {
     } = req.query
 
     // Парсим параметры
-    const params = {
-      category: typeof category === 'string' ? category : undefined,
-      search: typeof search === 'string' ? search : undefined,
-      tags: typeof tags === 'string' ? tags.split(',') : undefined,
-      limit: limit ? parseInt(limit as string, 10) : undefined,
-      offset: offset ? parseInt(offset as string, 10) : undefined,
-      sortBy: typeof sortBy === 'string' ? sortBy : undefined,
-      sortOrder: (typeof sortOrder === 'string' && ['asc', 'desc'].includes(sortOrder))
-        ? sortOrder as 'asc' | 'desc'
-        : undefined
+    const params: any = {};
+
+    if (typeof category === 'string') params.category = category;
+    if (typeof search === 'string') params.search = search;
+    if (typeof tags === 'string') params.tags = tags.split(',');
+    if (limit) params.limit = parseInt(limit as string, 10);
+    if (offset) params.offset = parseInt(offset as string, 10);
+    if (typeof sortBy === 'string') params.sortBy = sortBy;
+    if (typeof sortOrder === 'string' && ['asc', 'desc'].includes(sortOrder)) {
+      params.sortOrder = sortOrder as 'asc' | 'desc';
     }
 
     const result = await ReusableBlocksService.getReusableBlocks(params)
@@ -169,7 +178,7 @@ router.get('/:id', async (req: Request<{ id: string }>, res: Response) => {
 })
 
 // PUT /api/reusable-blocks/:id - Обновление метаданных переиспользуемого блока
-router.put('/:id', isAdmin, async (req: Request<{ id: string }, any, Partial<CreateReusableBlockRequest>>, res: Response) => {
+router.put('/:id', authMiddleware, isAdmin, async (req: Request<{ id: string }, any, Partial<CreateReusableBlockRequest>>, res: Response) => {
   try {
     const { id } = req.params
     const { name, description, category, tags } = req.body
@@ -214,7 +223,7 @@ router.put('/:id', isAdmin, async (req: Request<{ id: string }, any, Partial<Cre
 })
 
 // DELETE /api/reusable-blocks/:id - Удаление переиспользуемого блока
-router.delete('/:id', isAdmin, async (req: Request<{ id: string }>, res: Response) => {
+router.delete('/:id', authMiddleware, isAdmin, async (req: Request<{ id: string }>, res: Response) => {
   try {
     const { id } = req.params
 

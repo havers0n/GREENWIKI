@@ -1,12 +1,20 @@
 import React from 'react';
 import { z } from 'zod';
-import { Input, Textarea, Select, Button } from '@my-forum/ui';
+import { Input, Textarea, Select } from '@my-forum/ui';
 
 // Импорт редакторов блоков
-import { HeadingEditor, ParagraphEditor, ImageEditor, ButtonEditor, SpacerEditor, TabsEditor, AccordionEditor, SectionEditor, IconEditor } from 'features/BlockEditors';
+import { HeadingEditor, ParagraphEditor, ImageEditor, SpacerEditor, TabsEditor, AccordionEditor, SectionEditor, IconEditor } from 'features/BlockEditors';
+import { ColumnsBlockEditor } from '../../blocks/layout/ColumnsBlock';
+import { ButtonBlockEditor } from '../../blocks/atomic/ButtonBlock';
+
+// Адаптер для ButtonBlockEditor
+const ButtonBlockEditorAdapter: React.FC<{ data: any; onChange: (data: any) => void }> = ({ data, onChange }) => {
+  return <ButtonBlockEditor text={data.content?.text} metadata={data.metadata} onClick={() => onChange(data)} />;
+};
 
 // Ленивые импорты рендереров блоков
-const ContainerSection = React.lazy(() => import('blocks/layout/ContainerBlock'));
+const ContainerSection = React.lazy(() => import('../../blocks/layout/ContainerBlock').then(module => ({ default: module.ContainerSectionEditor })));
+const ColumnsBlock = React.lazy(() => import('../../blocks/layout/ColumnsBlock').then(module => ({ default: module.ColumnsBlock })));
 const TabsBlock = React.lazy(() => import('widgets/TabsBlock'));
 const AccordionBlock = React.lazy(() => import('widgets/AccordionBlock'));
 
@@ -17,7 +25,7 @@ const CardSection = React.lazy(() => import('widgets/CardSection'));
 const LazyHeadingBlock = React.lazy(() => import('widgets/AtomicBlocks/HeadingBlock'));
 const LazyParagraphBlock = React.lazy(() => import('widgets/AtomicBlocks/ParagraphBlock'));
 const LazyImageBlock = React.lazy(() => import('widgets/AtomicBlocks/ImageBlock'));
-const LazyButtonBlock = React.lazy(() => import('blocks/atomic/ButtonBlock'));
+const LazyButtonBlock = React.lazy(() => import('../../blocks/atomic/ButtonBlock').then(module => ({ default: module.ButtonBlock })));
 const LazySpacerBlock = React.lazy(() => import('widgets/AtomicBlocks/SpacerBlock'));
 const LazySectionBlock = React.lazy(() => import('widgets/AtomicBlocks/SectionBlock'));
 const LazyIconBlock = React.lazy(() => import('widgets/AtomicBlocks/IconBlock'));
@@ -51,54 +59,17 @@ export interface BlockSpec<T = unknown> {
 	allowedChildren?: string[];
 	/** Массив имен слотов для вложенных блоков */
 	allowedSlots?: string[];
+	/** Может ли блок содержать дочерние блоки (для обратной совместимости) */
+	canHaveChildren?: boolean;
 }
 
 // Редактор для блоков без настраиваемых параметров
-const NoConfigEditor: React.FC<{ data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }> = () => {
-	return (
-		<div className="text-sm text-gray-500 dark:text-gray-400">
-			Для этого блока нет настраиваемых параметров.
-		</div>
-	);
-};
 
 
 
 
 
 
-
-// ContainerSection
-interface ContainerSectionData { 
-	title?: string; 
-	layout: 'two' | 'three'; 
-}
-
-const ContainerSectionEditor: React.FC<{ data: ContainerSectionData; onChange: (d: ContainerSectionData) => void }> = ({ data, onChange }) => {
-	return (
-		<div className="space-y-3">
-			<Input
-				label="Заголовок контейнера"
-				value={data.title || ''}
-				onChange={(e) => onChange({ ...data, title: e.target.value })}
-				placeholder="Например: Основные разделы"
-			/>
-			<Select
-				label="Количество колонок"
-				value={data.layout}
-				onChange={(e) => onChange({ ...data, layout: e.target.value as 'two' | 'three' })}
-			>
-				<option value="two">2 колонки</option>
-				<option value="three">3 колонки</option>
-			</Select>
-			<div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-				<div className="text-sm text-blue-700 dark:text-blue-300">
-					<strong>Совет:</strong> Перетащите блоки из библиотеки в колонки контейнера для создания вложенной структуры.
-				</div>
-			</div>
-		</div>
-	);
-};
 
 // Схемы для новых контейнерных блоков
 interface TabItem {
@@ -207,21 +178,21 @@ export const blockRegistry: Record<string, BlockSpec<any>> = {
 	columns: {
 		type: 'columns',
 		name: 'Колонки',
-		defaultData: () => ({ layout: 'two' }),
-		Editor: ContainerSectionEditor,
-		Renderer: ContainerSection as unknown as React.LazyExoticComponent<React.ComponentType<any>>,
+		defaultData: () => ({ layout: 'three' }),
+		Editor: ColumnsBlockEditor,
+		Renderer: ColumnsBlock,
 		category: 'Структура',
 		icon: 'columns',
 		tags: ['columns', 'layout', 'grid'],
-		description: 'Контейнер с колонками для организации контента.',
-		previewData: () => ({ layout: 'two' }),
+		description: 'Гибкий контейнер с колонками для создания многоколоночных макетов.',
+		previewData: () => ({ layout: 'three' }),
 		schemaVersion: 1,
 		schema: z.object({
-			layout: z.enum(['two', 'three']).default('two'),
+			layout: z.enum(['two', 'three', 'four']).default('three'),
 		}),
-		// Поддержка вложенности
-		allowedChildren: ['heading', 'paragraph', 'image', 'button', 'spacer', 'section', 'container', 'tabs', 'accordion', 'card', 'icon'],
-		allowedSlots: ['column1', 'column2', 'column3'],
+		// Поддержка вложенности - можно вкладывать любые блоки
+		allowedChildren: ['heading', 'paragraph', 'image', 'button', 'spacer', 'section', 'container', 'columns', 'tabs', 'accordion', 'card', 'icon'],
+		allowedSlots: ['column1', 'column2', 'column3', 'column4'],
 	},
 	
 	// Атомарные блоки
@@ -270,11 +241,11 @@ export const blockRegistry: Record<string, BlockSpec<any>> = {
 		schema: ImageSchema as unknown as z.ZodType<ImageData>,
 	},
 	
-	button: {
-		type: 'button',
+	single_button: {
+		type: 'single_button',
 		name: 'Кнопка',
 		defaultData: () => ({ text: 'Кнопка', link: '', variant: 'primary', size: 'md' }),
-		Editor: ButtonEditor,
+		Editor: ButtonBlockEditorAdapter,
 		Renderer: LazyButtonBlock,
 		category: 'Контент',
 		icon: 'button',
@@ -453,35 +424,32 @@ export const blockRegistry: Record<string, BlockSpec<any>> = {
 				<Select
 					label="Layout"
 					value={data.layout || 'vertical'}
-					onChange={(value) => onChange({ ...data, layout: value })}
-					options={[
-						{ value: 'vertical', label: 'Вертикальный' },
-						{ value: 'horizontal', label: 'Горизонтальный' },
-						{ value: 'grid', label: 'Сетка' },
-					]}
-				/>
+					onChange={(e) => onChange({ ...data, layout: e.target.value })}
+				>
+					<option value="vertical">Вертикальный</option>
+					<option value="horizontal">Горизонтальный</option>
+					<option value="grid">Сетка</option>
+				</Select>
 				<Select
 					label="Отступы между элементами"
 					value={data.gap || 'medium'}
-					onChange={(value) => onChange({ ...data, gap: value })}
-					options={[
-						{ value: 'none', label: 'Без отступов' },
-						{ value: 'small', label: 'Маленькие' },
-						{ value: 'medium', label: 'Средние' },
-						{ value: 'large', label: 'Большие' },
-					]}
-				/>
+					onChange={(e) => onChange({ ...data, gap: e.target.value })}
+				>
+					<option value="none">Без отступов</option>
+					<option value="small">Маленькие</option>
+					<option value="medium">Средние</option>
+					<option value="large">Большие</option>
+				</Select>
 				<Select
 					label="Внутренние отступы"
 					value={data.padding || 'medium'}
-					onChange={(value) => onChange({ ...data, padding: value })}
-					options={[
-						{ value: 'none', label: 'Без отступов' },
-						{ value: 'small', label: 'Маленькие' },
-						{ value: 'medium', label: 'Средние' },
-						{ value: 'large', label: 'Большие' },
-					]}
-				/>
+					onChange={(e) => onChange({ ...data, padding: e.target.value })}
+				>
+					<option value="none">Без отступов</option>
+					<option value="small">Маленькие</option>
+					<option value="medium">Средние</option>
+					<option value="large">Большие</option>
+				</Select>
 				<Input
 					label="Цвет фона"
 					type="color"
@@ -545,24 +513,22 @@ export const blockRegistry: Record<string, BlockSpec<any>> = {
 				<Select
 					label="Вариант стиля"
 					value={data.variant || 'default'}
-					onChange={(value) => onChange({ ...data, variant: value })}
-					options={[
-						{ value: 'default', label: 'По умолчанию' },
-						{ value: 'elevated', label: 'Приподнятая' },
-						{ value: 'outlined', label: 'Обведенная' },
-						{ value: 'filled', label: 'Заполненная' },
-					]}
-				/>
+					onChange={(e) => onChange({ ...data, variant: e.target.value })}
+				>
+					<option value="default">По умолчанию</option>
+					<option value="elevated">Приподнятая</option>
+					<option value="outlined">Обведенная</option>
+					<option value="filled">Заполненная</option>
+				</Select>
 				<Select
 					label="Размер"
 					value={data.size || 'medium'}
-					onChange={(value) => onChange({ ...data, size: value })}
-					options={[
-						{ value: 'small', label: 'Маленький' },
-						{ value: 'medium', label: 'Средний' },
-						{ value: 'large', label: 'Большой' },
-					]}
-				/>
+					onChange={(e) => onChange({ ...data, size: e.target.value })}
+				>
+					<option value="small">Маленький</option>
+					<option value="medium">Средний</option>
+					<option value="large">Большой</option>
+				</Select>
 				<div className="flex items-center space-x-4">
 					<label className="flex items-center">
 						<input

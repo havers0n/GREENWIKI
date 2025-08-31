@@ -1,5 +1,7 @@
 // Типы для декларативной конфигурационной системы ContextualInspector
 
+import { LucideIcon } from 'lucide-react';
+
 export type ControlType =
   | 'SpacingControl'
   | 'EnhancedColorPicker'
@@ -96,7 +98,7 @@ export type InspectorControl =
 export interface InspectorSectionConfig {
   title: string;
   description?: string;
-  icon?: string;
+  icon?: LucideIcon | string; // Поддерживаем как компонент, так и строку для обратной совместимости
   controls: InspectorControl[];
   collapsible?: boolean;
   defaultExpanded?: boolean;

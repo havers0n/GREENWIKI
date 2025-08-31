@@ -196,7 +196,7 @@ export const ActionIcon = React.memo<ActionIconProps>(
         [onClick, loading, disabled]
       );
 
-      const spinnerSize = size === ActionIconSize.Xs ? 'xs' : size === ActionIconSize.Sm ? 'sm' : size === ActionIconSize.Lg ? 'lg' : 'md';
+      const spinnerSize = size === ActionIconSize.Sm ? 'sm' : size === ActionIconSize.Lg ? 'lg' : 'md';
 
       return (
         <button

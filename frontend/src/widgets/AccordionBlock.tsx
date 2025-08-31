@@ -1,10 +1,8 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { Typography } from '@my-forum/ui';
-import BlockRenderer from 'widgets/BlockRenderer';
-import type { Database } from '@my-forum/db-types';
-
-type LayoutBlock = Database['public']['Tables']['layout_blocks']['Row'];
+import RenderBlockNode from 'widgets/BlockRenderer/ui/RenderBlockNode';
+import type { BlockNode } from '../types/api';
 
 interface AccordionItem {
   id: string;
@@ -20,13 +18,15 @@ interface AccordionBlockProps extends AccordionBlockData {
   // Новые props для работы с вложенными блоками
   editorMode?: boolean;
   blockId?: string;
-  allBlocks?: LayoutBlock[];
+  allBlocks?: BlockNode[];
   selectedBlockId?: string;
   onSelectBlock?: (id: string | null) => void;
-  onUpdateBlock?: (updated: LayoutBlock) => void;
+  onUpdateBlock?: (updated: BlockNode) => void;
   onUpdateContent?: (next: AccordionBlockData) => void;
   // Metadata для стилизации
   metadata?: Record<string, unknown>;
+  // Дочерние блоки для рендеринга
+  blockTree?: BlockNode[];
 }
 
 const AccordionBlock: React.FC<AccordionBlockProps> = ({
@@ -34,12 +34,12 @@ const AccordionBlock: React.FC<AccordionBlockProps> = ({
   expandedSections = [],
   editorMode = false,
   blockId,
-  allBlocks = [],
   selectedBlockId,
   onSelectBlock,
   onUpdateBlock,
   onUpdateContent,
-  metadata = {}
+  metadata = {},
+  blockTree = []
 }) => {
   const handleToggleSection = (sectionId: string) => {
     if (onUpdateContent) {
@@ -136,15 +136,19 @@ const AccordionBlock: React.FC<AccordionBlockProps> = ({
               )}
 
               <div className="min-h-[100px] rounded-lg border border-dashed border-gray-200 dark:border-gray-700 p-4">
-                <BlockRenderer
-                  blockTree={allBlocks || []}
-                  editorMode={editorMode}
-                  selectedBlockId={selectedBlockId}
-                  onSelectBlock={onSelectBlock}
-                  onUpdateBlock={onUpdateBlock}
-                  parentBlockId={blockId || null}
-                  slot={section.id}
-                />
+                {blockTree
+                  .filter(child => child.slot === section.id)
+                  .map(child => (
+                    <RenderBlockNode
+                      key={child.id}
+                      block={child}
+                      depth={0}
+                      editorMode={editorMode}
+                      selectedBlockId={selectedBlockId}
+                      onSelectBlock={onSelectBlock}
+                      onUpdateBlock={onUpdateBlock}
+                    />
+                  ))}
               </div>
 
               {editorMode && (

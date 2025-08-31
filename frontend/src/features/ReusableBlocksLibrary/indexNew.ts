@@ -25,7 +25,6 @@ export type {
   LibraryGridProps,
   LibraryPaginationProps,
   LibraryEmptyStateProps,
-  ReusableBlock,
   LibraryFilters as Filters,
   LibraryPagination as Pagination,
   LibraryLoading,
@@ -36,6 +35,9 @@ export type {
   GridConfig,
   VirtualizationConfig,
 } from './types';
+
+// Экспорт глобального типа ReusableBlock
+export type { ReusableBlock } from '../../types/api';
 
 // Переэкспорт для обратной совместимости
 export { ReusableBlocksLibraryNew as default } from './ui/ReusableBlocksLibraryNew';

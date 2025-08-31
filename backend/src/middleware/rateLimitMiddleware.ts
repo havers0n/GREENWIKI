@@ -43,6 +43,12 @@ export function rateLimitMiddleware(options: RateLimitOptions) {
 
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
+      // Check if cache service is available
+      if (!cacheService || typeof cacheService.get !== 'function') {
+        console.warn('Rate limit check skipped: cache service is not available.');
+        return next();
+      }
+
       const key = `ratelimit:${keyGenerator(req)}`;
       const now = Date.now();
       const windowStart = Math.floor(now / windowMs) * windowMs;
@@ -81,10 +87,15 @@ export function rateLimitMiddleware(options: RateLimitOptions) {
         resetTime
       };
 
-      await cacheService.set(key, newData, {
-        ttl: Math.ceil(windowMs / 1000),
-        tags: ['ratelimit']
-      });
+      // Check if cache service is available before setting
+      if (cacheService && typeof cacheService.set === 'function') {
+        await cacheService.set(key, newData, {
+          ttl: Math.ceil(windowMs / 1000),
+          tags: ['ratelimit']
+        });
+      } else {
+        console.warn('Rate limit data not saved: cache service is not available.');
+      }
 
       // Add headers
       if (headers) {
@@ -135,10 +146,15 @@ export function rateLimitRollbackMiddleware() {
               count: Math.max(0, data.count - 1)
             };
 
-            cacheService.set(key, rollbackData, {
-              ttl: Math.ceil((data.resetTime - Date.now()) / 1000),
-              tags: ['ratelimit']
-            }).catch(err => console.error('Rate limit rollback error:', err));
+            // Check if cache service is available before rollback
+            if (cacheService && typeof cacheService.set === 'function') {
+              cacheService.set(key, rollbackData, {
+                ttl: Math.ceil((data.resetTime - Date.now()) / 1000),
+                tags: ['ratelimit']
+              }).catch(err => console.error('Rate limit rollback error:', err));
+            } else {
+              console.warn('Rate limit rollback skipped: cache service is not available.');
+            }
           }
         } catch (error) {
           console.error('Rate limit rollback failed:', error);
@@ -161,10 +177,15 @@ export function rateLimitRollbackMiddleware() {
               count: Math.max(0, data.count - 1)
             };
 
-            cacheService.set(key, rollbackData, {
-              ttl: Math.ceil((data.resetTime - Date.now()) / 1000),
-              tags: ['ratelimit']
-            }).catch(err => console.error('Rate limit rollback error:', err));
+            // Check if cache service is available before rollback
+            if (cacheService && typeof cacheService.set === 'function') {
+              cacheService.set(key, rollbackData, {
+                ttl: Math.ceil((data.resetTime - Date.now()) / 1000),
+                tags: ['ratelimit']
+              }).catch(err => console.error('Rate limit rollback error:', err));
+            } else {
+              console.warn('Rate limit rollback skipped: cache service is not available.');
+            }
           }
         } catch (error) {
           console.error('Rate limit rollback failed:', error);
@@ -182,38 +203,59 @@ export function rateLimitRollbackMiddleware() {
 export const rateLimiters = {
   // General API rate limiting
   general: rateLimitMiddleware({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    maxRequests: 100, // 100 requests per 15 minutes
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes default
+    maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'), // 100 requests default
     message: 'Too many requests from this IP, please try again later.'
   }),
 
   // Strict rate limiting for auth endpoints
   auth: rateLimitMiddleware({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    maxRequests: 5, // 5 attempts per 15 minutes
+    windowMs: parseInt(process.env.RATE_LIMIT_AUTH_WINDOW_MS || '900000'), // 15 minutes default
+    maxRequests: parseInt(process.env.RATE_LIMIT_AUTH_MAX_REQUESTS || '5'), // 5 attempts default
     message: 'Too many authentication attempts, please try again later.',
     skipFailedRequests: false
   }),
 
   // Rate limiting for file uploads
   upload: rateLimitMiddleware({
-    windowMs: 60 * 60 * 1000, // 1 hour
-    maxRequests: 10, // 10 uploads per hour
+    windowMs: parseInt(process.env.RATE_LIMIT_UPLOAD_WINDOW_MS || '3600000'), // 1 hour default
+    maxRequests: parseInt(process.env.RATE_LIMIT_UPLOAD_MAX_REQUESTS || '10'), // 10 uploads default
     message: 'Upload limit exceeded, please try again later.'
   }),
 
   // Rate limiting for search endpoints
   search: rateLimitMiddleware({
-    windowMs: 60 * 1000, // 1 minute
-    maxRequests: 30, // 30 searches per minute
+    windowMs: parseInt(process.env.RATE_LIMIT_SEARCH_WINDOW_MS || '60000'), // 1 minute default
+    maxRequests: parseInt(process.env.RATE_LIMIT_SEARCH_MAX_REQUESTS || '30'), // 30 searches default
     message: 'Search rate limit exceeded, please slow down.'
   }),
 
-  // Very strict rate limiting for admin endpoints
+  // Strict rate limiting for admin endpoints
   admin: rateLimitMiddleware({
-    windowMs: 60 * 1000, // 1 minute
-    maxRequests: 60, // 60 requests per minute
+    windowMs: parseInt(process.env.RATE_LIMIT_ADMIN_WINDOW_MS || '60000'), // 1 minute default
+    maxRequests: parseInt(process.env.RATE_LIMIT_ADMIN_MAX_REQUESTS || '60'), // 60 requests default
     message: 'Admin API rate limit exceeded.'
+  }),
+
+  // Rate limiting for content creation endpoints
+  create: rateLimitMiddleware({
+    windowMs: parseInt(process.env.RATE_LIMIT_CREATE_WINDOW_MS || '300000'), // 5 minutes default
+    maxRequests: parseInt(process.env.RATE_LIMIT_CREATE_MAX_REQUESTS || '20'), // 20 creations default
+    message: 'Content creation rate limit exceeded, please slow down.'
+  }),
+
+  // Rate limiting for block operations
+  blocks: rateLimitMiddleware({
+    windowMs: parseInt(process.env.RATE_LIMIT_BLOCKS_WINDOW_MS || '60000'), // 1 minute default
+    maxRequests: parseInt(process.env.RATE_LIMIT_BLOCKS_MAX_REQUESTS || '120'), // 120 block operations default
+    message: 'Block operation rate limit exceeded.'
+  }),
+
+  // Very strict rate limiting for critical operations
+  critical: rateLimitMiddleware({
+    windowMs: parseInt(process.env.RATE_LIMIT_CRITICAL_WINDOW_MS || '60000'), // 1 minute default
+    maxRequests: parseInt(process.env.RATE_LIMIT_CRITICAL_MAX_REQUESTS || '10'), // 10 critical operations default
+    message: 'Critical operation rate limit exceeded.'
   })
 };
 

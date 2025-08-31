@@ -1,12 +1,13 @@
 import { useState, useCallback } from 'react';
 import type { Database } from '@my-forum/db-types';
+import type { BlockNode } from '../../types/api';
 
 type PageTemplate = Database['public']['Tables']['page_templates']['Row'];
 
 interface CreateTemplateData {
   title: string;
   description?: string;
-  blocks: any[];
+  blocks: BlockNode[];
 }
 
 export const useTemplates = () => {

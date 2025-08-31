@@ -2,8 +2,9 @@ import axios from 'axios';
 import { supabase } from '../../supabase';
 
 export const api = axios.create({
-  baseURL: 'http://localhost:3001/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
   timeout: 10000,
+  withCredentials: true, // Enable sending cookies and auth headers
   headers: {
     'Content-Type': 'application/json',
   },

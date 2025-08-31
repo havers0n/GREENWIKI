@@ -1,8 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Button } from '@my-forum/ui';
-import { Typography } from '@my-forum/ui';
-import { Modal } from '@my-forum/ui';
+import { Card, Button, Select, Typography, Modal } from '@my-forum/ui';
 import BlockLibrary from 'widgets/BlockLibrary';
 import RevisionsModal from 'widgets/RevisionsModal';
 import { ReusableBlocksLibrary } from 'features/ReusableBlocksLibrary';
@@ -52,7 +50,7 @@ interface EditorToolbarProps {
   onOpenReusableLibrary?: () => void;
 }
 
-const EditorToolbar: React.FC<EditorToolbarProps> = ({
+const EditorToolbar: React.FC<EditorToolbarProps> = React.memo(({
   pageIdentifier,
   isDirty,
   saving,
@@ -86,7 +84,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   // Получаем состояние библиотеки переиспользуемых блоков
   const isReusableLibraryOpen = useAppSelector(state => state.reusableBlocks.isLibraryOpen);
 
-  const handlePageChange = (pageSlug: string) => {
+  const handlePageChange = useCallback((pageSlug: string) => {
     if (pageSlug !== pageIdentifier) {
       // Проверяем на несохраненные изменения
       if (isDirty) {
@@ -97,7 +95,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       }
       navigate(`/admin/editor/${pageSlug}`);
     }
-  };
+  }, [pageIdentifier, isDirty, navigate]);
 
   return (
     <>
@@ -111,11 +109,11 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
             {/* Выбор страницы */}
             <div className="flex items-center gap-2">
-              <select
+              <Select
                 value={pageIdentifier}
                 onChange={(e) => handlePageChange(e.target.value)}
-                className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                 disabled={pagesLoading}
+                className="w-48"
               >
                 {pagesLoading ? (
                   <option disabled>Загрузка...</option>
@@ -126,7 +124,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                     </option>
                   ))
                 )}
-              </select>
+              </Select>
             </div>
 
             <div className="flex items-center gap-2">
@@ -303,6 +301,8 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       />
     </>
   );
-};
+});
+
+EditorToolbar.displayName = 'EditorToolbar';
 
 export default EditorToolbar;

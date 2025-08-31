@@ -1,6 +1,6 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useRef, useCallback, useEffect, useMemo } from 'react';
-import type { BlockNode } from '../../../types/api';
+import { useRef, useCallback } from 'react';
+import type { BlockNode } from '../../types/api';
 
 interface UseDynamicVirtualizerOptions {
   blocks: BlockNode[];
@@ -30,7 +30,7 @@ export function useDynamicVirtualizer({
   });
 
   // Функция для регистрации элемента (упрощенная версия)
-  const registerElement = useCallback((element: HTMLElement | null, blockId: string, index: number) => {
+  const registerElement = useCallback((element: HTMLElement | null, blockId: string) => {
     if (!element) return;
 
     // Измеряем размер элемента

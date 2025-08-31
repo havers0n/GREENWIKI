@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Plus } from 'lucide-react';
 import {
   Modal,
   Button,
@@ -6,19 +7,19 @@ import {
   Textarea,
   Card,
   ActionIcon,
-  Tooltip,
-  ButtonSize
+  Tooltip
 } from '@my-forum/ui';
 import { useTemplates } from './useTemplates';
 import type { Database } from '@my-forum/db-types';
+import type { BlockNode } from '../../types/api';
 
 type PageTemplate = Database['public']['Tables']['page_templates']['Row'];
 
 interface TemplatesManagerProps {
   isOpen: boolean;
   onClose: () => void;
-  onApplyTemplate: (blocks: any[]) => void;
-  currentBlocks: any[];
+  onApplyTemplate: (blocks: BlockNode[]) => void;
+  currentBlocks: BlockNode[];
 }
 
 export const TemplatesManager: React.FC<TemplatesManagerProps> = ({
@@ -103,9 +104,10 @@ export const TemplatesManager: React.FC<TemplatesManagerProps> = ({
       setNewTemplateDescription('');
       setErrors({});
       setShowCreateModal(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Не удалось создать шаблон. Попробуйте еще раз.';
       setErrors({
-        submit: error?.message || 'Не удалось создать шаблон. Попробуйте еще раз.'
+        submit: errorMessage
       });
     } finally {
       setCreating(false);
@@ -114,7 +116,7 @@ export const TemplatesManager: React.FC<TemplatesManagerProps> = ({
 
   const handleApplyTemplate = (template: PageTemplate) => {
     if (template.blocks && Array.isArray(template.blocks)) {
-      onApplyTemplate(template.blocks);
+      onApplyTemplate(template.blocks as unknown as BlockNode[]);
       onClose();
     }
   };
@@ -138,7 +140,7 @@ export const TemplatesManager: React.FC<TemplatesManagerProps> = ({
             onClick={() => setShowCreateModal(true)}
             fullWidth
             variant="secondary"
-            leftIcon={<span className="text-lg">➕</span>}
+            leftIcon={Plus as any}
             size="md"
           >
             Сохранить текущую страницу как шаблон

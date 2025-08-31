@@ -13,7 +13,7 @@ export { default as NewLiveEditor } from './NewLiveEditor';
 export { default as EditorToolbar } from './EditorToolbar';
 export { ContextualInspector } from './ContextualInspector/indexNew';
 export { OverridesPanel } from './OverridesPanel';
-export { ContainerSection } from 'blocks/layout/ContainerBlock';
+export { default as ContainerSection } from './ContainerSection';
 export { default as TabsBlock } from './TabsBlock';
 export { default as AccordionBlock } from './AccordionBlock';
 export { Breadcrumbs } from './Breadcrumbs';

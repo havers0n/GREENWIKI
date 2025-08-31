@@ -1,22 +1,14 @@
-import React, { useState } from 'react';
-import { GripVertical, Plus } from 'lucide-react';
-import { useDroppable } from '@dnd-kit/core';
+import React from 'react';
 import { cn } from '../../../shared/lib/utils';
 
 interface BlockWrapperProps {
   depth?: number;
   className?: string;
   children?: React.ReactNode;
-  blockId?: string;
   blockType?: string;
-  showDragHandle?: boolean;
   onDragStart?: () => void;
-  isContainer?: boolean;
-  hasChildren?: boolean;
-  isExpanded?: boolean;
   onToggleExpanded?: () => void;
   onAddChild?: (slot?: string) => void;
-  availableSlots?: string[];
   currentSlot?: string;
   dragListeners?: Record<string, any>;
   dragAttributes?: Record<string, any>;
@@ -25,28 +17,19 @@ interface BlockWrapperProps {
   dragRef?: React.Ref<HTMLDivElement>;
 }
 
-interface SlotDropZoneProps {
-  slotName: string;
-  isActive: boolean;
-  onAddBlock: () => void;
-}
+
 
 function BlockWrapperComponent(props: BlockWrapperProps, ref: React.Ref<HTMLDivElement>) {
   const depth = props.depth || 0;
   const className = props.className;
   const children = props.children;
-  const blockId = props.blockId;
-  const showDragHandle = props.showDragHandle || false;
-  const isContainer = props.isContainer || false;
-  const hasChildren = props.hasChildren || false;
-  const isExpanded = props.isExpanded !== undefined ? props.isExpanded : true;
-  const availableSlots = props.availableSlots || [];
+
   const dragRef = props.dragRef;
   const dragListeners = props.dragListeners;
   const dragAttributes = props.dragAttributes;
   const dragStyle = props.dragStyle;
   const isDragging = props.isDragging;
-  const [isHovered, setIsHovered] = useState(false);
+
 
   // Функция для объединения ref'ов
   const mergeRefs = (...refs: (React.Ref<HTMLDivElement> | undefined)[]) => {
@@ -101,47 +84,7 @@ function BlockWrapperComponent(props: BlockWrapperProps, ref: React.Ref<HTMLDivE
   );
 }
 
-function SlotDropZone(props: SlotDropZoneProps) {
-  const slotName = props.slotName;
-  const isActive = props.isActive;
-  const onAddBlock = props.onAddBlock;
 
-  if (!isActive) {
-    return null;
-  }
-
-  const droppableResult = useDroppable({
-    id: `slot-${slotName}`,
-    data: {
-      type: 'slot',
-      slotName: slotName,
-      accepts: ['block']
-    }
-  });
-
-  const setNodeRef = droppableResult.setNodeRef;
-  const isOver = droppableResult.isOver;
-
-  return React.createElement(
-    'div',
-    {
-      ref: setNodeRef,
-      className: cn(
-        'min-h-[40px] border-2 border-dashed border-gray-300 rounded-md p-2 flex items-center justify-center transition-colors',
-        isOver ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-400'
-      )
-    },
-    React.createElement(
-      'button',
-      {
-        onClick: onAddBlock,
-        className: 'inline-flex items-center gap-2 px-3 py-1 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors'
-      },
-      React.createElement(Plus, { className: 'h-4 w-4' }),
-      'Добавить блок'
-    )
-  );
-}
 
 const BlockWrapper = React.forwardRef(BlockWrapperComponent);
 

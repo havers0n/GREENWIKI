@@ -13,7 +13,7 @@ import { mergeOverrides } from '../../shared/lib/utils';
 
 // Базовые селекторы
 export const selectBlockTree = (state: RootState): BlockNode[] => state.content.blockTree;
-export const selectBlocksFlat = (state: RootState) => state.content.blocks;
+export const selectBlocksFlat = (state: RootState) => state.content.blockTree;
 
 // Поиск блока по ID
 export const selectBlockById = (state: RootState, blockId: string): BlockNode | null => {
@@ -53,7 +53,7 @@ export const selectBlockWithEffectiveContent = (state: RootState, blockId: strin
     const mergedContent = mergeOverrides(block.content, block.overrides);
     return {
       ...block,
-      content: mergedContent
+      content: mergedContent as any
     };
   }
 

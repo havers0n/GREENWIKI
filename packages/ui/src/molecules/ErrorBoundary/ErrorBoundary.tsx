@@ -1,7 +1,8 @@
-import React, { Component, ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
-import { Button } from '../../atoms/Button';
 import { Card } from '../../atoms/Card';
+import { Button } from '../../atoms/Button';
+import { Icon } from '../../atoms/Icon';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -78,7 +79,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             <div className="text-center">
               {/* Иконка ошибки */}
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20 mb-4">
-                <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
+                <Icon icon={AlertTriangle} className="h-6 w-6 text-red-600 dark:text-red-400" />
               </div>
 
               {/* Заголовок */}
@@ -119,7 +120,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                   onClick={this.handleRetry}
                   className="flex items-center gap-2"
                 >
-                  <RefreshCw className="h-4 w-4" />
+                  <Icon icon={RefreshCw} className="h-4 w-4" />
                   Попробовать снова
                 </Button>
 
@@ -128,7 +129,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                   onClick={this.handleGoHome}
                   className="flex items-center gap-2"
                 >
-                  <Home className="h-4 w-4" />
+                  <Icon icon={Home} className="h-4 w-4" />
                   На главную
                 </Button>
 
@@ -137,7 +138,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                   onClick={this.handleReload}
                   className="flex items-center gap-2"
                 >
-                  <RefreshCw className="h-4 w-4" />
+                  <Icon icon={RefreshCw} className="h-4 w-4" />
                   Перезагрузить страницу
                 </Button>
               </div>

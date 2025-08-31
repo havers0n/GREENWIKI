@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface ImageBlockProps {
   imageUrl: string;
@@ -8,6 +8,7 @@ interface ImageBlockProps {
 }
 
 const ImageBlock: React.FC<ImageBlockProps> = ({ imageUrl, altText, editorMode = false, metadata = {} }) => {
+  const [imageError, setImageError] = useState(false);
   const isEmpty = !imageUrl || imageUrl.trim().length === 0;
 
   // Генерация стилей из metadata
@@ -57,36 +58,38 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ imageUrl, altText, editorMode =
     'hover:ring-2 hover:ring-blue-300 hover:ring-opacity-50'
   ].join(' ') : 'w-full';
 
+  // Компонент ошибки загрузки изображения
+  const ErrorPlaceholder = () => (
+    <div className="w-full h-48 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center justify-center">
+      <div className="text-center text-red-600 dark:text-red-400">
+        <div className="text-2xl mb-2">❌</div>
+        <div className="text-sm font-medium">Ошибка загрузки изображения</div>
+        {editorMode && (
+          <div className="text-xs mt-1">Проверьте URL в инспекторе</div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className={containerClasses} style={customStyles}>
-      <img
-        src={imageUrl}
-        alt={altText || 'Изображение'}
-        className={`w-full h-auto rounded-lg shadow-sm ${editorMode ? 'select-none' : ''}`}
-        onError={(e) => {
-          const target = e.target as HTMLImageElement;
-          target.style.display = 'none';
-          const parent = target.parentElement;
-          if (parent) {
-            parent.innerHTML = `
-              <div class="w-full h-48 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center justify-center">
-                <div class="text-center text-red-600 dark:text-red-400">
-                  <div class="text-2xl mb-2">❌</div>
-                  <div class="text-sm font-medium">Ошибка загрузки изображения</div>
-                  ${editorMode ? '<div class="text-xs mt-1">Проверьте URL в инспекторе</div>' : ''}
-                </div>
-              </div>
-            `;
-          }
-        }}
-        onLoad={() => {
-          // Добавляем индикатор загруженного изображения в режиме редактора
-          if (editorMode) {
-            console.log('✅ Изображение успешно загружено:', imageUrl);
-          }
-        }}
-      />
-      {editorMode && (
+      {imageError ? (
+        <ErrorPlaceholder />
+      ) : (
+        <img
+          src={imageUrl}
+          alt={altText || 'Изображение'}
+          className={`w-full h-auto rounded-lg shadow-sm ${editorMode ? 'select-none' : ''}`}
+          onError={() => setImageError(true)}
+          onLoad={() => {
+            // Добавляем индикатор загруженного изображения в режиме редактора
+            if (editorMode) {
+              console.log('✅ Изображение успешно загружено:', imageUrl);
+            }
+          }}
+        />
+      )}
+      {editorMode && !imageError && (
         <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
           🖼️ Изображение
         </div>

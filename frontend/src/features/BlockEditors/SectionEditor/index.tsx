@@ -25,14 +25,13 @@ const SectionEditor: React.FC<SectionEditorProps> = ({ data, onChange }) => {
       <Select
         label="Внутренние отступы"
         value={data.padding || 'medium'}
-        onChange={(value) => onChange({ ...data, padding: value })}
-        options={[
-          { value: 'none', label: 'Без отступов' },
-          { value: 'small', label: 'Маленькие' },
-          { value: 'medium', label: 'Средние' },
-          { value: 'large', label: 'Большие' }
-        ]}
-      />
+        onChange={(e) => onChange({ ...data, padding: e.target.value as SectionData['padding'] })}
+      >
+        <option value="none">Без отступов</option>
+        <option value="small">Маленькие</option>
+        <option value="medium">Средние</option>
+        <option value="large">Большие</option>
+      </Select>
 
       <Input
         label="Максимальная ширина"

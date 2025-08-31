@@ -1,4 +1,5 @@
 import React from 'react';
+import { Search, Filter } from 'lucide-react';
 import { Typography, Button, ButtonVariant, Card, FilterTabs, SearchInput, FilterButton } from '@my-forum/ui';
 
 interface ControlsSectionProps {
@@ -47,8 +48,8 @@ const ControlsSection: React.FC<ControlsSectionProps> = ({
                         <SearchInput placeholder="Поиск недвижимости..." />
                         <FilterTabs options={['Все', 'Дома', 'Квартиры', 'Офисы', 'Склады']} active="Все" onSelect={() => {}} />
                         <div className="flex gap-2">
-                            <FilterButton iconName="search">$ Все</FilterButton>
-                            <FilterButton iconName="filter">По убыванию даты</FilterButton>
+                            <FilterButton icon={Search}>$ Все</FilterButton>
+                            <FilterButton icon={Filter}>По убыванию даты</FilterButton>
                         </div>
                     </div>
                 </Card>

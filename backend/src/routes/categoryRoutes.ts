@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { supabasePublic, supabaseAdmin } from '../supabaseClient'
 import type { TablesInsert, TablesUpdate } from '@my-forum/db-types'
-import { isAdmin } from '../middleware/authMiddleware'
+import { isAdmin } from '../middleware/isAdminMiddleware'
 
 const router = Router()
 
@@ -85,7 +85,7 @@ router.put(
 
       for (const key of allowed) {
         if (Object.prototype.hasOwnProperty.call(body, key)) {
-          updates[key] = body[key]
+          (updates as any)[key] = body[key]
         }
       }
 

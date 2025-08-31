@@ -27,6 +27,14 @@ import {
   performanceMiddleware
 } from './middleware/loggingMiddleware'
 
+// Import error handling
+import {
+  databaseErrorHandler,
+  validationErrorHandler,
+  errorHandler,
+  corsErrorHandler
+} from './middleware/errorHandler'
+
 const app = express()
 
 // Initialize cache service
@@ -40,8 +48,38 @@ let cacheService: any = null;
   }
 })();
 
-// Middleware
-app.use(cors())
+// CORS Configuration
+const corsOptions = {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = process.env.CORS_ORIGINS
+      ? process.env.CORS_ORIGINS.split(',').map(url => url.trim())
+      : ['http://localhost:3000', 'http://localhost:5173'];
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: process.env.CORS_CREDENTIALS === 'true',
+  maxAge: parseInt(process.env.CORS_MAX_AGE || '86400'), // 24 hours
+  optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Access-Control-Request-Method',
+    'Access-Control-Request-Headers'
+  ]
+};
+
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }))
 
 // Performance monitoring (must be first)
@@ -50,8 +88,15 @@ app.use(performanceMiddleware())
 // Security logging
 app.use(securityLoggingMiddleware())
 
-// Apply rate limiting to API routes
+// Apply differentiated rate limiting to API routes
 app.use('/api', rateLimiters.general)
+app.use('/api/auth', rateLimiters.auth)
+app.use('/api/admin', rateLimiters.admin)
+app.use('/api/pages', rateLimiters.create)
+app.use('/api/layout', rateLimiters.blocks)
+app.use('/api/reusable-blocks', rateLimiters.blocks)
+
+// Apply rate limit rollback middleware
 app.use('/api', rateLimitRollbackMiddleware())
 
 // Request logging for API routes
@@ -158,18 +203,16 @@ app.use('/api', (_req: Request, res: Response) => {
   res.status(404).json({ error: 'Not Found' })
 })
 
-// Error logging middleware (must be before final error handler)
+// Error logging middleware (must be before error handlers)
 app.use(errorLoggingMiddleware())
 
-// Final error handler
-app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-  const e = err as { statusCode?: number; message?: string; details?: unknown }
-  const status = e?.statusCode || 500
-  res.status(status).json({
-    error: e?.message || 'Internal Server Error',
-    details: e?.details ?? undefined
-  })
-})
+// Specialized error handlers (order matters)
+app.use(databaseErrorHandler)
+app.use(validationErrorHandler)
+app.use(corsErrorHandler)
+
+// Final error handler (catch-all)
+app.use(errorHandler)
 
 const PORT = Number(process.env.PORT) || 3001
 app.listen(PORT, () => {

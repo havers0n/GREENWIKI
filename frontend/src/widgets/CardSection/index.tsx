@@ -1,5 +1,6 @@
 import React from 'react';
-import { BlockRenderer } from 'widgets/BlockRenderer';
+import RenderBlockNode from 'widgets/BlockRenderer/ui/RenderBlockNode';
+import type { BlockNode } from '../../types/api';
 
 interface CardSectionProps {
   title?: string;
@@ -11,12 +12,13 @@ interface CardSectionProps {
 
   // Props для редактора
   editorMode?: boolean;
-  blockId?: string;
-  allBlocks?: any[];
+  allBlocks?: BlockNode[];
   selectedBlockId?: string | null;
   onSelectBlock?: (id: string | null) => void;
-  onUpdateBlock?: (block: any) => void;
-  onUpdateContent?: (content: any) => void;
+  onUpdateBlock?: (block: BlockNode) => void;
+
+  // Дочерние блоки для рендеринга
+  blockTree?: BlockNode[];
 }
 
 /**
@@ -33,18 +35,14 @@ const CardSection: React.FC<CardSectionProps> = ({
 
   // Editor props
   editorMode = false,
-  blockId,
-  allBlocks = [],
   selectedBlockId,
   onSelectBlock,
   onUpdateBlock,
-  onUpdateContent,
+  blockTree = [],
 }) => {
   // Получаем дочерние блоки для разных слотов
   const getSlotBlocks = (slotName: string) =>
-    allBlocks.filter(block =>
-      block.parent_block_id === blockId && block.slot === slotName
-    );
+    blockTree.filter(block => block.slot === slotName);
 
   const headerBlocks = getSlotBlocks('header');
   const contentBlocks = getSlotBlocks('content');
@@ -94,14 +92,17 @@ const CardSection: React.FC<CardSectionProps> = ({
           {/* Блоки заголовка */}
           {headerBlocks.length > 0 && (
             <div className="mt-3">
-              <BlockRenderer
-                blockTree={headerBlocks || []}
-                editorMode={editorMode}
-                selectedBlockId={selectedBlockId}
-                onSelectBlock={onSelectBlock}
-                onUpdateBlock={onUpdateBlock}
-                slot="header"
-              />
+              {headerBlocks.map(block => (
+                <RenderBlockNode
+                  key={block.id}
+                  block={block}
+                  depth={0}
+                  editorMode={editorMode}
+                  selectedBlockId={selectedBlockId ?? undefined}
+                  onSelectBlock={onSelectBlock}
+                  onUpdateBlock={onUpdateBlock}
+                />
+              ))}
             </div>
           )}
         </div>
@@ -119,13 +120,19 @@ const CardSection: React.FC<CardSectionProps> = ({
 
         {/* Блоки контента */}
         {contentBlocks.length > 0 && (
-          <BlockRenderer
-            blockTree={contentBlocks || []}
-            editorMode={editorMode}
-            selectedBlockId={selectedBlockId}
-            onSelectBlock={onSelectBlock}
-            onUpdateBlock={onUpdateBlock}
-          />
+          <div>
+            {contentBlocks.map(block => (
+              <RenderBlockNode
+                key={block.id}
+                block={block}
+                depth={0}
+                editorMode={editorMode}
+                selectedBlockId={selectedBlockId ?? undefined}
+                onSelectBlock={onSelectBlock}
+                onUpdateBlock={onUpdateBlock}
+              />
+            ))}
+          </div>
         )}
       </div>
 
@@ -140,13 +147,19 @@ const CardSection: React.FC<CardSectionProps> = ({
 
           {/* Блоки футера */}
           {footerBlocks.length > 0 && (
-            <BlockRenderer
-              blockTree={footerBlocks || []}
-              editorMode={editorMode}
-              selectedBlockId={selectedBlockId}
-              onSelectBlock={onSelectBlock}
-              onUpdateBlock={onUpdateBlock}
-            />
+            <div>
+              {footerBlocks.map(block => (
+                <RenderBlockNode
+                  key={block.id}
+                  block={block}
+                  depth={0}
+                  editorMode={editorMode}
+                  selectedBlockId={selectedBlockId ?? undefined}
+                  onSelectBlock={onSelectBlock}
+                  onUpdateBlock={onUpdateBlock}
+                />
+              ))}
+            </div>
           )}
         </div>
       )}

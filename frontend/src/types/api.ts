@@ -86,6 +86,100 @@ export interface ContentItem {
   scheduledAt?: string;
 }
 
+// Block Content Types - конкретные типы для каждого типа блока
+export interface HeadingContent {
+  text: string;
+  level: 1 | 2 | 3 | 4 | 5 | 6;
+  align: 'left' | 'center' | 'right';
+}
+
+export interface ParagraphContent {
+  text: string;
+}
+
+export interface ImageContent {
+  imageUrl: string;
+  altText: string;
+}
+
+export interface ButtonContent {
+  text: string;
+  link: string;
+  variant: 'primary' | 'secondary' | 'danger' | 'ghost';
+  size: 'sm' | 'md' | 'lg';
+}
+
+export interface SpacerContent {
+  height: 'sm' | 'md' | 'lg' | 'xl' | 'custom';
+  customHeight?: number;
+}
+
+export interface SectionContent {
+  backgroundColor?: string;
+  padding: 'none' | 'small' | 'medium' | 'large';
+  maxWidth: string;
+}
+
+export interface IconContent {
+  icon: string;
+  size: 'small' | 'medium' | 'large' | 'xl';
+  color: string;
+}
+
+export interface ColumnsContent {
+  layout: 'two' | 'three' | 'four';
+}
+
+export interface ContainerContent {
+  title?: string;
+  layout: 'vertical' | 'horizontal' | 'grid';
+  gap: 'none' | 'small' | 'medium' | 'large';
+  padding: 'none' | 'small' | 'medium' | 'large';
+  backgroundColor?: string;
+  borderRadius?: string;
+  maxWidth?: string;
+}
+
+export interface TabsContent {
+  tabs: Array<{
+    id: string;
+    title: string;
+  }>;
+  activeTab?: string;
+}
+
+export interface AccordionContent {
+  sections: Array<{
+    id: string;
+    title: string;
+  }>;
+  expandedSections?: string[];
+}
+
+export interface CardContent {
+  title?: string;
+  description?: string;
+  variant: 'default' | 'elevated' | 'outlined' | 'filled';
+  size: 'small' | 'medium' | 'large';
+  showHeader: boolean;
+  showFooter: boolean;
+}
+
+// Union type для всех типов content
+export type BlockContent =
+  | HeadingContent
+  | ParagraphContent
+  | ImageContent
+  | ButtonContent
+  | SpacerContent
+  | SectionContent
+  | IconContent
+  | ColumnsContent
+  | ContainerContent
+  | TabsContent
+  | AccordionContent
+  | CardContent;
+
 // Block Types
 export interface BlockData {
   id: string;
@@ -102,19 +196,25 @@ export interface BlockData {
   updatedAt: string;
 }
 
+import type { Json } from '@my-forum/db-types';
+
 // Tree Block Types (новая древовидная структура)
+// Синхронизировано с db-types для полного соответствия схеме БД
 export interface BlockNode {
+  // Поля из db-types layout_blocks
   id: string;
   block_type: string;
-  content: Record<string, any> | null;
+  content: BlockContent | null;
   depth: number;
   instance_id: string | null;
-  metadata: Record<string, any>;
+  metadata: Json;
   page_id: number;
-  parent_block_id?: string | null; // Добавлено для совместимости
+  parent_block_id: string | null;
   position: number | null;
   slot: string | null;
   status: string;
+
+  // Дополнительные поля для фронтенда
   children: BlockNode[];
   // Переопределения для экземпляров переиспользуемых блоков
   overrides?: Record<string, any>;
@@ -125,6 +225,10 @@ export interface LayoutApiResponse {
   pageId: number;
   blocks: BlockNode[];
 }
+
+// Единый Источник Правды для UI - главный тип BlockNode с children
+// LayoutBlock - плоский тип для данных из БД (без children)
+export type LayoutBlock = Omit<BlockNode, 'children'>;
 
 // Page Types
 export interface Page {

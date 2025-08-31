@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Check } from 'lucide-react';
+import { ChevronDown, Check, LucideIcon } from 'lucide-react';
 import { Icon } from '../atoms/Icon';
 import { cn } from '../lib/utils';
 
@@ -7,7 +7,7 @@ export interface DropdownOption {
   value: string;
   label: string;
   disabled?: boolean;
-  icon?: React.ElementType;
+  icon?: LucideIcon | string; // Поддерживаем как компонент, так и строку для обратной совместимости
 }
 
 export interface DropdownProps {
@@ -172,7 +172,12 @@ export const Dropdown: React.FC<DropdownProps> = ({
                 )}
 
                 {option.icon && (
-                  <Icon icon={option.icon} size={16} className="mr-3" />
+                  <Icon 
+                    name={typeof option.icon === 'string' ? option.icon : undefined}
+                    icon={typeof option.icon === 'function' ? option.icon : undefined}
+                    size={16} 
+                    className="mr-3" 
+                  />
                 )}
 
                 <span className="flex-1">{renderOption ? renderOption(option) : option.label}</span>

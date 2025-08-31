@@ -3,6 +3,26 @@ export interface CacheOptions {
   tags?: string[]; // Cache tags for invalidation
 }
 
+/**
+ * Тип для статистики кеширования, который включает опциональные поля для Redis и Memory
+ */
+export type CacheStats = {
+  hits: number;
+  misses: number;
+  hitRate: number;
+  entries: number;
+  redis?: {
+    connected: boolean;
+    memory: number | null;
+    uptime: number | null;
+  };
+  memory?: {
+    used: number;
+    max?: number;
+    utilization?: number;
+  };
+};
+
 export interface CacheService {
   get<T>(key: string): Promise<T | null>;
   set<T>(key: string, value: T, options?: CacheOptions): Promise<void>;
@@ -10,12 +30,7 @@ export interface CacheService {
   clear(): Promise<void>;
   invalidateTags(tags: string[]): Promise<void>;
   has(key: string): Promise<boolean>;
-  getStats(): Promise<{
-    hits: number;
-    misses: number;
-    hitRate: number;
-    entries: number;
-  }>;
+  getStats(): Promise<CacheStats>;
 }
 
 // Base cache service with common functionality
@@ -34,7 +49,7 @@ export abstract class BaseCacheService implements CacheService {
   abstract invalidateTags(tags: string[]): Promise<void>;
   abstract has(key: string): Promise<boolean>;
 
-  async getStats() {
+  async getStats(): Promise<CacheStats> {
     const total = this.stats.hits + this.stats.misses;
     const hitRate = total > 0 ? (this.stats.hits / total) * 100 : 0;
 

@@ -6,6 +6,7 @@ import { InspectorField } from './InspectorField';
 import { EnhancedColorPicker } from './EnhancedColorPicker';
 import { ActionIcon } from '../atoms/ActionIcon';
 import { Link, Unlink } from 'lucide-react';
+import { Icon } from '../atoms/Icon';
 
 export interface BorderValue {
   width?: string;
@@ -126,7 +127,7 @@ export const BorderControl = React.memo(
                 disabled={disabled}
                 aria-label={isLinked ? 'Разорвать связь границ' : 'Связать все границы'}
               >
-                {isLinked ? <Link size={16} /> : <Unlink size={16} />}
+                {isLinked ? <Icon icon={Link} size={16} /> : <Icon icon={Unlink} size={16} />}
               </ActionIcon>
             </div>
           </InspectorField>

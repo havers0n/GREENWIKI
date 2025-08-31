@@ -25,14 +25,13 @@ const IconEditor: React.FC<IconEditorProps> = ({ data, onChange }) => {
       <Select
         label="Размер"
         value={data.size || 'medium'}
-        onChange={(value) => onChange({ ...data, size: value })}
-        options={[
-          { value: 'small', label: 'Маленький' },
-          { value: 'medium', label: 'Средний' },
-          { value: 'large', label: 'Большой' },
-          { value: 'xl', label: 'Очень большой' }
-        ]}
-      />
+        onChange={(e) => onChange({ ...data, size: e.target.value as IconData['size'] })}
+      >
+        <option value="small">Маленький</option>
+        <option value="medium">Средний</option>
+        <option value="large">Большой</option>
+        <option value="xl">Очень большой</option>
+      </Select>
 
       <Input
         label="Цвет"

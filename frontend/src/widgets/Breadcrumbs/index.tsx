@@ -3,24 +3,9 @@ import { Button } from '@my-forum/ui';
 import type { Database } from '@my-forum/db-types';
 import { blockRegistry } from '../../shared/config/blockRegistry';
 import { getBlockPath } from '../../store/slices/treeUtils';
+import type { BlockNode } from '../../types/api';
 
 type LayoutBlock = Database['public']['Tables']['layout_blocks']['Row'];
-
-// Поддержка типов BlockNode для редактора
-interface BlockNode {
-  id: string;
-  block_type: string;
-  content: Record<string, any> | null;
-  depth: number;
-  instance_id: string | null;
-  metadata: Record<string, any>;
-  page_id: number;
-  position: number | null;
-  slot: string | null;
-  status: string;
-  children: BlockNode[];
-  parent_block_id?: string | null;
-}
 
 interface BreadcrumbItem {
   id: string;

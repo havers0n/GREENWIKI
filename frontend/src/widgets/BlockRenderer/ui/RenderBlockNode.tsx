@@ -1,18 +1,43 @@
 import React, { useMemo, useCallback } from 'react';
-import type { BlockNode } from '../../../types/api';
-import { blockRegistry } from '../../../shared/config/blockRegistry';
+import type {
+  BlockNode,
+  HeadingContent,
+  ParagraphContent,
+  ImageContent,
+  ButtonContent,
+  SpacerContent,
+  SectionContent,
+  IconContent,
+  ColumnsContent,
+  ContainerContent,
+  TabsContent,
+  AccordionContent,
+  CardContent
+} from '../../../types/api';
+import { BlockType } from '../../../shared/consts/blockTypes';
 import BlockWrapper from './BlockWrapper';
 import DropZone from './DropZone';
 import { BlockErrorBoundary, BlockErrorFallback } from './BlockErrorBoundary';
+import BlockRenderer from './BlockRenderer';
 import { useAppSelector } from '../../../store/hooks';
 import { selectBlockWithEffectiveContent } from '../../../store/selectors/blockSelectors';
 import { useDraggable } from '@dnd-kit/core';
 
-// Новые чистые блоки
-import { ContainerBlockEditor } from '../../../blocks/layout/ContainerBlock';
-import { ButtonBlockEditor } from '../../../blocks/atomic/ButtonBlock';
+// Компоненты рендереров для всех типов блоков
+import ContainerSection from '../../../widgets/ContainerSection';
+import ColumnsBlock from '../../../blocks/layout/ColumnsBlock/ui/ColumnsBlock';
+import TabsBlock from '../../../widgets/TabsBlock';
+import AccordionBlock from '../../../widgets/AccordionBlock';
+import CardSection from '../../../widgets/CardSection';
+import LazyHeadingBlock from '../../../widgets/AtomicBlocks/HeadingBlock';
+import LazyParagraphBlock from '../../../widgets/AtomicBlocks/ParagraphBlock';
+import LazyImageBlock from '../../../widgets/AtomicBlocks/ImageBlock';
+import LazyButtonBlock from '../../../widgets/AtomicBlocks/ButtonBlock';
+import LazySpacerBlock from '../../../widgets/AtomicBlocks/SpacerBlock';
+import LazySectionBlock from '../../../widgets/AtomicBlocks/SectionBlock';
+import LazyIconBlock from '../../../widgets/AtomicBlocks/IconBlock';
 
-type AnyComponent = React.ComponentType<any>;
+
 
 interface RenderBlockNodeProps {
   block: BlockNode;
@@ -61,20 +86,190 @@ const RenderBlockNode = React.memo<RenderBlockNodeProps>(({
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
   } : undefined;
 
-  // Выбор компонента для рендеринга блока
-  const Component = useMemo(() => {
-    // Новые чистые блоки
+  // Функция рендеринга блока с строгой типизацией
+  const renderBlockContent = useCallback(() => {
     switch (block.block_type) {
-      case 'container_section':
-        return ContainerBlockEditor;
-      case 'single_button':
-        return ButtonBlockEditor;
+      case 'heading': {
+        const content = effectiveContent as HeadingContent;
+        return (
+          <LazyHeadingBlock
+            text={content.text}
+            level={content.level}
+            align={content.align}
+            metadata={block.metadata as Record<string, unknown> || undefined}
+            editorMode={editorMode}
+          />
+        );
+      }
+
+      case 'text': {
+        const content = effectiveContent as ParagraphContent;
+        return (
+          <LazyParagraphBlock
+            text={content.text}
+            metadata={block.metadata as Record<string, unknown> || undefined}
+            editorMode={editorMode}
+          />
+        );
+      }
+
+      case 'image': {
+        const content = effectiveContent as ImageContent;
+        return (
+          <LazyImageBlock
+            imageUrl={content.imageUrl}
+            altText={content.altText}
+            metadata={block.metadata as Record<string, unknown> || undefined}
+            editorMode={editorMode}
+          />
+        );
+      }
+
+      case 'single_button': {
+        const content = effectiveContent as ButtonContent;
+        return (
+          <LazyButtonBlock
+            text={content.text}
+            link={content.link}
+            variant={content.variant}
+            size={content.size}
+            metadata={block.metadata as Record<string, unknown> || undefined}
+            onClick={(event: React.MouseEvent) => {
+              if (content.link && !content.link.startsWith('http')) {
+                event.preventDefault();
+                window.location.href = content.link;
+              }
+            }}
+            blockId={block.id}
+          />
+        );
+      }
+
+      case 'spacer': {
+        const content = effectiveContent as SpacerContent;
+        return (
+          <LazySpacerBlock
+            height={content.height}
+            customHeight={content.customHeight}
+          />
+        );
+      }
+
+      case 'section': {
+        const content = effectiveContent as SectionContent;
+        return (
+          <LazySectionBlock
+            backgroundColor={content.backgroundColor}
+            padding={content.padding}
+            maxWidth={content.maxWidth}
+            metadata={block.metadata as Record<string, unknown> || undefined}
+          />
+        );
+      }
+
+      case 'icon': {
+        const content = effectiveContent as IconContent;
+        return (
+          <LazyIconBlock
+            icon={content.icon}
+            size={content.size}
+            color={content.color}
+            metadata={block.metadata as Record<string, unknown> || undefined}
+          />
+        );
+      }
+
+      case 'columns': {
+        const content = effectiveContent as ColumnsContent;
+        return (
+          <ColumnsBlock
+            layout={content.layout}
+            editorMode={editorMode}
+            blockId={block.id}
+            selectedBlockId={selectedBlockId}
+            onSelectBlock={onSelectBlock}
+            onUpdateBlock={onUpdateBlock}
+            blockTree={block.children}
+          />
+        );
+      }
+
+      case 'container': {
+        const content = effectiveContent as ContainerContent;
+        return (
+          <ContainerSection
+            title={content.title}
+            editorMode={editorMode}
+            blockId={block.id}
+            selectedBlockId={selectedBlockId}
+            onSelectBlock={onSelectBlock}
+            onUpdateBlock={onUpdateBlock}
+            blockTree={block.children}
+          />
+        );
+      }
+
+      case 'tabs': {
+        const content = effectiveContent as TabsContent;
+        return (
+          <TabsBlock
+            tabs={content.tabs}
+            activeTab={content.activeTab}
+            metadata={block.metadata as Record<string, unknown> || undefined}
+            editorMode={editorMode}
+            blockId={block.id}
+            selectedBlockId={selectedBlockId}
+            onSelectBlock={onSelectBlock}
+            onUpdateBlock={onUpdateBlock}
+            blockTree={block.children}
+          />
+        );
+      }
+
+      case 'accordion': {
+        const content = effectiveContent as AccordionContent;
+        return (
+          <AccordionBlock
+            sections={content.sections}
+            expandedSections={content.expandedSections}
+            metadata={block.metadata as Record<string, unknown> || undefined}
+            editorMode={editorMode}
+            blockId={block.id}
+            selectedBlockId={selectedBlockId}
+            onSelectBlock={onSelectBlock}
+            onUpdateBlock={onUpdateBlock}
+            blockTree={block.children}
+          />
+        );
+      }
+
+      case 'card': {
+        const content = effectiveContent as CardContent;
+        return (
+          <CardSection
+            title={content.title}
+            description={content.description}
+            variant={content.variant}
+            size={content.size}
+            showHeader={content.showHeader}
+            showFooter={content.showFooter}
+            editorMode={editorMode}
+            selectedBlockId={selectedBlockId}
+            onSelectBlock={onSelectBlock}
+            onUpdateBlock={onUpdateBlock}
+            blockTree={block.children}
+          />
+        );
+      }
+
       default:
-        // Для остальных типов используем старый реестр
-        const spec = blockRegistry[block.block_type];
-        return spec?.Renderer as AnyComponent | undefined;
+        return (
+          <div className="rounded-md border border-red-300 bg-red-50 text-red-700 p-3">
+            Неизвестный тип блока: {block.block_type}
+          </div>
+        );
     }
-  }, [block.block_type]);
+  }, [block.block_type, effectiveContent, block.metadata, editorMode, block.id, onSelectBlock, onUpdateBlock, selectedBlockId, block.children]);
 
   // Мемоизация состояния выбора
   const isSelected = useMemo(() => selectedBlockId === block.id, [selectedBlockId, block.id]);
@@ -97,22 +292,10 @@ const RenderBlockNode = React.memo<RenderBlockNodeProps>(({
     onSelectBlock(block.id);
   }, [editorMode, onSelectBlock, block.id, block.block_type]);
 
-  if (!Component) {
-    return (
-      <BlockWrapper depth={depth} showDragHandle={editorMode}>
-        <div className="rounded-md border border-red-300 bg-red-50 text-red-700 p-3">
-          Неизвестный тип блока: {block.block_type}
-        </div>
-      </BlockWrapper>
-    );
-  }
-
   return (
     <React.Fragment key={block.id}>
       <BlockWrapper
         depth={depth}
-        showDragHandle={editorMode}
-        blockId={selectedBlockId === block.id ? block.id : undefined}
         blockType={block.block_type}
         dragRef={setDraggableRef}
         dragListeners={listeners}
@@ -140,74 +323,7 @@ const RenderBlockNode = React.memo<RenderBlockNodeProps>(({
             }
           >
             <React.Suspense fallback={<div className="flex justify-center items-center h-24">Загрузка...</div>}>
-              {block.block_type === 'container_section' ? (
-              // Новые контейнеры
-              <ContainerBlockEditor
-                layout={effectiveContent?.layout || 'vertical'}
-                gap={effectiveContent?.gap || 'medium'}
-                padding={effectiveContent?.padding || 'medium'}
-                backgroundColor={effectiveContent?.backgroundColor}
-                borderRadius={effectiveContent?.borderRadius}
-                maxWidth={effectiveContent?.maxWidth}
-                title={effectiveContent?.title}
-                metadata={block.metadata}
-                editorMode={editorMode}
-                blockId={block.id}
-                selectedBlockId={selectedBlockId}
-                onSelectBlock={onSelectBlock}
-                onUpdateBlock={onUpdateBlock}
-                onUpdateContent={(nextContent: unknown) => {
-                  if (!onUpdateBlock) return;
-                  const updatedBlock = { ...block, content: nextContent as object } as BlockNode;
-                  onUpdateBlock(updatedBlock);
-                }}
-              />
-            ) : block.block_type === 'single_button' ? (
-              // Новые кнопки
-              <ButtonBlockEditor
-                text={effectiveContent?.text || 'Кнопка'}
-                link={effectiveContent?.link}
-                linkTarget={effectiveContent?.linkTarget}
-                variant={effectiveContent?.variant || 'primary'}
-                size={effectiveContent?.size || 'md'}
-                metadata={block.metadata}
-                onClick={(event) => {
-                  // Обработка клика по кнопке
-                  if (effectiveContent?.link && !effectiveContent.link.startsWith('http')) {
-                    event.preventDefault();
-                    window.location.href = effectiveContent.link;
-                  }
-                }}
-                editorMode={editorMode}
-                blockId={block.id}
-                isSelected={isSelected}
-                onSelect={() => onSelectBlock?.(block.id)}
-                onUpdate={(updates) => {
-                  if (!onUpdateBlock) return;
-                  const updatedBlock = { ...block, content: { ...effectiveContent, ...updates } } as BlockNode;
-                  onUpdateBlock(updatedBlock);
-                }}
-              />
-            ) : (
-              // Старые компоненты через реестр
-              <Component
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                {...(effectiveContent as Record<string, unknown>)}
-                // Metadata для стилизации
-                metadata={block.metadata as Record<string, unknown>}
-                // Режим редактора и API для контейнеров
-                editorMode={editorMode}
-                blockId={block.id}
-                selectedBlockId={selectedBlockId}
-                onSelectBlock={onSelectBlock}
-                onUpdateBlock={onUpdateBlock}
-                onUpdateContent={(nextContent: unknown) => {
-                  if (!onUpdateBlock) return;
-                  const updatedBlock = { ...block, content: nextContent as object } as BlockNode;
-                  onUpdateBlock(updatedBlock);
-                }}
-              />
-            )}
+              {renderBlockContent()}
             </React.Suspense>
           </BlockErrorBoundary>
         </div>
@@ -223,29 +339,17 @@ const RenderBlockNode = React.memo<RenderBlockNodeProps>(({
               className="ml-4 mb-2"
             />
           )}
-          {block.children.map((child, index) => (
-            <React.Fragment key={child.id}>
-              <RenderBlockNode
-                block={child}
-                depth={depth + 1}
-                editorMode={editorMode}
-                selectedBlockId={selectedBlockId}
-                onSelectBlock={onSelectBlock}
-                onUpdateBlock={onUpdateBlock}
-              />
-              {editorMode && index < block.children.length - 1 && (
-                <DropZone
-                  parentId={block.id}
-                  position={index + 1}
-                  className="ml-4 my-2"
-                />
-              )}
-            </React.Fragment>
-          ))}
+          <BlockRenderer
+            blockTree={block.children}
+            editorMode={editorMode}
+            selectedBlockId={selectedBlockId}
+            onSelectBlock={onSelectBlock}
+            onUpdateBlock={onUpdateBlock}
+          />
         </div>
       ) : (
         // Пустой контейнер - показываем DropZone (только для старых контейнеров)
-        editorMode && block.block_type === 'container' && (
+        editorMode && block.block_type === BlockType.CONTAINER && (
           <div className="ml-4 border-l-2 border-gray-200 dark:border-gray-700">
             <DropZone
               parentId={block.id}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { Card, Typography, Button } from '@my-forum/ui';
-import { VirtualizedCanvas } from '../widgets/VirtualizedCanvas';
+import { DnDCanvas } from '../features/DnDTools';
 import type { BlockNode } from '../types/api';
 
 /**
@@ -11,9 +11,15 @@ const DnDTestPage: React.FC = () => {
   // Создаем тестовое дерево блоков
   const [blockTree, setBlockTree] = useState<BlockNode[]>([
     {
-      id: 'container-1',
+      id: 'root-container',
       block_type: 'container',
-      content: { title: 'Контейнер для теста', layout: 'vertical' },
+      // ✅ ИСПРАВЛЕНИЕ 1: Добавлены все обязательные поля для ContainerContent
+      content: { 
+        title: 'Контейнер для теста', 
+        layout: 'vertical',
+        gap: 'medium', // Добавлено недостающее поле
+        padding: 'medium' // Добавлено недостающее поле
+      },
       depth: 0,
       instance_id: null,
       metadata: {},
@@ -21,6 +27,7 @@ const DnDTestPage: React.FC = () => {
       position: 0,
       slot: null,
       status: 'published',
+      parent_block_id: null, // У корневого элемента тоже должно быть это поле
       children: []
     },
     {
@@ -34,6 +41,7 @@ const DnDTestPage: React.FC = () => {
       position: 1,
       slot: null,
       status: 'published',
+      parent_block_id: null, // ✅ ИСПРАВЛЕНИЕ 2: Добавлена ссылка на родителя
       children: []
     },
     {
@@ -47,6 +55,7 @@ const DnDTestPage: React.FC = () => {
       position: 2,
       slot: null,
       status: 'published',
+      parent_block_id: null, // ✅ ИСПРАВЛЕНИЕ 3: Добавлена ссылка на родителя
       children: []
     }
   ]);
@@ -134,9 +143,15 @@ const DnDTestPage: React.FC = () => {
   const resetTest = () => {
     setBlockTree([
       {
-        id: 'container-1',
+        id: 'root-container',
         block_type: 'container',
-        content: { title: 'Контейнер для теста', layout: 'vertical' },
+        // ✅ ИСПРАВЛЕНИЕ 1: Добавлены все обязательные поля для ContainerContent
+        content: { 
+          title: 'Контейнер для теста', 
+          layout: 'vertical',
+          gap: 'medium', // Добавлено недостающее поле
+          padding: 'medium' // Добавлено недостающее поле
+        },
         depth: 0,
         instance_id: null,
         metadata: {},
@@ -144,6 +159,7 @@ const DnDTestPage: React.FC = () => {
         position: 0,
         slot: null,
         status: 'published',
+        parent_block_id: null, // У корневого элемента тоже должно быть это поле
         children: []
       },
       {
@@ -157,6 +173,7 @@ const DnDTestPage: React.FC = () => {
         position: 1,
         slot: null,
         status: 'published',
+        parent_block_id: null, // ✅ ИСПРАВЛЕНИЕ 2: Добавлена ссылка на родителя
         children: []
       },
       {
@@ -170,6 +187,7 @@ const DnDTestPage: React.FC = () => {
         position: 2,
         slot: null,
         status: 'published',
+        parent_block_id: null, // ✅ ИСПРАВЛЕНИЕ 3: Добавлена ссылка на родителя
         children: []
       }
     ]);
@@ -185,7 +203,7 @@ const DnDTestPage: React.FC = () => {
           Тест Вложенности Блоков (D&D)
         </Typography>
 
-        <Typography variant="body1" className="text-gray-600 mb-6">
+        <Typography variant="body" className="text-gray-600 mb-6">
           Эта страница предназначена для тестирования функциональности вложенности блоков через Drag & Drop.
           Попробуйте перетащить кнопки внутрь контейнера.
         </Typography>
@@ -213,13 +231,10 @@ const DnDTestPage: React.FC = () => {
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
             >
-              <VirtualizedCanvas
+              <DnDCanvas
                 blockTree={blockTree}
-                editorMode={true}
                 selectedBlockId={selectedBlockId}
                 onSelectBlock={setSelectedBlockId}
-                onUpdateBlock={() => {}}
-                isCanvasOver={false}
               />
             </DndContext>
           </Card>
@@ -287,7 +302,7 @@ const DnDTestPage: React.FC = () => {
       </div>
 
       <div className="mt-8 p-4 bg-green-50 border border-green-200 rounded-lg">
-        <Typography variant="body2" className="text-green-800">
+        <Typography variant="body" className="text-green-800">
           <strong>Успех:</strong> Если кнопки успешно перемещаются внутрь контейнера и структура блоков обновляется,
           значит функциональность вложенности работает корректно!
         </Typography>

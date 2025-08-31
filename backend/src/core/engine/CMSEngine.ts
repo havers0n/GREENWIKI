@@ -1,8 +1,8 @@
-import { ContentManager } from './ContentManager';
-import { UserManager } from './UserManager';
-import { TemplateEngine } from './TemplateEngine';
-import { PluginManager } from './PluginManager';
-import { APIManager } from './APIManager';
+import { ContentManager } from '../ContentManager';
+import { UserManager } from '../UserManager';
+import { TemplateEngine } from '../TemplateEngine';
+import { PluginManager } from '../PluginManager';
+import { APIManager } from '../APIManager';
 import { EventBus } from '../events/EventBus';
 import { DatabaseService } from '../database/DatabaseService';
 import { CacheService } from '../cache/CacheService';
@@ -28,8 +28,8 @@ export interface CMSEngineConfig {
 }
 
 export interface CMSContext {
-  userId?: string;
-  sessionId?: string;
+  userId?: string | null;
+  sessionId?: string | null;
   permissions: string[];
   metadata: Record<string, any>;
 }
@@ -145,8 +145,8 @@ export class CMSEngine {
    */
   createContext(userId?: string, sessionId?: string): CMSContext {
     return {
-      userId,
-      sessionId,
+      userId: userId || null,
+      sessionId: sessionId || null,
       permissions: [],
       metadata: {}
     };

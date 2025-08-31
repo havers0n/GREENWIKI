@@ -1,10 +1,8 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { Typography } from '@my-forum/ui';
-import BlockRenderer from 'widgets/BlockRenderer';
-import type { Database } from '@my-forum/db-types';
-
-type LayoutBlock = Database['public']['Tables']['layout_blocks']['Row'];
+import RenderBlockNode from 'widgets/BlockRenderer/ui/RenderBlockNode';
+import type { BlockNode } from '../types/api';
 
 interface ContainerSectionProps {
   title?: string;
@@ -12,13 +10,14 @@ interface ContainerSectionProps {
   // Новые props для работы с вложенными блоками
   editorMode?: boolean;
   blockId?: string;
-  allBlocks?: LayoutBlock[];
+  allBlocks?: BlockNode[];
   selectedBlockId?: string;
   onSelectBlock?: (id: string | null) => void;
-  onUpdateBlock?: (updated: LayoutBlock) => void;
-  onUpdateContent?: (next: ContainerSectionProps) => void;
+  onUpdateBlock?: (updated: BlockNode) => void;
   // Metadata для стилизации
   metadata?: Record<string, unknown>;
+  // Дочерние блоки для рендеринга
+  blockTree?: BlockNode[];
 }
 
 const ContainerSection: React.FC<ContainerSectionProps> = ({
@@ -26,12 +25,11 @@ const ContainerSection: React.FC<ContainerSectionProps> = ({
   layout = 'two',
   editorMode = false,
   blockId,
-  allBlocks = [],
   selectedBlockId,
   onSelectBlock,
   onUpdateBlock,
-  onUpdateContent,
-  metadata = {}
+  metadata = {},
+  blockTree = []
 }) => {
   const gridCols = layout === 'three' ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2';
   const columnCount = layout === 'three' ? 3 : 2;
@@ -94,7 +92,7 @@ const ContainerSection: React.FC<ContainerSectionProps> = ({
         className={`grid ${gridCols} gap-4`}
         style={containerStyles}
       >
-        {slots.map((slotName, colIdx) => (
+        {slots.map((slotName) => (
           <div key={slotName} className="space-y-2">
             {editorMode && (
               <SlotDropZone 
@@ -105,15 +103,19 @@ const ContainerSection: React.FC<ContainerSectionProps> = ({
             )}
             
             <div className="min-h-[100px] rounded-lg border border-dashed border-gray-200 dark:border-gray-700 p-2">
-              <BlockRenderer
-                blockTree={allBlocks || []}
-                editorMode={editorMode}
-                selectedBlockId={selectedBlockId}
-                onSelectBlock={onSelectBlock}
-                onUpdateBlock={onUpdateBlock}
-                parentBlockId={blockId || null}
-                slot={slotName}
-              />
+              {blockTree
+                .filter(child => child.slot === slotName)
+                .map(child => (
+                  <RenderBlockNode
+                    key={child.id}
+                    block={child}
+                    depth={0}
+                    editorMode={editorMode}
+                    selectedBlockId={selectedBlockId}
+                    onSelectBlock={onSelectBlock}
+                    onUpdateBlock={onUpdateBlock}
+                  />
+                ))}
             </div>
             
             {editorMode && (
@@ -132,21 +134,21 @@ const ContainerSection: React.FC<ContainerSectionProps> = ({
 
 export default ContainerSection;
 
-const SlotDropZone: React.FC<{ 
-  blockId?: string; 
-  slotName: string; 
+const SlotDropZone: React.FC<{
+  blockId?: string;
+  slotName: string;
   position: number;
 }> = ({ blockId, slotName, position }) => {
   const slotId = `slot:${blockId}:${slotName}:${position}`;
   const { setNodeRef, isOver } = useDroppable({ id: slotId });
-  
-  const cls = isOver 
-    ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20' 
+
+  const cls = isOver
+    ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20'
     : 'border-gray-300 dark:border-gray-600';
-  
+
   return (
-    <div 
-      ref={setNodeRef} 
+    <div
+      ref={setNodeRef}
       className={`h-2 border border-dashed rounded ${cls} transition-colors`}
       aria-label={`Дроп-зона для слота ${slotName}`}
     />

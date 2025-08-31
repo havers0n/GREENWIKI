@@ -70,7 +70,7 @@ export const AlignmentControl = React.memo(
         )}
       >
         {alignmentOptions.map((option) => {
-          const Icon = option.icon;
+          const IconComponent = option.icon;
           const isActive = option.value === value;
 
           return (
@@ -90,7 +90,7 @@ export const AlignmentControl = React.memo(
                 !isActive && !disabled && 'hover:scale-105'
               )}
             >
-              <Icon size={size === 'sm' ? 16 : 20} />
+              {React.createElement(IconComponent as any, { size: size === 'sm' ? 16 : 20 })}
             </ActionIcon>
           );
         })}

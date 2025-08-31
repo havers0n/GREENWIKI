@@ -88,11 +88,11 @@ const AdminContentPage: React.FC = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'published':
-        return <Badge variant="success">Опубликован</Badge>;
+        return <Badge tone="green">Опубликован</Badge>;
       case 'draft':
-        return <Badge variant="secondary">Черновик</Badge>;
+        return <Badge tone="neutral">Черновик</Badge>;
       case 'archived':
-        return <Badge variant="error">Архивирован</Badge>;
+        return <Badge tone="red">Архивирован</Badge>;
       default:
         return <Badge>Неизвестно</Badge>;
     }
@@ -123,7 +123,7 @@ const AdminContentPage: React.FC = () => {
           <Typography variant="h1" className="text-2xl font-bold">
             Управление контентом
           </Typography>
-          <Typography variant="body2" className="text-gray-600 dark:text-gray-400 mt-1">
+          <Typography variant="body" className="text-gray-600 dark:text-gray-400 mt-1">
             Создавайте, редактируйте и управляйте вашим контентом
           </Typography>
         </div>
@@ -147,8 +147,7 @@ const AdminContentPage: React.FC = () => {
 
           <Select
             value={filter.type}
-            onChange={(value) => setFilter(prev => ({ ...prev, type: value }))}
-            placeholder="Все типы"
+            onChange={(e) => setFilter(prev => ({ ...prev, type: e.target.value }))}
           >
             <option value="">Все типы</option>
             <option value="page">Страницы</option>
@@ -158,8 +157,7 @@ const AdminContentPage: React.FC = () => {
 
           <Select
             value={filter.status}
-            onChange={(value) => setFilter(prev => ({ ...prev, status: value }))}
-            placeholder="Все статусы"
+            onChange={(e) => setFilter(prev => ({ ...prev, status: e.target.value }))}
           >
             <option value="">Все статусы</option>
             <option value="draft">Черновики</option>
@@ -190,7 +188,7 @@ const AdminContentPage: React.FC = () => {
                 <Typography variant="h3" className="text-gray-500 dark:text-gray-400 mb-2">
                   Контент не найден
                 </Typography>
-                <Typography variant="body2" className="text-gray-400 dark:text-gray-500">
+                <Typography variant="body" className="text-gray-400 dark:text-gray-500">
                   Попробуйте изменить фильтры или создайте новый контент
                 </Typography>
               </div>
@@ -208,20 +206,20 @@ const AdminContentPage: React.FC = () => {
                         {content.title}
                       </Typography>
                       <div className="flex items-center gap-2 mt-1">
-                        <Typography variant="body2" className="text-gray-500 dark:text-gray-400">
+                        <Typography variant="body" className="text-gray-500 dark:text-gray-400">
                           /{content.slug}
                         </Typography>
                         <span className="text-gray-300 dark:text-gray-600">•</span>
-                        <Typography variant="body2" className="text-gray-500 dark:text-gray-400">
+                        <Typography variant="body" className="text-gray-500 dark:text-gray-400">
                           {content.author}
                         </Typography>
                         <span className="text-gray-300 dark:text-gray-600">•</span>
-                        <Typography variant="body2" className="text-gray-500 dark:text-gray-400">
+                        <Typography variant="body" className="text-gray-500 dark:text-gray-400">
                           {new Date(content.updatedAt).toLocaleDateString()}
                         </Typography>
                       </div>
                       {content.excerpt && (
-                        <Typography variant="body2" className="text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
+                        <Typography variant="body" className="text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
                           {content.excerpt}
                         </Typography>
                       )}
@@ -315,7 +313,7 @@ const ContentEditorPage: React.FC = () => {
           <Typography variant="h1" className="text-2xl font-bold">
             Создание контента
           </Typography>
-          <Typography variant="body2" className="text-gray-600 dark:text-gray-400 mt-1">
+          <Typography variant="body" className="text-gray-600 dark:text-gray-400 mt-1">
             Создайте новый контент с помощью WYSIWYG редактора
           </Typography>
         </div>
@@ -363,10 +361,10 @@ const ContentEditorPage: React.FC = () => {
                       <svg className="mx-auto h-12 w-12 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
-                      <Typography variant="body1" className="mb-2">
+                      <Typography variant="body" className="mb-2">
                         WYSIWYG Редактор
                       </Typography>
-                      <Typography variant="body2">
+                      <Typography variant="body">
                         Здесь будет интеграция с Quill, TinyMCE или другим WYSIWYG редактором
                       </Typography>
                       <textarea
@@ -395,7 +393,7 @@ const ContentEditorPage: React.FC = () => {
               <Select
                 label="Тип контента"
                 value={formData.type}
-                onChange={(value) => setFormData(prev => ({ ...prev, type: value as any }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as 'page' | 'post' | 'article' }))}
               >
                 <option value="page">Страница</option>
                 <option value="post">Пост</option>
@@ -405,7 +403,7 @@ const ContentEditorPage: React.FC = () => {
               <Select
                 label="Статус"
                 value={formData.status}
-                onChange={(value) => setFormData(prev => ({ ...prev, status: value as any }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as 'draft' | 'published' }))}
               >
                 <option value="draft">Черновик</option>
                 <option value="published">Опубликовать</option>
@@ -420,17 +418,17 @@ const ContentEditorPage: React.FC = () => {
             </Typography>
 
             <div className="space-y-2">
-              <Typography variant="body2" className="text-gray-600 dark:text-gray-400">
+              <Typography variant="body" className="text-gray-600 dark:text-gray-400">
                 Заголовок:
               </Typography>
-              <Typography variant="body1" className="font-medium">
+              <Typography variant="body" className="font-medium">
                 {formData.title || 'Без заголовка'}
               </Typography>
 
-              <Typography variant="body2" className="text-gray-600 dark:text-gray-400">
+              <Typography variant="body" className="text-gray-600 dark:text-gray-400">
                 Slug:
               </Typography>
-              <Typography variant="body2" className="font-mono text-sm">
+              <Typography variant="body" className="font-mono text-sm">
                 /{formData.slug || 'без-slug'}
               </Typography>
             </div>

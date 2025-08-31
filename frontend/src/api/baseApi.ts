@@ -9,7 +9,7 @@ export const baseApi = createApi({
     prepareHeaders: (headers, { getState }) => {
       // Получаем токен из состояния
       const state = getState() as RootState;
-      const token = state.user.token;
+      const token = state.user.tokens?.accessToken;
 
       // Добавляем токен авторизации
       if (token) {
@@ -66,6 +66,4 @@ export const baseApi = createApi({
 // Экспортируем хук для использования в компонентах
 export const {
   usePrefetch,
-  useGetRunningQueries,
-  useGetRunningMutations,
 } = baseApi;

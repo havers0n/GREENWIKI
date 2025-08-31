@@ -1,4 +1,5 @@
 import type { BlockNode } from '../../types/api';
+import { hasPosition } from '../../shared/types/guards';
 
 /**
  * Утилиты для работы с древовидной структурой блоков
@@ -184,7 +185,7 @@ export function flattenTree(tree: BlockNode[]): BlockNode[] {
         ...node,
         // Добавляем parentBlockId для обратной совместимости
         metadata: {
-          ...node.metadata,
+          ...(typeof node.metadata === 'object' && node.metadata ? node.metadata : {}),
           parentBlockId: parentId,
           position: index
         }
@@ -219,7 +220,7 @@ export function buildTreeFromFlat(flatBlocks: BlockNode[]): BlockNode[] {
   // Затем строим иерархию
   flatBlocks.forEach(block => {
     const node = blockMap.get(block.id)!;
-    const parentId = block.metadata?.parentBlockId;
+    const parentId = block.parent_block_id;
 
     if (parentId && blockMap.has(parentId)) {
       const parent = blockMap.get(parentId)!;
@@ -233,7 +234,11 @@ export function buildTreeFromFlat(flatBlocks: BlockNode[]): BlockNode[] {
   function sortChildren(nodes: BlockNode[]): void {
     nodes.forEach(node => {
       if (node.children.length > 0) {
-        node.children.sort((a, b) => (a.metadata?.position || 0) - (b.metadata?.position || 0));
+        node.children.sort((a, b) => {
+          const aPosition = hasPosition(a.metadata) ? a.metadata.position : 0;
+          const bPosition = hasPosition(b.metadata) ? b.metadata.position : 0;
+          return aPosition - bPosition;
+        });
         sortChildren(node.children);
       }
     });

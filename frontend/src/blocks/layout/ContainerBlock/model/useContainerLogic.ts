@@ -91,7 +91,7 @@ export const useContainerStyles = (
 
   const styles = {
     display: layout === 'horizontal' ? 'flex' : layout === 'grid' ? 'grid' : 'block',
-    flexDirection: layout === 'horizontal' ? 'row' : undefined,
+    flexDirection: layout as React.CSSProperties['flexDirection'],
     gridTemplateColumns: layout === 'grid' ? 'repeat(auto-fit, minmax(250px, 1fr))' : undefined,
     gap: gapValues[gap],
     padding: paddingValues[padding],

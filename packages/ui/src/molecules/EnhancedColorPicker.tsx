@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, forwardRef } from 'react';
 import { cn } from '../lib/utils';
 import { Palette, Check } from 'lucide-react';
+import { Icon } from '../atoms/Icon';
 
 export interface EnhancedColorPickerProps {
   value?: string;
@@ -122,7 +123,7 @@ export const EnhancedColorPicker = React.memo(
             aria-label="Выбрать цвет"
             title="Выбрать цвет"
           >
-            <Palette className="w-4 h-4 text-white mix-blend-difference" />
+            <Icon icon={Palette} className="w-4 h-4 text-white mix-blend-difference" />
           </button>
 
           {/* Text input */}
@@ -228,7 +229,7 @@ export const EnhancedColorPicker = React.memo(
                       title={presetColor}
                     >
                       {inputValue === presetColor && (
-                        <Check className="w-4 h-4 text-white absolute inset-0 m-auto" />
+                        <Icon icon={Check} className="w-4 h-4 text-white absolute inset-0 m-auto" />
                       )}
                     </button>
                   ))}

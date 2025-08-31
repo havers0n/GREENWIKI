@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Button, ButtonSize, Input } from '@my-forum/ui';
+import { Modal, Button, Input } from '@my-forum/ui';
 import { updateCategory } from 'shared/api/categories';
 import type { Database, TablesUpdate } from '@my-forum/db-types';
 
@@ -40,7 +40,7 @@ const EditCategoryModal: React.FC<Props> = ({ category, onClose, onUpdated }) =>
           delete newErrors.slug;
         }
         break;
-      case 'position':
+      case 'position': {
         const numValue = Number(value);
         if (value && (isNaN(numValue) || numValue < 0)) {
           newErrors.position = 'Позиция должна быть положительным числом';
@@ -48,6 +48,7 @@ const EditCategoryModal: React.FC<Props> = ({ category, onClose, onUpdated }) =>
           delete newErrors.position;
         }
         break;
+      }
     }
 
     setErrors(newErrors);
@@ -105,7 +106,7 @@ const EditCategoryModal: React.FC<Props> = ({ category, onClose, onUpdated }) =>
   };
 
   return (
-    <Modal title="Редактировать категорию" onClose={onClose}>
+    <Modal isOpen={true} title="Редактировать категорию" onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-6">
         {errors.submit && (
           <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">

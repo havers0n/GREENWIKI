@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, EmptyBlocksLibrary, EmptySearchResults } from '@my-forum/ui';
+import { EmptyBlocksLibrary, EmptySearchResults } from '@my-forum/ui';
 import type { LibraryEmptyStateProps } from '../types';
 
 /**
@@ -8,15 +8,12 @@ import type { LibraryEmptyStateProps } from '../types';
  */
 const LibraryEmptyState: React.FC<LibraryEmptyStateProps> = ({
   hasFilters,
-  searchQuery,
-  onClearSearch
+  searchQuery: _searchQuery,
+  onClearSearch: _onClearSearch
 }) => {
   if (hasFilters) {
     return (
-      <EmptySearchResults
-        searchQuery={searchQuery}
-        onClearSearch={onClearSearch}
-      />
+      <EmptySearchResults />
     );
   }
 

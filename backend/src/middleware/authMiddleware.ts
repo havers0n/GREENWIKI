@@ -1,53 +1,56 @@
-import { Request, Response, NextFunction } from 'express'
-import { supabaseAdmin } from '../supabaseClient'
+// src/middleware/authMiddleware.ts
+import { Request, Response, NextFunction } from 'express';
+import { supabaseAdmin } from '../supabaseClient'; // Убедитесь, что путь правильный
+import { UserProfile } from '@my-forum/db-types'; // Импортируем наш тип
 
-// Расширяем Express.Request для безопасной записи user и isAdmin
-declare module 'express-serve-static-core' {
-  interface Request {
-    user?: { id: string }
-    isAdmin?: boolean
+// 1. Правильно расширяем глобальный неймспейс Express
+declare global {
+  namespace Express {
+    interface Request {
+      user?: UserProfile; // Теперь req.user будет иметь правильный тип
+      isAdmin?: boolean;
+      token?: string; // Сохраняем токен для проброса в сервисы
+    }
   }
 }
 
-/**
- * Проверяет JWT из заголовка Authorization и роль пользователя (profiles.role === 'admin')
- * Требуется заголовок: Authorization: Bearer <access_token>
- */
-export async function isAdmin(req: Request, res: Response, next: NextFunction) {
+export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  const token = req.headers.authorization?.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+
   try {
-    const authHeader = req.headers.authorization || ''
-    const [scheme, token] = authHeader.split(' ')
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
 
-    if (scheme !== 'Bearer' || !token) {
-      return res.status(401).json({ error: 'Unauthorized' })
+    if (userError || !user) {
+      return res.status(401).json({ error: 'Invalid token' });
     }
 
-    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token)
-    if (userError || !userData?.user?.id) {
-      return res.status(401).json({ error: 'Unauthorized' })
-    }
-
-    const userId = userData.user.id
+    // 2. Получаем профиль пользователя, чтобы узнать его роль
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('role')
-      .eq('id', userId)
-      .single()
+      .select('id, role, username')
+      .eq('id', user.id)
+      .single();
 
     if (profileError || !profile) {
-      return res.status(403).json({ error: 'Forbidden' })
+      // Важно: если профиля нет, пользователь не может быть авторизован в системе
+      return res.status(403).json({ error: 'User profile not found or inaccessible' });
     }
 
-    if (profile.role !== 'admin') {
-      return res.status(403).json({ error: 'Forbidden' })
-    }
+    // 3. Записываем в req.user объект, соответствующий типу UserProfile
+    req.user = profile;
+    req.isAdmin = profile.role === 'admin'; // Определяем админа по роли из профиля
+    req.token = token; // Сохраняем токен для использования в сервисах
 
-    req.user = { id: userId }
-    req.isAdmin = true
-    return next()
-  } catch {
-    return res.status(500).json({ error: 'Internal Server Error' })
+    next();
+  } catch (error) {
+    if (error instanceof Error) {
+        res.status(500).json({ error: 'Internal Server Error', details: error.message });
+    } else {
+        res.status(500).json({ error: 'An unknown error occurred' });
+    }
   }
-}
-
-export default isAdmin
+};

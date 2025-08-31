@@ -18,13 +18,12 @@ export const useLibraryFilters = (
   const [categoryValue, setCategoryValue] = useState(initialCategory);
 
   // Обработчик изменения поиска
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchValue(e.target.value);
+  const handleSearchChange = (value: string) => {
+    setSearchValue(value);
   };
 
   // Обработчик изменения категории
-  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const category = e.target.value;
+  const handleCategoryChange = (category: string) => {
     setCategoryValue(category);
 
     // Синхронизируем с Redux

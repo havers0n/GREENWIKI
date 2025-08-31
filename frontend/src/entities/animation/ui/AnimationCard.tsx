@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Animation } from 'shared/lib/types';
+import { Search, ExternalLink } from 'lucide-react';
 import { Card, Typography, Icon } from '@my-forum/ui';
 
 interface AnimationCardProps {
@@ -18,9 +19,9 @@ export const AnimationCard: React.FC<AnimationCardProps> = ({ animation }) => {
         </div>
         <Typography as="h3" variant="h3" className="mb-1">{animation.name}</Typography>
         <div className="flex items-center gap-2 text-majestic-gray-400 text-sm">
-            <Icon name="search" className="w-4 h-4" />
+            <Icon icon={Search} className="w-4 h-4" />
             <span>{animation.name}</span>
-            <Icon name="externalLink" className="w-4 h-4" />
+            <Icon icon={ExternalLink} className="w-4 h-4" />
             <span>{animation.code}</span>
         </div>
         <div className="mt-2">

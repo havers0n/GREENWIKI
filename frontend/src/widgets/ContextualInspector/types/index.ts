@@ -1,6 +1,5 @@
 // Типы для ContextualInspector
 
-import type { Database } from '@my-forum/db-types';
 import type { BlockNode } from '../../../types/api';
 
 // Расширяем BlockNode для совместимости с ContextualInspector

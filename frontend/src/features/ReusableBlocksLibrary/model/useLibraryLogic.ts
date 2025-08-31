@@ -7,10 +7,9 @@ import {
   clearFilters,
   setPage,
 } from '../../../store/slices/reusableBlocksSlice';
-import { useNotificationActions } from '../../../shared/contexts/NotificationContext';
+
 import type {
-  UseLibraryLogicResult,
-  ReusableBlocksLibraryProps
+  UseLibraryLogicResult
 } from '../types';
 
 /**
@@ -22,7 +21,7 @@ export const useLibraryLogic = (
   onClose: () => void
 ): UseLibraryLogicResult => {
   const dispatch = useAppDispatch();
-  const { error: showError } = useNotificationActions();
+
 
   // Получаем состояние из Redux
   const {
@@ -73,11 +72,17 @@ export const useLibraryLogic = (
     onClose();
   };
 
-  // Обработчик повторной попытки загрузки при ошибке
+  // Повторная загрузка блоков
   const handleRetryLoad = () => {
-    dispatch(fetchReusableBlocks());
-    showError('Ошибка загрузки', 'Повторная попытка загрузки блоков...');
+    dispatch(fetchReusableBlocks({
+      search: filters.search,
+      category: filters.category,
+      page: pagination.page,
+      limit: pagination.limit,
+    }));
   };
+
+
 
   return {
     // Состояние

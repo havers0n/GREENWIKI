@@ -92,7 +92,7 @@ class Logger {
       statusCode: res.statusCode,
       responseTime,
       ip: req.ip || req.connection.remoteAddress || 'unknown',
-      userAgent: req.get('User-Agent'),
+      userAgent: req.get('User-Agent') ?? 'unknown',
       userId: (req as any).user?.id
     };
 
@@ -117,8 +117,8 @@ class Logger {
 
     if (error) {
       entry.error = {
-        message: error.message,
-        stack: error.stack
+        message: error.message || 'Unknown error',
+        ...(error.stack && { stack: error.stack })
       };
     }
 

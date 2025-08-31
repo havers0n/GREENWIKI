@@ -1,6 +1,7 @@
 import React from 'react';
 import { SpacingControl, ColorPicker, BorderControl, BackgroundControl } from '../controls';
 import type { BlockDesignEditorProps } from '../types';
+import { BlockType } from '../../../shared/consts/blockTypes';
 
 /**
  * Компонент для редактирования дизайна блока
@@ -56,7 +57,7 @@ const BlockDesignEditor: React.FC<BlockDesignEditorProps> = ({
       />
 
       {/* Border Control - для контейнера и кнопки */}
-      {(blockType === 'container_section' || blockType === 'single_button') && (
+      {(blockType === BlockType.CONTAINER_SECTION || blockType === BlockType.SINGLE_BUTTON) && (
         <BorderControl
           value={metadata.border as any}
           onChange={handleBorderChange}
@@ -64,7 +65,7 @@ const BlockDesignEditor: React.FC<BlockDesignEditorProps> = ({
       )}
 
       {/* Background Control - только для контейнера */}
-      {blockType === 'container_section' && (
+      {blockType === BlockType.CONTAINER_SECTION && (
         <BackgroundControl
           value={metadata.background as any}
           onChange={handleBackgroundChange}

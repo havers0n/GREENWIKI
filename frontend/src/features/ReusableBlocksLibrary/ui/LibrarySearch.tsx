@@ -12,12 +12,6 @@ const LibrarySearch: React.FC<LibrarySearchProps> = ({
   onSearchSubmit,
   loading = false
 }) => {
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      onSearchSubmit();
-    }
-  };
-
   return (
     <div className="flex gap-2">
       <div className="flex-1">
@@ -25,7 +19,6 @@ const LibrarySearch: React.FC<LibrarySearchProps> = ({
           placeholder="Поиск по названию или описанию..."
           value={searchValue}
           onChange={onSearchChange}
-          onKeyDown={handleKeyDown}
         />
       </div>
       <Button

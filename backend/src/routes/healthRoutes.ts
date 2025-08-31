@@ -74,12 +74,13 @@ router.get('/detailed', async (_req: Request, res: Response) => {
 
     res.status(statusCode).json(health);
   } catch (error) {
-    logger.logSecurity(_req, 'Health check failed', { error: error.message });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.logSecurity(_req, 'Health check failed', { error: errorMessage });
     res.status(503).json({
       status: 'error',
       timestamp: new Date().toISOString(),
       error: 'Health check failed',
-      details: error.message
+      details: errorMessage
     });
   }
 });

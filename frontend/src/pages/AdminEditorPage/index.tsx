@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { ErrorBoundary } from '@my-forum/ui';
-import NewLiveEditor from 'widgets/NewLiveEditor';
+import PageEditor from '../../features/PageEditor';
 
 const AdminEditorPage: React.FC = () => {
   const { pageSlug } = useParams<{ pageSlug: string }>();
@@ -45,7 +45,7 @@ const AdminEditorPage: React.FC = () => {
         </div>
       }
     >
-      <NewLiveEditor pageSlug={currentPageSlug} />
+      <PageEditor pageSlug={currentPageSlug} />
     </ErrorBoundary>
   );
 };

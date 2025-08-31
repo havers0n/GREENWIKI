@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Database } from '@my-forum/db-types';
-import { Button, Card, Typography, Tag, Select, Spinner, Modal } from '@my-forum/ui';
+import { Button, ButtonSize, Card, Typography, Tag, Select, Spinner, Modal } from '@my-forum/ui';
 import {
   fetchAdminLayoutByPage,
   createLayoutBlock,
@@ -90,10 +90,10 @@ import { blockRegistry } from 'shared/config/blockRegistry';
            )}
          </div>
          <div className="flex items-center gap-2 ml-4">
-           <Button onClick={() => onMoveUp(block.id)} disabled={isFirst} variant="secondary">Вверх</Button>
-           <Button onClick={() => onMoveDown(block.id)} disabled={isLast} variant="secondary">Вниз</Button>
-           <Button onClick={() => onEdit(block)} variant="primary">Редактировать</Button>
-           <Button onClick={() => onDelete(block)} variant="ghost" className="text-red-600 dark:text-red-400">Удалить</Button>
+           <Button size={ButtonSize.Sm} onClick={() => onMoveUp(block.id)} disabled={isFirst} variant="secondary">Вверх</Button>
+           <Button size={ButtonSize.Sm} onClick={() => onMoveDown(block.id)} disabled={isLast} variant="secondary">Вниз</Button>
+           <Button size={ButtonSize.Sm} onClick={() => onEdit(block)} variant="primary">Редактировать</Button>
+           <Button size={ButtonSize.Sm} onClick={() => onDelete(block)} variant="ghost" className="text-red-600 dark:text-red-400">Удалить</Button>
          </div>
        </div>
      </Card>
@@ -138,8 +138,8 @@ import { blockRegistry } from 'shared/config/blockRegistry';
 
    const spec = blockRegistry[blockType];
 
-   return (
-     <Modal title={`Добавить блок для «${pageIdentifier}»`} onClose={onClose}>
+     return (
+    <Modal isOpen={true} title={`Добавить блок для «${pageIdentifier}»`} onClose={onClose}>
        {error && (
          <div className="mb-3 p-3 rounded-md text-sm bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-700/50">{error}</div>
        )}
@@ -161,8 +161,8 @@ import { blockRegistry } from 'shared/config/blockRegistry';
            <div className="text-sm text-red-600 dark:text-red-400">Неизвестный тип блока: {blockType}</div>
          )}
          <div className="flex justify-end gap-2 pt-2">
-           <Button onClick={onClose} variant="secondary">Отмена</Button>
-           <Button onClick={handleSubmit} disabled={submitting} variant="primary">
+           <Button size={ButtonSize.Md} onClick={onClose} variant="secondary">Отмена</Button>
+           <Button size={ButtonSize.Md} onClick={handleSubmit} disabled={submitting} variant="primary">
              {submitting ? 'Сохранение...' : 'Сохранить'}
            </Button>
          </div>
@@ -210,8 +210,8 @@ import { blockRegistry } from 'shared/config/blockRegistry';
 
    const spec = blockRegistry[blockType];
 
-   return (
-     <Modal title={`Редактировать блок #${block.position}`} onClose={onClose}>
+     return (
+    <Modal isOpen={true} title={`Редактировать блок #${block.position}`} onClose={onClose}>
        {error && (
          <div className="mb-3 p-3 rounded-md text-sm bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-700/50">{error}</div>
        )}
@@ -233,8 +233,8 @@ import { blockRegistry } from 'shared/config/blockRegistry';
            <div className="text-sm text-red-600 dark:text-red-400">Неизвестный тип блока: {blockType}</div>
          )}
          <div className="flex justify-end gap-2 pt-2">
-           <Button onClick={onClose} variant="secondary">Отмена</Button>
-           <Button onClick={handleSubmit} disabled={submitting} variant="primary">
+           <Button size={ButtonSize.Md} onClick={onClose} variant="secondary">Отмена</Button>
+           <Button size={ButtonSize.Md} onClick={handleSubmit} disabled={submitting} variant="primary">
              {submitting ? 'Сохранение...' : 'Сохранить'}
            </Button>
          </div>
@@ -253,14 +253,14 @@ import { blockRegistry } from 'shared/config/blockRegistry';
 
  const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({ block, onConfirm, onClose, busy }) => {
    if (!block) return null;
-   return (
-     <Modal title="Подтвердите удаление" onClose={onClose}>
+     return (
+    <Modal isOpen={true} title="Подтвердите удаление" onClose={onClose}>
        <Typography>
          Вы уверены, что хотите удалить блок #{block.position} ({block.block_type})?
        </Typography>
        <div className="flex justify-end gap-2 pt-4">
-         <Button onClick={onClose} variant="secondary">Отмена</Button>
-         <Button onClick={onConfirm} disabled={!!busy} variant="danger">{busy ? 'Удаление...' : 'Удалить'}</Button>
+         <Button size={ButtonSize.Md} onClick={onClose} variant="secondary">Отмена</Button>
+         <Button size={ButtonSize.Md} onClick={onConfirm} disabled={!!busy} variant="danger">{busy ? 'Удаление...' : 'Удалить'}</Button>
        </div>
      </Modal>
    );
@@ -295,12 +295,16 @@ import { blockRegistry } from 'shared/config/blockRegistry';
    const handleCreate = async (data: { block_type: BlockType; status: BlockStatus; content: Json }) => {
      const nextPosition = (blocks.length || 0) + 1;
      const created = await createLayoutBlock({
-       page_identifier: pageIdentifier,
+       page_id: 1, // TODO: Получить правильный page_id из pageIdentifier
        block_type: data.block_type,
        status: data.status,
-       content: data.content,
+       content: data.content || {},
+       metadata: {},
        position: nextPosition,
-     } as any);
+       depth: 0,
+       parent_block_id: null,
+       slot: null
+     });
      const next = ensureSequentialPositions([...blocks, created]);
      setBlocks(next);
    };
@@ -356,8 +360,8 @@ import { blockRegistry } from 'shared/config/blockRegistry';
            <Typography variant="small" className="mt-1 text-gray-500 dark:text-gray-400">Страница: {pageIdentifier}</Typography>
          </div>
          <div className="flex items-center gap-2">
-           <Button onClick={() => setShowCreate(true)} variant="primary">Добавить новый блок</Button>
-           <Button onClick={load} variant="secondary">Обновить</Button>
+           <Button size={ButtonSize.Md} onClick={() => setShowCreate(true)} variant="primary">Добавить новый блок</Button>
+           <Button size={ButtonSize.Md} onClick={load} variant="secondary">Обновить</Button>
          </div>
        </div>
 
@@ -426,7 +430,7 @@ import { blockRegistry } from 'shared/config/blockRegistry';
                setDeleteBlockState((s) => ({ ...s, busy: true }));
                await handleDelete(deleteBlockState.block!.id);
                setDeleteBlockState({ block: null, busy: false });
-             } catch (e) {
+             } catch (_e) {
                setDeleteBlockState({ block: null, busy: false });
              }
            }}

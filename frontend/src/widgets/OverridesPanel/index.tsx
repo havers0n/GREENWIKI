@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { Typography, Button, Input, Textarea, Spinner, Card } from '@my-forum/ui';
+import { Typography, Button, Input, Textarea, Select, Spinner, Card } from '@my-forum/ui';
 import {
   selectBlockWithEffectiveContent,
   selectBlockOriginalContent,
@@ -18,7 +18,6 @@ import {
   getBlockInstanceOverrides
 } from '../../shared/api/blockInstances';
 import {
-  mergeOverrides,
   getNestedProperty,
   hasOverride,
   removeOverride
@@ -337,14 +336,14 @@ const OverrideFieldComponent: React.FC<OverrideFieldComponentProps> = ({
 
       case 'boolean':
         return (
-          <select
+          <Select
             value={String(field.currentValue)}
             onChange={(e) => handleInputChange(e.target.value === 'true')}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            className="w-full"
           >
             <option value="true">Да</option>
             <option value="false">Нет</option>
-          </select>
+          </Select>
         );
 
       case 'color':
@@ -382,7 +381,7 @@ const OverrideFieldComponent: React.FC<OverrideFieldComponentProps> = ({
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Typography as="label" variant="label" className="text-sm font-medium">
+          <Typography as="span" variant="small" className="text-sm font-medium">
             {field.label}
           </Typography>
           {field.hasOverride && (

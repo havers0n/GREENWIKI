@@ -14,6 +14,16 @@ const LibraryGrid: React.FC<LibraryGridProps> = ({
   virtualized = false,
   gridConfig
 }) => {
+  // Всегда вызываем хуки на верхнем уровне, независимо от условий
+  const parentRef = React.useRef<HTMLDivElement>(null);
+
+  const virtualizer = useVirtualizer({
+    count: blocks.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 200 + 16, // CARD_HEIGHT + ROW_GAP
+    overscan: 5,
+  });
+
   if (loading && blocks.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -31,14 +41,6 @@ const LibraryGrid: React.FC<LibraryGridProps> = ({
 
   if (virtualized && gridConfig) {
     // Виртуализированная сетка для большого количества блоков с @tanstack/react-virtual
-    const parentRef = React.useRef<HTMLDivElement>(null);
-
-    const virtualizer = useVirtualizer({
-      count: blocks.length,
-      getScrollElement: () => parentRef.current,
-      estimateSize: () => 200 + 16, // CARD_HEIGHT + ROW_GAP
-      overscan: 5,
-    });
 
     return (
       <div className="mb-6">

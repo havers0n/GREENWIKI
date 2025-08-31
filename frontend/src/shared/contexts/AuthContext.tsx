@@ -8,6 +8,7 @@ interface AuthContextType {
   profile: Profile | null;
   isLoading: boolean;
   loading: boolean; // Для совместимости
+  isInitialized: boolean; // Указывает, была ли проверена сессия хотя бы один раз
   error: string | null;
   isAdmin: boolean;
   signOut: () => Promise<void>;
@@ -32,6 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false); // Отслеживает, была ли проверена сессия
   const [error, setError] = useState<string | null>(null);
 
   // ЭФФЕКТ №1: ТОЛЬКО СИНХРОННОЕ УПРАВЛЕНИЕ СЕССИЕЙ
@@ -67,6 +69,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       authListener.subscription.unsubscribe();
     };
   }, []);
+
+  // Эффект для установки isInitialized после первой проверки сессии
+  useEffect(() => {
+    if (!isLoading && !isInitialized) {
+      setIsInitialized(true);
+    }
+  }, [isLoading, isInitialized]);
 
   // ЭФФЕКТ №2: РЕАКТИВНАЯ ЗАГРУЗКА ПРОФИЛЯ
   // Этот useEffect ЗАВИСИТ от `user`. Он запускается каждый раз, когда `user` меняется.
@@ -221,6 +230,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     profile,
     isLoading,
     loading: isLoading, // Для совместимости
+    isInitialized,
     error,
     isAdmin: profile?.role === 'admin',
     signOut,

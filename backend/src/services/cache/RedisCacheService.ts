@@ -1,5 +1,5 @@
 import Redis from 'ioredis';
-import { BaseCacheService, CacheOptions, CacheService } from './CacheService';
+import { BaseCacheService, CacheOptions, CacheService, CacheStats } from './CacheService';
 
 interface RedisCacheEntry {
   value: any;
@@ -81,8 +81,8 @@ export class RedisCacheService extends BaseCacheService implements CacheService 
     try {
       const entry: RedisCacheEntry = {
         value,
-        tags: options.tags,
-        expiresAt: options.ttl ? Date.now() + (options.ttl * 1000) : undefined
+        ...(options.tags && { tags: options.tags }),
+        ...(options.ttl && { expiresAt: Date.now() + (options.ttl * 1000) })
       };
 
       const serialized = JSON.stringify(entry);
@@ -178,7 +178,7 @@ export class RedisCacheService extends BaseCacheService implements CacheService 
     }
   }
 
-  async getStats() {
+  async getStats(): Promise<CacheStats> {
     const baseStats = await super.getStats();
 
     if (this.isDevelopmentMode || !this.isConnected || !this.client) {
@@ -203,8 +203,8 @@ export class RedisCacheService extends BaseCacheService implements CacheService 
         entries: await this.getEntryCount(),
         redis: {
           connected: true,
-          memory: memoryMatch ? parseInt(memoryMatch[1]) : null,
-          uptime: uptimeMatch ? parseInt(uptimeMatch[1]) : null
+          memory: memoryMatch && memoryMatch[1] ? parseInt(memoryMatch[1], 10) : null,
+          uptime: uptimeMatch && uptimeMatch[1] ? parseInt(uptimeMatch[1], 10) : null
         }
       };
     } catch (error) {

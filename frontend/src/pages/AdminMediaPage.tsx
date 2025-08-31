@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Card, Typography, Button, Input, Badge, Spinner, Progress } from '@my-forum/ui';
+import { Card, Typography, Button, Input, Select, Badge, Spinner, Progress } from '@my-forum/ui';
 
 interface MediaFile {
   id: string;
@@ -202,10 +202,6 @@ const AdminMediaPage: React.FC = () => {
     );
   };
 
-  const selectAll = () => {
-    setSelectedFiles(filteredFiles.map(f => f.id));
-  };
-
   const deselectAll = () => {
     setSelectedFiles([]);
   };
@@ -218,7 +214,7 @@ const AdminMediaPage: React.FC = () => {
           <Typography variant="h1" className="text-2xl font-bold">
             Медиа библиотека
           </Typography>
-          <Typography variant="body2" className="text-gray-600 dark:text-gray-400 mt-1">
+          <Typography variant="body" className="text-gray-600 dark:text-gray-400 mt-1">
             Управляйте изображениями, документами и другими файлами
           </Typography>
         </div>
@@ -247,7 +243,7 @@ const AdminMediaPage: React.FC = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <Spinner size="md" />
-                <Typography variant="body1">
+                <Typography variant="body">
                   Загрузка файлов... {uploadProgress}%
                 </Typography>
               </div>
@@ -259,10 +255,10 @@ const AdminMediaPage: React.FC = () => {
                 <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
-                <Typography variant="body1" className="mb-2">
+                <Typography variant="body" className="mb-2">
                   Перетащите файлы сюда или нажмите для выбора
                 </Typography>
-                <Typography variant="body2" className="text-gray-500 dark:text-gray-400 mb-4">
+                <Typography variant="body" className="text-gray-500 dark:text-gray-400 mb-4">
                   Поддерживаются изображения, документы, видео и аудио файлы (макс. 10MB каждый)
                 </Typography>
                 <Button onClick={() => fileInputRef.current?.click()}>
@@ -295,8 +291,7 @@ const AdminMediaPage: React.FC = () => {
 
             <Select
               value={filter.type}
-              onChange={(value) => setFilter(prev => ({ ...prev, type: value }))}
-              placeholder="Все типы"
+              onChange={(e) => setFilter(prev => ({ ...prev, type: e.target.value }))}
             >
               <option value="">Все типы</option>
               <option value="image">Изображения</option>
@@ -309,7 +304,7 @@ const AdminMediaPage: React.FC = () => {
           <div className="flex items-center gap-2">
             {selectedFiles.length > 0 && (
               <div className="flex items-center gap-2 mr-4">
-                <Typography variant="body2" className="text-gray-600 dark:text-gray-400">
+                <Typography variant="body" className="text-gray-600 dark:text-gray-400">
                   Выбрано: {selectedFiles.length}
                 </Typography>
                 <Button variant="ghost" size="sm" onClick={deselectAll}>
@@ -397,10 +392,10 @@ const AdminMediaPage: React.FC = () => {
 
                     {/* File info */}
                     <div className="p-3 bg-white dark:bg-gray-800">
-                      <Typography variant="body2" className="font-medium truncate" title={file.originalName}>
+                      <Typography variant="body" className="font-medium truncate">
                         {file.originalName}
                       </Typography>
-                      <Typography variant="body2" className="text-gray-500 dark:text-gray-400 text-xs">
+                      <Typography variant="body" className="text-gray-500 dark:text-gray-400 text-xs">
                         {formatFileSize(file.size)}
                       </Typography>
                     </div>
@@ -466,15 +461,15 @@ const AdminMediaPage: React.FC = () => {
                     <div className="text-2xl">{getFileIcon(file.type, file.mimeType)}</div>
 
                     <div className="flex-1 min-w-0">
-                      <Typography variant="body1" className="font-medium truncate">
+                      <Typography variant="body" className="font-medium truncate">
                         {file.originalName}
                       </Typography>
-                      <Typography variant="body2" className="text-gray-500 dark:text-gray-400">
+                      <Typography variant="body" className="text-gray-500 dark:text-gray-400">
                         {file.name} • {formatFileSize(file.size)} • {new Date(file.uploadedAt).toLocaleDateString()}
                       </Typography>
                     </div>
 
-                    <Badge variant="secondary" className="capitalize">
+                    <Badge tone="neutral" className="capitalize">
                       {file.type}
                     </Badge>
 
@@ -511,7 +506,7 @@ const AdminMediaPage: React.FC = () => {
                 <Typography variant="h3" className="text-gray-500 dark:text-gray-400 mb-2">
                   Файлы не найдены
                 </Typography>
-                <Typography variant="body2" className="text-gray-400 dark:text-gray-500">
+                <Typography variant="body" className="text-gray-400 dark:text-gray-500">
                   Попробуйте изменить фильтры или загрузите новые файлы
                 </Typography>
               </div>

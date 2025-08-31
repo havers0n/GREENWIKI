@@ -27,9 +27,9 @@ global.ResizeObserver = class ResizeObserver {
 };
 
 // Мокаем IntersectionObserver
-global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
-  observe() {}
-  disconnect() {}
-  unobserve() {}
-};
+// global.IntersectionObserver = class IntersectionObserver {
+//   constructor() {}
+//   observe() {}
+//   disconnect() {}
+//   unobserve() {}
+// };

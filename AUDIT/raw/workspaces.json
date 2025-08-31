@@ -1,0 +1,10 @@
+{
+  "nodes": [
+    {
+      "id": "my-forum",
+      "label": "my-forum@1.0.0",
+      "type": "workspace"
+    }
+  ],
+  "edges": []
+}

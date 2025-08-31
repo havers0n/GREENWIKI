@@ -5,9 +5,9 @@ import { CacheService } from './cache/CacheService';
 export interface User {
   id: string;
   email: string;
-  username?: string;
-  firstName?: string;
-  lastName?: string;
+  username?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
   role: 'admin' | 'editor' | 'author' | 'viewer';
   isActive: boolean;
   lastLoginAt?: Date;
@@ -72,9 +72,9 @@ export class UserManager {
       const user: User = {
         id: this.generateId(),
         email: input.email.toLowerCase(),
-        username: input.username,
-        firstName: input.firstName,
-        lastName: input.lastName,
+        username: input.username || null,
+        firstName: input.firstName || null,
+        lastName: input.lastName || null,
         role: input.role || 'viewer',
         isActive: input.isActive !== false,
         createdAt: new Date(),
@@ -102,7 +102,7 @@ export class UserManager {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'user:create',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         input: { ...input, password: '[REDACTED]' }
       });
       throw error;
@@ -131,7 +131,7 @@ export class UserManager {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'user:getById',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         id
       });
       throw error;
@@ -147,7 +147,7 @@ export class UserManager {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'user:getByEmail',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         email
       });
       throw error;
@@ -191,7 +191,7 @@ export class UserManager {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'user:update',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         id,
         input
       });
@@ -223,7 +223,7 @@ export class UserManager {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'user:delete',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         id
       });
       throw error;
@@ -261,7 +261,7 @@ export class UserManager {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'user:authenticate',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         email
       });
       throw error;
@@ -349,7 +349,7 @@ export class UserManager {
     } catch (error) {
       await this.events.emit(CMS_EVENTS.ERROR, {
         operation: 'user:list',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         options
       });
       throw error;

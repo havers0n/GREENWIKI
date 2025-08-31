@@ -46,16 +46,20 @@ export const BackgroundControl: React.FC<BackgroundControlProps> = ({
 
   return (
     <div>
-      <Text variant="body-sm" className="font-medium mb-2">{label}</Text>
+      <Text variant="small" className="font-medium mb-2">{label}</Text>
 
       <Select
         label="Тип фона"
-        data={backgroundTypes}
         value={value.type || 'color'}
-        onChange={handleTypeChange}
-        size="xs"
-        mb="md"
-      />
+        onChange={(e) => handleTypeChange(e.target.value)}
+        className="mb-4"
+      >
+        {backgroundTypes.map((type) => (
+          <option key={type.value} value={type.value}>
+            {type.label}
+          </option>
+        ))}
+      </Select>
 
       {value.type === 'color' && (
         <TextInput
@@ -63,7 +67,6 @@ export const BackgroundControl: React.FC<BackgroundControlProps> = ({
           placeholder="#ffffff"
           value={value.color || ''}
           onChange={(e) => handleChange('color', e.target.value)}
-          size="xs"
         />
       )}
 
@@ -90,7 +93,6 @@ export const BackgroundControl: React.FC<BackgroundControlProps> = ({
           placeholder="https://example.com/image.jpg"
           value={value.imageUrl || ''}
           onChange={(e) => handleChange('imageUrl', e.target.value)}
-          size="xs"
         />
       )}
     </div>

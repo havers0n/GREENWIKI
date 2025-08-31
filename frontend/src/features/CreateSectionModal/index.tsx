@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Modal, Button, ButtonSize, Input, Select, Textarea, RadioGroup, RadioGroupItem } from '@my-forum/ui';
+import { Modal, Button, Input, Select, Textarea, RadioGroup, RadioGroupItem } from '@my-forum/ui';
 import { fetchCategories } from 'shared/api/categories';
 import { createSection } from 'shared/api/sections';
 import type { Database, TablesInsert } from '@my-forum/db-types';
@@ -32,8 +32,9 @@ const CreateSectionModal: React.FC<Props> = ({ onClose, onCreated }) => {
     const loadCats = async () => {
       try {
         setCategories(await fetchCategories());
-      } catch (e: any) {
-        setError(e?.message || 'Ошибка загрузки категорий');
+      } catch (e: unknown) {
+        const errorMessage = e instanceof Error ? e.message : 'Ошибка загрузки категорий';
+        setErrors({ general: errorMessage });
       }
     };
     loadCats();
@@ -44,8 +45,9 @@ const CreateSectionModal: React.FC<Props> = ({ onClose, onCreated }) => {
       try {
         const data = await fetchAdminPages();
         setPages(data);
-      } catch (e: any) {
-        setError(e?.message || 'Ошибка загрузки страниц');
+      } catch (e: unknown) {
+        const errorMessage = e instanceof Error ? e.message : 'Ошибка загрузки страниц';
+        setErrors({ general: errorMessage });
       }
     };
     loadPages();
@@ -76,7 +78,7 @@ const CreateSectionModal: React.FC<Props> = ({ onClose, onCreated }) => {
         }
         break;
 
-      case 'position':
+      case 'position': {
         const numValue = Number(value);
         if (value && (isNaN(numValue) || numValue < 0 || numValue > 999)) {
           newErrors.position = 'Позиция должна быть числом от 0 до 999';
@@ -84,6 +86,7 @@ const CreateSectionModal: React.FC<Props> = ({ onClose, onCreated }) => {
           delete newErrors.position;
         }
         break;
+      }
 
       case 'categoryId':
         if (!value || value === '') {
@@ -118,9 +121,9 @@ const CreateSectionModal: React.FC<Props> = ({ onClose, onCreated }) => {
     }
 
     // XOR validation for link types
-    if (linkType === 'internal' && pageId && pageId !== '' && externalUrl.trim()) {
+    if (linkType === 'internal' && pageId && Number(pageId) > 0 && externalUrl.trim()) {
       newErrors.linkXor = 'Нельзя указывать одновременно внутреннюю страницу и внешний URL';
-    } else if (linkType === 'external' && externalUrl.trim() && pageId && pageId !== '') {
+    } else if (linkType === 'external' && externalUrl.trim() && pageId && Number(pageId) > 0) {
       newErrors.linkXor = 'Нельзя указывать одновременно внешний URL и внутреннюю страницу';
     } else {
       delete newErrors.linkXor;
@@ -164,7 +167,7 @@ const CreateSectionModal: React.FC<Props> = ({ onClose, onCreated }) => {
            name.trim().length >= 2 &&
            categoryId !== '' &&
            categoryId !== null &&
-           ((linkType === 'internal' && pageId !== '' && pageId !== null) ||
+           ((linkType === 'internal' && Number(pageId) > 0 && pageId !== null) ||
             (linkType === 'external' && externalUrl.trim().length > 0));
   }, [errors, name, categoryId, linkType, pageId, externalUrl]);
 
@@ -198,10 +201,11 @@ const CreateSectionModal: React.FC<Props> = ({ onClose, onCreated }) => {
       await createSection(payload);
       onCreated();
       onClose();
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : 'Не удалось создать секцию';
       setErrors(prev => ({
         ...prev,
-        submit: e?.message || 'Не удалось создать секцию'
+        submit: errorMessage
       }));
     } finally {
       setLoading(false);
@@ -209,7 +213,7 @@ const CreateSectionModal: React.FC<Props> = ({ onClose, onCreated }) => {
   };
 
   return (
-    <Modal title="Создать секцию" onClose={onClose}>
+    <Modal isOpen={true} title="Создать секцию" onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-6">
         {errors.submit && (
           <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">

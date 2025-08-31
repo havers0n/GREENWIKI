@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 import { Card } from '../atoms/Card';
 import { Typography } from '../atoms/Typography';
 import { Icon } from '../atoms/Icon';
@@ -8,7 +8,7 @@ import { cn } from '../lib/utils';
 export interface AccordionItem {
   id: string;
   title: string;
-  content: React.ReactNode;
+  content: string;
   disabled?: boolean;
 }
 
@@ -81,10 +81,10 @@ export const Accordion: React.FC<AccordionProps> = ({
               <Typography variant="body" className="font-medium">
                 {item.title}
               </Typography>
-              {React.createElement(
-                isExpanded ? ChevronUp : ChevronDown,
-                { className: "w-5 h-5 text-gray-500 transition-transform duration-200" }
-              )}
+              <Icon 
+                icon={isExpanded ? ChevronUp : ChevronDown}
+                className="w-5 h-5 text-gray-500 transition-transform duration-200" 
+              />
             </button>
 
             {isExpanded && (

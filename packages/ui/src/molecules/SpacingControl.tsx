@@ -3,6 +3,7 @@ import { cn } from '../lib/utils';
 import { Input } from '../atoms/Input';
 import { ActionIcon } from '../atoms/ActionIcon';
 import { Link, Unlink } from 'lucide-react';
+import { Icon } from '../atoms/Icon';
 
 export interface SpacingValue {
   top?: string;
@@ -166,7 +167,7 @@ export const SpacingControl = React.memo(
               isLinked && 'text-blue-600 dark:text-blue-400'
             )}
           >
-            {isLinked ? <Link size={16} /> : <Unlink size={16} />}
+            {isLinked ? <Icon icon={Link} size={16} /> : <Icon icon={Unlink} size={16} />}
           </ActionIcon>
         )}
 

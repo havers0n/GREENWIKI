@@ -1,4 +1,5 @@
 import React from 'react';
+import DOMPurify from 'dompurify';
 
 interface ParagraphBlockProps {
   text: string;
@@ -7,13 +8,19 @@ interface ParagraphBlockProps {
 }
 
 const ParagraphBlock: React.FC<ParagraphBlockProps> = ({ text, editorMode = false, metadata = {} }) => {
-  // Простая обработка Markdown для базовых тегов
+  // Безопасная обработка Markdown для базовых тегов с санитизацией
   const processMarkdown = (content: string) => {
-    return content
+    const processed = content
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // **bold**
       .replace(/\*(.*?)\*/g, '<em>$1</em>') // *italic*
       .replace(/`(.*?)`/g, '<code class="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm">$1</code>') // `code`
       .replace(/\n/g, '<br />'); // новые строки
+
+    // Санитизация HTML с разрешением только безопасных тегов
+    return DOMPurify.sanitize(processed, {
+      ALLOWED_TAGS: ['strong', 'em', 'code', 'br'],
+      ALLOWED_ATTR: ['class']
+    });
   };
 
   const isEmpty = !text || text.trim().length === 0;

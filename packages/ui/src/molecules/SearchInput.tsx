@@ -40,16 +40,10 @@ export const SearchInput: React.FC<SearchInputProps> = ({
     onChange?.('');
   };
 
-  const inputSize = {
-    sm: 'sm',
-    md: 'md',
-    lg: 'lg',
-  }[size];
-
   return (
     <div className={cn('relative', className)}>
       <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
-        {React.createElement(Search as any, { className: "h-4 w-4 text-gray-400" })}
+        <Icon icon={Search} className="h-4 w-4 text-gray-400" />
       </div>
 
       <Input
@@ -58,7 +52,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
         onChange={handleChange}
         placeholder={placeholder}
         disabled={disabled}
-        size={inputSize}
+        size={size}
         className="pl-10 pr-10"
       />
 
@@ -69,7 +63,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
           className="absolute right-3 top-1/2 transform -translate-y-1/2 z-10 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           aria-label="Очистить поиск"
         >
-          {React.createElement(X as any, { className: "h-4 w-4 text-gray-400 hover:text-gray-600" })}
+          <Icon icon={X} className="h-4 w-4 text-gray-400 hover:text-gray-600" />
         </button>
       )}
     </div>

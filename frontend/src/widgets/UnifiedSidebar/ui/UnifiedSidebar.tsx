@@ -20,7 +20,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
   onMoveRight,
   onAddBlock,
   adding,
-  pageIdentifier,
+  pageIdentifier: _pageIdentifier,
   externalActiveView,
   onViewChange,
 }) => {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ReusableBlocksLibrary } from './indexNew';
-import type { ReusableBlock } from './types';
+
 
 /**
  * Примеры использования нового ReusableBlocksLibrary
@@ -29,21 +29,11 @@ export const FullLibraryExample: React.FC = () => {
 
 // Пример использования отдельных компонентов
 export const IndividualComponentsExample: React.FC = () => {
-  const [searchValue, setSearchValue] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
 
-  const mockCategories = ['Базовые', 'Контент', 'Навигация', 'Медиа'];
-  const mockBlocks: ReusableBlock[] = [
-    {
-      id: '1',
-      name: 'Базовый блок',
-      description: 'Простой текстовый блок',
-      category: 'Базовые',
-      content: { text: 'Пример контента' },
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }
-  ];
+
+
+
+
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-6">

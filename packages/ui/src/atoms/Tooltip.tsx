@@ -7,7 +7,7 @@ export type TooltipPosition = 'top' | 'bottom' | 'left' | 'right';
 
 export interface TooltipProps {
   children: React.ReactNode;
-  content: string;
+  content: React.ReactNode;
   position?: TooltipPosition;
   disabled?: boolean;
   delay?: number;

@@ -46,8 +46,8 @@ export interface PluginInfo {
   version: string;
   description: string;
   isActive: boolean;
-  loadedAt?: Date;
-  error?: string;
+  loadedAt?: Date | null;
+  error?: string | null;
 }
 
 export class PluginManager {
@@ -112,7 +112,7 @@ export class PluginManager {
         ...info,
         isActive: true,
         loadedAt: new Date(),
-        error: undefined
+        error: null
       });
 
       // Emit event
@@ -129,7 +129,7 @@ export class PluginManager {
       if (info) {
         this.pluginInfo.set(pluginName, {
           ...info,
-          error: error.message
+          error: error instanceof Error ? error.message : String(error)
         });
       }
 
@@ -137,7 +137,7 @@ export class PluginManager {
       const plugin = this.plugins.get(pluginName);
       if (plugin?.onError) {
         try {
-          await plugin.onError(error);
+          await plugin.onError(error instanceof Error ? error : new Error(String(error)));
         } catch (hookError) {
           console.error(`Plugin ${pluginName} onError hook failed:`, hookError);
         }
@@ -145,7 +145,7 @@ export class PluginManager {
 
       await this.events.emit(CMS_EVENTS.PLUGIN_ERROR, {
         name: pluginName,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       });
 
       throw error;
@@ -175,7 +175,7 @@ export class PluginManager {
       this.pluginInfo.set(pluginName, {
         ...info,
         isActive: false,
-        loadedAt: undefined
+        loadedAt: null
       });
 
       // Emit event
@@ -224,29 +224,30 @@ export class PluginManager {
    */
   async executeHooks<T>(
     hookName: keyof PluginHooks,
-    data: T,
-    filter?: (plugin: Plugin) => boolean
-  ): Promise<T> {
+    data?: T,
+    ...args: any[]
+  ): Promise<T | undefined> {
     let result = data;
 
     for (const pluginName of this.activePlugins) {
       const plugin = this.plugins.get(pluginName);
       if (!plugin) continue;
 
-      // Apply filter if provided
-      if (filter && !filter(plugin)) continue;
-
       const hook = plugin.hooks[hookName];
       if (typeof hook === 'function') {
         try {
-          result = await hook(result);
+          if (hookName === 'onTemplateRender' && args.length > 0) {
+            result = await (hook as any)(result, args[0]);
+          } else {
+            result = await (hook as any)(result);
+          }
         } catch (error) {
           console.error(`Plugin ${pluginName} hook ${hookName} failed:`, error);
 
           // Call onError hook if exists
           if (plugin.onError) {
             try {
-              await plugin.onError(error);
+              await plugin.onError(error instanceof Error ? error : new Error(String(error)));
             } catch (hookError) {
               console.error(`Plugin ${pluginName} onError hook failed:`, hookError);
             }
@@ -351,11 +352,11 @@ export class PluginManager {
   private setupEventListeners(): void {
     // Listen for system events and forward to plugins
     this.events.on(CMS_EVENTS.CMS_INITIALIZED, async () => {
-      await this.executeHooks('onSystemStart');
+      await this.executeHooks('onSystemStart', undefined);
     });
 
     this.events.on(CMS_EVENTS.CMS_SHUTDOWN, async () => {
-      await this.executeHooks('onSystemStop');
+      await this.executeHooks('onSystemStop', undefined);
     });
 
     // Listen for content events

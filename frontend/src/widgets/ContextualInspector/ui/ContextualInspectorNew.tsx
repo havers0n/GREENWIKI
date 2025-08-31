@@ -33,7 +33,7 @@ const ContextualInspectorNew: React.FC<ContextualInspectorProps> = ({
   const {
     spec,
     isInstance,
-    Editor,
+    Editor: _Editor,
     data,
     metadata,
     statusInfo
